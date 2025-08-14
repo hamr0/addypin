@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Search, MapPin, X, LocateFixed } from "lucide-react";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { useAuth } from "@/hooks/useAuth";
-import AuthHeader from "./AuthHeader";
+
 
 // Fix for default markers in Leaflet
 import icon from "leaflet/dist/images/marker-icon.png";
@@ -258,7 +258,6 @@ export default function MapSection({ coordinates, onCoordinatesChange, generated
             <p className="text-addypin-medium mt-1">Search above or click to set your location</p>
           </div>
           <div className="flex items-center gap-4">
-            <AuthHeader />
             <div className="flex items-center text-sm text-addypin-medium">
               <i className="fas fa-map-marker-alt text-addypin-cyan mr-2"></i>
               <span>Location set</span>

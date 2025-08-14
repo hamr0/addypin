@@ -28,7 +28,7 @@ export default function Home() {
                 </a>
               </nav>
               <span className="text-sm text-addypin-medium">
-                Login to edit pins
+                OTP verification for pin editing
               </span>
             </div>
             <button className="md:hidden text-addypin-medium" data-testid="mobile-menu">
