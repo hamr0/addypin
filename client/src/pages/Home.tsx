@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "wouter";
 import MapSection from "@/components/MapSection";
 import Sidebar from "@/components/Sidebar";
 import Logo from "@/components/Logo";
@@ -65,7 +66,7 @@ export default function Home() {
               <h3 className="font-semibold text-addypin-dark mb-3">Resources</h3>
               <ul className="space-y-2 text-sm text-addypin-medium">
                 <li><a href="#" className="hover:text-addypin-cyan transition-colors">API Documentation</a></li>
-                <li><a href="#" className="hover:text-addypin-cyan transition-colors">GitHub Repository</a></li>
+                <li><Link href="/versions" className="hover:text-addypin-cyan transition-colors" data-testid="link-version-history-footer">Version History</Link></li>
                 <li><a href="#" className="hover:text-addypin-cyan transition-colors">Help Center</a></li>
               </ul>
             </div>

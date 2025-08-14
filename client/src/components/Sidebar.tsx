@@ -286,14 +286,7 @@ export default function Sidebar({ coordinates, generatedLink, onLinkGenerated }:
 
       {/* Footer */}
       <div className="text-center mt-6">
-        <div className="flex justify-center space-x-4 text-xs">
-          <Link href="/versions" className="text-addypin-cyan hover:underline" data-testid="link-version-history">
-            Version History
-          </Link>
-        </div>
-        <p className="text-addypin-medium text-xs mt-2">
-          Powered by <span className="text-addypin-cyan font-medium">AddyPin</span>
-        </p>
+        {/* Empty footer space - Version History moved to Home page Resources */}
       </div>
     </div>
   );
