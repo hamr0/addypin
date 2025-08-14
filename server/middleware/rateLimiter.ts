@@ -34,6 +34,13 @@ setInterval(() => {
   }
 }, 60 * 60 * 1000); // Run every hour
 
+// Whitelist for development testing
+const WHITELISTED_IPS = [
+  '127.0.0.1',
+  'localhost',
+  '172.31.76.98', // Your current IP for testing
+];
+
 export function createRateLimiter(options: {
   windowMs: number;
   maxRequests: number;
@@ -47,6 +54,11 @@ export function createRateLimiter(options: {
                req.socket.remoteAddress ||
                (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
                'unknown';
+
+    // Skip rate limiting for whitelisted IPs (development only)
+    if (process.env.NODE_ENV === 'development' && WHITELISTED_IPS.includes(ip)) {
+      return next();
+    }
 
     const now = Date.now();
     const store = options.windowMs > 3600000 ? dailyStore : rateLimitStore;

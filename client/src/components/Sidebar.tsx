@@ -173,7 +173,7 @@ export default function Sidebar({ coordinates, generatedLink, onLinkGenerated }:
               placeholder="your@email.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="border-gray-300 focus:border-addypin-cyan focus:ring-addypin-cyan"
+              className="border-gray-300 focus:border-addypin-cyan focus:ring-addypin-cyan placeholder:text-gray-400"
               data-testid="input-creator-email"
             />
             <p className="text-xs text-gray-500 mt-1">

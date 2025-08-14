@@ -15,17 +15,22 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <Logo />
-            <nav className="hidden md:flex space-x-6">
-              <a href="#" className="text-addypin-medium hover:text-addypin-dark transition-colors">
-                Features
-              </a>
-              <a href="#" className="text-addypin-medium hover:text-addypin-dark transition-colors">
-                API
-              </a>
-              <a href="#" className="text-addypin-medium hover:text-addypin-dark transition-colors">
-                Help
-              </a>
-            </nav>
+            <div className="flex items-center space-x-6">
+              <nav className="hidden md:flex space-x-6">
+                <a href="#" className="text-addypin-medium hover:text-addypin-dark transition-colors">
+                  Features
+                </a>
+                <a href="#" className="text-addypin-medium hover:text-addypin-dark transition-colors">
+                  API
+                </a>
+                <a href="#" className="text-addypin-medium hover:text-addypin-dark transition-colors">
+                  Help
+                </a>
+              </nav>
+              <span className="text-sm text-addypin-medium">
+                Login to edit pins
+              </span>
+            </div>
             <button className="md:hidden text-addypin-medium" data-testid="mobile-menu">
               <i className="fas fa-bars text-xl"></i>
             </button>
