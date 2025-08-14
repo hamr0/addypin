@@ -24,19 +24,17 @@ export default function EditPage() {
     },
     onSuccess: (data, email) => {
       setShowOtpInput(true);
-      // Display the OTP code prominently for development
-      setTimeout(() => {
-        const otpMatch = data.message?.match(/\(check console in development\)/);
-        if (otpMatch) {
-          // Find the OTP in console logs - look for pattern "OTP for email: 123456"
-          console.log(`🔑 OTP Code Display: Looking for OTP sent to ${email}`);
-          toast({
-            title: "OTP Sent",
-            description: "Check the browser console for your 6-digit verification code",
-            duration: 8000,
-          });
-        }
-      }, 100);
+      toast({
+        title: "Verification Code Sent",
+        description: "🔍 Check server console (workflow logs) for the 6-digit code",
+        duration: 10000,
+      });
+      // Log prominent instructions to help user find the OTP
+      console.log(`\n🔍 ===============================`);
+      console.log(`🔍 OTP SENT TO: ${email.toUpperCase()}`);
+      console.log(`🔍 LOOK FOR SERVER LOGS ABOVE`);
+      console.log(`🔍 FIND: "🔑 OTP CODE FOR ${email.toUpperCase()}"`);
+      console.log(`🔍 ===============================\n`);
     },
     onError: (error) => {
       toast({
@@ -75,8 +73,7 @@ export default function EditPage() {
         {/* Header */}
         <div className="text-center mb-8">
           <Logo />
-          <h1 className="text-2xl font-bold text-addypin-dark mt-4">Edit Pin Coordinates</h1>
-          <p className="text-addypin-medium">Verify your email to edit existing pin coordinates</p>
+          <h1 className="text-2xl font-bold text-addypin-dark mt-4">Edit addypin coordinates</h1>
         </div>
 
         <div className="max-w-md mx-auto">
@@ -84,7 +81,7 @@ export default function EditPage() {
             <CardHeader>
               <CardTitle className="flex items-center">
                 <Edit className="w-5 h-5 text-addypin-cyan mr-2" />
-                Coordinate Editor
+                Email Verification
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -98,6 +95,7 @@ export default function EditPage() {
                       id="edit-email"
                       type="email"
                       placeholder="your@email.com"
+                      style={{ color: '#6b7280' }}
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       className="border-gray-300 focus:border-addypin-cyan focus:ring-addypin-cyan"
@@ -134,10 +132,12 @@ export default function EditPage() {
                           data-testid="input-otp-code"
                         />
                         <div className="text-xs text-orange-600 bg-orange-50 p-3 rounded border-l-4 border-orange-400 mt-3">
-                          <div className="font-semibold mb-1">🔍 Development Mode Instructions:</div>
-                          <div>1. Open browser console (F12 or right-click → Inspect)</div>
-                          <div>2. Look for server logs with your email address</div>
-                          <div>3. Find the 6-digit code and copy it here</div>
+                          <div className="font-semibold mb-2">🔍 Development Mode - Find Your OTP:</div>
+                          <div className="space-y-1">
+                            <div><strong>Step 1:</strong> Look at the <strong>Workflow Console</strong> (server logs)</div>
+                            <div><strong>Step 2:</strong> Find the box with "🔑 OTP CODE FOR YOUR_EMAIL"</div>
+                            <div><strong>Step 3:</strong> Copy the 6-digit number and paste it above</div>
+                          </div>
                         </div>
                       </div>
                       

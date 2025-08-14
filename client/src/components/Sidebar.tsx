@@ -409,10 +409,12 @@ export default function Sidebar({ coordinates, generatedLink, onLinkGenerated }:
                   </Button>
                 </div>
                 <div className="text-xs text-orange-600 bg-orange-50 p-3 rounded border-l-4 border-orange-400">
-                  <div className="font-semibold mb-1">🔍 Development Mode Instructions:</div>
-                  <div>1. Open browser console (F12 or right-click → Inspect)</div>
-                  <div>2. Look for server logs with your email address</div>
-                  <div>3. Find the 6-digit code and copy it here</div>
+                  <div className="font-semibold mb-2">🔍 Development Mode - Find Your OTP:</div>
+                  <div className="space-y-1">
+                    <div><strong>Step 1:</strong> Look at the <strong>Workflow Console</strong> (server logs)</div>
+                    <div><strong>Step 2:</strong> Find the box with "🔑 OTP CODE FOR YOUR_EMAIL"</div>
+                    <div><strong>Step 3:</strong> Copy the 6-digit number and paste it above</div>
+                  </div>
                 </div>
               </div>
             )}
