@@ -149,7 +149,7 @@ export default function Sidebar({ coordinates, generatedLink, onLinkGenerated }:
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <h2 className="text-lg font-semibold text-addypin-dark mb-4 flex items-center">
           <i className="fas fa-link text-addypin-cyan mr-3"></i>
-          Generate Short Link
+          Generate addypin!
         </h2>
 
         <div className="space-y-4">
