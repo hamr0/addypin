@@ -5,7 +5,7 @@ import "leaflet/dist/leaflet.css";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Search, MapPin } from "lucide-react";
+import { Search, MapPin, X, LocateFixed } from "lucide-react";
 import { useGeolocation } from "@/hooks/useGeolocation";
 
 // Fix for default markers in Leaflet
@@ -64,11 +64,11 @@ export default function MapSection({ coordinates, onCoordinatesChange, generated
       maxZoom: 19,
     }).addTo(map);
 
-    // Custom pin icon - matches logo pin style exactly
+    // Custom upright pin icon
     const customIcon = L.divIcon({
       className: 'custom-pin',
-      html: `<div class="w-6 h-6 bg-addypin-cyan border-2 border-white shadow-lg transform rotate-45 relative" style="border-radius: 50% 50% 50% 0;">
-        <div class="w-2 h-2 bg-white rounded-full absolute top-1 left-1 transform rotate-45"></div>
+      html: `<div class="w-6 h-6 bg-addypin-cyan border-2 border-white shadow-lg relative" style="border-radius: 50% 50% 50% 0; transform: rotate(-45deg);">
+        <div class="w-2 h-2 bg-white rounded-full absolute top-1 left-1"></div>
       </div>`,
       iconSize: [24, 24],
       iconAnchor: [12, 24],
@@ -149,6 +149,33 @@ export default function MapSection({ coordinates, onCoordinatesChange, generated
     }
   };
 
+  // Clear search and get current location
+  const handleClearSearch = () => {
+    setSearchQuery("");
+    
+    // Get current location if available
+    if (navigator.geolocation && mapRef.current) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+          
+          // Update map view and marker
+          mapRef.current?.setView([lat, lng], 15);
+          if (markerRef.current) {
+            markerRef.current.setLatLng([lat, lng]);
+          }
+          onCoordinatesChange({ lat, lng });
+        },
+        (error) => {
+          console.log("Geolocation error:", error);
+          // Silently fail - user can manually set location
+        },
+        { enableHighAccuracy: true, timeout: 5000, maximumAge: 300000 }
+      );
+    }
+  };
+
   const mapApps = [
     { name: "Google Maps", icon: "fab fa-google" },
     { name: "Apple Maps", icon: "fab fa-apple" },
@@ -181,9 +208,19 @@ export default function MapSection({ coordinates, onCoordinatesChange, generated
               placeholder="Search for an address, city, or landmark..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
+              className="pl-10 pr-10"
               data-testid="input-location-search"
             />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={handleClearSearch}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                data-testid="button-clear-search"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
           </div>
           <Button 
             type="submit" 
@@ -196,6 +233,15 @@ export default function MapSection({ coordinates, onCoordinatesChange, generated
             ) : (
               <>Search</>
             )}
+          </Button>
+          <Button
+            type="button"
+            onClick={handleClearSearch}
+            variant="outline"
+            className="border-addypin-cyan text-addypin-cyan hover:bg-addypin-cyan hover:text-white"
+            data-testid="button-current-location"
+          >
+            <LocateFixed className="h-4 w-4" />
           </Button>
         </form>
       </div>
