@@ -64,14 +64,14 @@ export default function MapSection({ coordinates, onCoordinatesChange, generated
       maxZoom: 19,
     }).addTo(map);
 
-    // Custom pin icon
+    // Custom pin icon - matches logo pin style exactly
     const customIcon = L.divIcon({
       className: 'custom-pin',
-      html: `<div class="w-8 h-8 bg-addypin-cyan rounded-full border-4 border-white shadow-lg transform rotate-45 relative">
-        <div class="w-3 h-3 bg-white rounded-full absolute top-1 left-1 transform -rotate-45"></div>
+      html: `<div class="w-6 h-6 bg-addypin-cyan border-2 border-white shadow-lg transform rotate-45 relative" style="border-radius: 50% 50% 50% 0;">
+        <div class="w-2 h-2 bg-white rounded-full absolute top-1 left-1 transform rotate-45"></div>
       </div>`,
-      iconSize: [32, 32],
-      iconAnchor: [16, 32],
+      iconSize: [24, 24],
+      iconAnchor: [12, 24],
     });
 
     const marker = L.marker([initialLat, initialLng], {

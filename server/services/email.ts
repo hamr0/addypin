@@ -3,7 +3,7 @@ import nodemailer from 'nodemailer';
 // Create reusable transporter using Gmail SMTP
 const createTransporter = () => {
   if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-    return nodemailer.createTransporter({
+    return nodemailer.createTransport({
       service: 'gmail',
       auth: {
         user: process.env.EMAIL_USER,
