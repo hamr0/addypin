@@ -45,9 +45,9 @@ class EmailService {
         "OpenStreetMap": `https://www.openstreetmap.org/?mlat=${latitude}&mlon=${longitude}#map=18/${latitude}/${longitude}`,
         "Bing Maps": `https://www.bing.com/maps?cp=${latitude}~${longitude}&lvl=18`,
         "TomTom": `https://mydrive.tomtom.com/en_gb/#mode=search+viewport=${latitude},${longitude},18,0,-0+search=${latitude},${longitude}`,
-        "Citymapper": `https://citymapper.com/directions?endcoord=${latitude},${longitude}&endname=Location`,
+        "Citymapper": `https://citymapper.com/directions?endcoord=${latitude}%2C${longitude}`,
         "OsmAnd": `https://osmand.net/go?lat=${latitude}&lon=${longitude}&z=18`,
-        "Sygic Maps": `https://maps.sygic.com/?lat=${latitude}&lon=${longitude}&zoom=18`,
+        "Sygic Maps": `https://directions.sygic.com/?location=${latitude}%2C${longitude}`,
         "Badger Maps": `https://web.badgermapping.com/map?lat=${latitude}&lng=${longitude}`,
       };
 

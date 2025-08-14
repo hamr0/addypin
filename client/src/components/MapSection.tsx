@@ -5,6 +5,7 @@ import "leaflet/dist/leaflet.css";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Search, MapPin } from "lucide-react";
 import { useGeolocation } from "@/hooks/useGeolocation";
 
 // Fix for default markers in Leaflet
@@ -32,6 +33,8 @@ export default function MapSection({ coordinates, onCoordinatesChange, generated
   const markerRef = useRef<L.Marker | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const [mapLinks, setMapLinks] = useState<Record<string, string>>({});
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
   
   const { location: geoLocation, error: geoError } = useGeolocation();
 
@@ -111,6 +114,41 @@ export default function MapSection({ coordinates, onCoordinatesChange, generated
     }
   }, [coordinates]);
 
+  // Search functionality
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchQuery.trim() || !mapRef.current) return;
+    
+    setIsSearching(true);
+    try {
+      // Use Nominatim (OpenStreetMap) geocoding service
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&limit=1`
+      );
+      const data = await response.json();
+      
+      if (data && data.length > 0) {
+        const result = data[0];
+        const lat = parseFloat(result.lat);
+        const lng = parseFloat(result.lon);
+        
+        // Update map view and marker
+        mapRef.current.setView([lat, lng], 15);
+        if (markerRef.current) {
+          markerRef.current.setLatLng([lat, lng]);
+        }
+        onCoordinatesChange({ lat, lng });
+      } else {
+        alert("Location not found. Try a different search term.");
+      }
+    } catch (error) {
+      console.error("Search error:", error);
+      alert("Search failed. Please try again.");
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
   const mapApps = [
     { name: "Google Maps", icon: "fab fa-google" },
     { name: "Apple Maps", icon: "fab fa-apple" },
@@ -129,11 +167,44 @@ export default function MapSection({ coordinates, onCoordinatesChange, generated
 
   return (
     <div className="lg:col-span-2 space-y-6">
+      {/* Search Bar */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+        <h3 className="text-lg font-semibold text-addypin-dark mb-3 flex items-center">
+          <Search className="w-5 h-5 text-addypin-cyan mr-2" />
+          Search Location
+        </h3>
+        <form onSubmit={handleSearch} className="flex gap-2">
+          <div className="relative flex-1">
+            <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              type="text"
+              placeholder="Search for an address, city, or landmark..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+              data-testid="input-location-search"
+            />
+          </div>
+          <Button 
+            type="submit" 
+            disabled={isSearching || !searchQuery.trim()}
+            className="bg-addypin-cyan hover:bg-addypin-cyan/90"
+            data-testid="button-search"
+          >
+            {isSearching ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+            ) : (
+              <>Search</>
+            )}
+          </Button>
+        </form>
+      </div>
+
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-semibold text-addypin-dark">Drop Your Pin</h1>
-            <p className="text-addypin-medium mt-1">Click or drag to set your location</p>
+            <p className="text-addypin-medium mt-1">Search above or click to set your location</p>
           </div>
           <div className="flex items-center text-sm text-addypin-medium">
             <i className="fas fa-map-marker-alt text-addypin-cyan mr-2"></i>

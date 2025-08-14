@@ -93,9 +93,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       "OpenStreetMap": `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=18/${lat}/${lng}`,
       "Bing Maps": `https://www.bing.com/maps?cp=${lat}~${lng}&lvl=18`,
       "TomTom": `https://mydrive.tomtom.com/en_gb/#mode=search+viewport=${lat},${lng},18,0,-0+search=${lat},${lng}`,
-      "Citymapper": `https://citymapper.com/directions?endcoord=${lat},${lng}&endname=Location`,
+      "Citymapper": `https://citymapper.com/directions?endcoord=${lat}%2C${lng}`,
       "OsmAnd": `https://osmand.net/go?lat=${lat}&lon=${lng}&z=18`,
-      "Sygic Maps": `https://maps.sygic.com/?lat=${lat}&lon=${lng}&zoom=18`,
+      "Sygic Maps": `https://directions.sygic.com/?location=${lat}%2C${lng}`,
       "Badger Maps": `https://web.badgermapping.com/map?lat=${lat}&lng=${lng}`,
     };
 
