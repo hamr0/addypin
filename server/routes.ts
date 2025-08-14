@@ -6,6 +6,7 @@ import { insertPinSchema, insertAnalyticsSchema } from "@shared/schema";
 import { z } from "zod";
 import { emailService } from "./services/email";
 import { analyticsService } from "./services/analytics";
+import { authService } from "./services/auth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Generate shortcode helper
@@ -176,6 +177,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Map app click tracking error:", error);
       res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // Authentication routes
+  app.post("/api/auth/send-otp", async (req, res) => {
+    try {
+      const { email } = z.object({ email: z.string().email() }).parse(req.body);
+      
+      const result = await authService.sendOtpCode(email);
+      
+      if (result.success) {
+        res.json({ success: true, message: result.message });
+      } else {
+        res.status(400).json({ success: false, message: result.message });
+      }
+    } catch (error) {
+      console.error("Send OTP error:", error);
+      res.status(500).json({ success: false, message: "Failed to send OTP" });
+    }
+  });
+
+  app.post("/api/auth/verify-otp", async (req, res) => {
+    try {
+      const { email, code } = z.object({ 
+        email: z.string().email(),
+        code: z.string().length(6)
+      }).parse(req.body);
+      
+      const result = await authService.verifyOtpAndCreateSession(email, code);
+      
+      if (result.success && result.sessionToken) {
+        res.json({ 
+          success: true, 
+          message: result.message,
+          sessionToken: result.sessionToken
+        });
+      } else {
+        res.status(400).json({ success: false, message: result.message });
+      }
+    } catch (error) {
+      console.error("Verify OTP error:", error);
+      res.status(500).json({ success: false, message: "Failed to verify OTP" });
+    }
+  });
+
+  app.post("/api/auth/logout", async (req, res) => {
+    try {
+      const { sessionToken } = z.object({ 
+        sessionToken: z.string()
+      }).parse(req.body);
+      
+      const result = await authService.logout(sessionToken);
+      res.json({ success: result.success });
+    } catch (error) {
+      console.error("Logout error:", error);
+      res.status(500).json({ success: false, message: "Failed to logout" });
     }
   });
 

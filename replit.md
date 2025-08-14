@@ -18,6 +18,7 @@ Preferred communication style: Simple, everyday language.
 - Real-time statistics dashboard showing pins created, links clicked, and active countries
 - Email integration using Nodemailer (free, no SendGrid dependency)
 - Comprehensive analytics tracking with daily reports sent to avoidaccess@msn.com
+- Email + OTP authentication system for secure coordinate editing with session management
 
 ✅ **Technical Implementation:**
 - PostgreSQL database with proper schema for pins, analytics, and daily stats

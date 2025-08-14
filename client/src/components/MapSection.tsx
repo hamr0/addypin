@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Search, MapPin, X, LocateFixed } from "lucide-react";
 import { useGeolocation } from "@/hooks/useGeolocation";
+import { useAuth } from "@/hooks/useAuth";
+import AuthHeader from "./AuthHeader";
 
 // Fix for default markers in Leaflet
 import icon from "leaflet/dist/images/marker-icon.png";
@@ -37,6 +39,7 @@ export default function MapSection({ coordinates, onCoordinatesChange, generated
   const [isSearching, setIsSearching] = useState(false);
   
   const { location: geoLocation, error: geoError } = useGeolocation();
+  const auth = useAuth();
 
   // Fetch map links when coordinates change
   const { data: fetchedMapLinks } = useQuery({
@@ -75,7 +78,7 @@ export default function MapSection({ coordinates, onCoordinatesChange, generated
     });
 
     const marker = L.marker([initialLat, initialLng], {
-      draggable: true,
+      draggable: auth.isAuthenticated,
       icon: customIcon,
     }).addTo(map);
 
@@ -83,13 +86,18 @@ export default function MapSection({ coordinates, onCoordinatesChange, generated
     onCoordinatesChange({ lat: initialLat, lng: initialLng });
 
     marker.on('dragend', () => {
-      const pos = marker.getLatLng();
-      onCoordinatesChange({ lat: pos.lat, lng: pos.lng });
+      if (auth.isAuthenticated) {
+        const pos = marker.getLatLng();
+        onCoordinatesChange({ lat: pos.lat, lng: pos.lng });
+      }
     });
 
     map.on('click', (e: L.LeafletMouseEvent) => {
-      marker.setLatLng(e.latlng);
-      onCoordinatesChange({ lat: e.latlng.lat, lng: e.latlng.lng });
+      if (auth.isAuthenticated) {
+        marker.setLatLng(e.latlng);
+        onCoordinatesChange({ lat: e.latlng.lat, lng: e.latlng.lng });
+      }
+      // Note: Non-authenticated users can still create pins, just can't edit existing ones
     });
 
     mapRef.current = map;
@@ -102,7 +110,18 @@ export default function MapSection({ coordinates, onCoordinatesChange, generated
         markerRef.current = null;
       }
     };
-  }, [geoLocation, onCoordinatesChange]);
+  }, [geoLocation, onCoordinatesChange, auth.isAuthenticated]);
+
+  // Update marker draggable state when authentication changes
+  useEffect(() => {
+    if (markerRef.current) {
+      if (auth.isAuthenticated) {
+        markerRef.current.dragging?.enable();
+      } else {
+        markerRef.current.dragging?.disable();
+      }
+    }
+  }, [auth.isAuthenticated]);
 
   // Update marker position when coordinates change externally
   useEffect(() => {
@@ -252,9 +271,12 @@ export default function MapSection({ coordinates, onCoordinatesChange, generated
             <h1 className="text-2xl font-semibold text-addypin-dark">Drop Your Pin</h1>
             <p className="text-addypin-medium mt-1">Search above or click to set your location</p>
           </div>
-          <div className="flex items-center text-sm text-addypin-medium">
-            <i className="fas fa-map-marker-alt text-addypin-cyan mr-2"></i>
-            <span>Location set</span>
+          <div className="flex items-center gap-4">
+            <AuthHeader />
+            <div className="flex items-center text-sm text-addypin-medium">
+              <i className="fas fa-map-marker-alt text-addypin-cyan mr-2"></i>
+              <span>Location set</span>
+            </div>
           </div>
         </div>
 
@@ -318,6 +340,8 @@ export default function MapSection({ coordinates, onCoordinatesChange, generated
           ))}
         </div>
       </div>
+
+
     </div>
   );
 }

@@ -204,6 +204,71 @@ Sent from AddyPin.com - The simplest way to share locations
       return false;
     }
   }
+  async sendOtpEmail(email: string, code: string): Promise<boolean> {
+    try {
+      const emailContent = this.generateOtpEmail(code);
+      
+      const success = await this.sendEmail({
+        to: email,
+        subject: "AddyPin - Your Login Code",
+        text: emailContent.text,
+        html: emailContent.html,
+      });
+
+      return success;
+    } catch (error) {
+      console.error("Failed to send OTP email:", error);
+      return false;
+    }
+  }
+
+  private generateOtpEmail(code: string): { text: string; html: string } {
+    const text = `
+Your AddyPin login code is: ${code}
+
+This code will expire in 10 minutes.
+
+If you didn't request this code, please ignore this email.
+
+Best regards,
+The AddyPin Team
+    `.trim();
+
+    const html = `
+      <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif; color: #333;">
+        <div style="text-align: center; padding: 20px; background-color: #f8f9fa; border-bottom: 1px solid #e9ecef;">
+          <h1 style="color: #00BCD4; margin: 0;">AddyPin</h1>
+        </div>
+        
+        <div style="padding: 30px 20px;">
+          <h2 style="color: #2c3e50; margin-bottom: 20px;">Your Login Code</h2>
+          
+          <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; text-align: center; margin: 20px 0;">
+            <div style="font-size: 32px; font-weight: bold; color: #00BCD4; letter-spacing: 4px; font-family: monospace;">
+              ${code}
+            </div>
+          </div>
+          
+          <p style="margin: 20px 0; line-height: 1.6;">
+            Use this code to access coordinate editing in AddyPin. This code will expire in <strong>10 minutes</strong>.
+          </p>
+          
+          <p style="margin: 20px 0; line-height: 1.6; color: #666;">
+            If you didn't request this code, please ignore this email.
+          </p>
+        </div>
+        
+        <div style="text-align: center; padding: 20px; background-color: #f8f9fa; border-top: 1px solid #e9ecef; color: #666;">
+          <p style="margin: 0; font-size: 14px;">
+            Best regards,<br>
+            The AddyPin Team
+          </p>
+        </div>
+      </div>
+    `;
+
+    return { text, html };
+  }
 }
 
 export const emailService = new EmailService();
