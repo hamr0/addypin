@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import path from "path";
 import { storage } from "./storage";
 import { insertPinSchema, insertAnalyticsSchema } from "@shared/schema";
 import { z } from "zod";
@@ -178,17 +179,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Subdomain redirect handling (this would typically be handled by nginx or similar)
+  // Subdomain redirect handling - serve the React app page instead of auto-redirecting
+  // This would typically be handled by nginx or similar in production
   app.get("/redirect/:shortcode", async (req, res) => {
     try {
       const { shortcode } = req.params;
       const pin = await storage.getPinByShortcode(shortcode);
 
       if (!pin) {
-        return res.status(404).send("Pin not found");
+        // Serve the React app which will handle the 404 display
+        const indexPath = process.env.NODE_ENV === 'production' 
+          ? path.join(process.cwd(), 'dist', 'index.html')
+          : path.join(process.cwd(), 'client', 'index.html');
+        return res.sendFile(indexPath);
       }
 
-      // Track click analytics
+      // Track click analytics for visiting the pin page
       await analyticsService.trackEvent({
         pinId: pin.id,
         eventType: "click",
@@ -196,19 +202,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ipAddress: req.ip,
       });
 
-      // Redirect to appropriate map based on user agent
-      const userAgent = req.headers['user-agent']?.toLowerCase() || '';
-      let redirectUrl: string;
-
-      if (userAgent.includes('iphone') || userAgent.includes('ipad')) {
-        redirectUrl = `https://maps.apple.com/?ll=${pin.latitude},${pin.longitude}`;
-      } else if (userAgent.includes('android')) {
-        redirectUrl = `https://www.google.com/maps/search/?api=1&query=${pin.latitude},${pin.longitude}`;
-      } else {
-        redirectUrl = `https://www.google.com/maps/search/?api=1&query=${pin.latitude},${pin.longitude}`;
-      }
-
-      res.redirect(302, redirectUrl);
+      // Serve the React app which will show the RedirectPage with all map options
+      const indexPath = process.env.NODE_ENV === 'production' 
+        ? path.join(process.cwd(), 'dist', 'index.html')
+        : path.join(process.cwd(), 'client', 'index.html');
+      res.sendFile(indexPath);
     } catch (error) {
       console.error("Redirect error:", error);
       res.status(500).send("Server error");
