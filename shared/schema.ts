@@ -77,34 +77,7 @@ export const insertDailyStatsSchema = createInsertSchema(dailyStats).omit({
   updatedAt: true,
 });
 
-// OTP authentication table
-export const otpCodes = pgTable("otp_codes", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  email: varchar("email").notNull(),
-  code: varchar("code", { length: 6 }).notNull(),
-  expiresAt: timestamp("expires_at").notNull(),
-  used: boolean("used").default(false),
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
-// User sessions table for coordinate editing
-export const userSessions = pgTable("user_sessions", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  email: varchar("email").notNull(),
-  sessionToken: varchar("session_token").notNull().unique(),
-  expiresAt: timestamp("expires_at").notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
-export const insertOtpCodeSchema = createInsertSchema(otpCodes).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertUserSessionSchema = createInsertSchema(userSessions).omit({
-  id: true,
-  createdAt: true,
-});
+// Note: Authentication now handled by Clerk - removed custom auth tables
 
 // Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -115,7 +88,3 @@ export type InsertAnalytics = z.infer<typeof insertAnalyticsSchema>;
 export type Analytics = typeof analytics.$inferSelect;
 export type InsertDailyStats = z.infer<typeof insertDailyStatsSchema>;
 export type DailyStats = typeof dailyStats.$inferSelect;
-export type InsertOtpCode = z.infer<typeof insertOtpCodeSchema>;
-export type OtpCode = typeof otpCodes.$inferSelect;
-export type InsertUserSession = z.infer<typeof insertUserSessionSchema>;
-export type UserSession = typeof userSessions.$inferSelect;

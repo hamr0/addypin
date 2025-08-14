@@ -1,6 +1,5 @@
 import { storage } from "../storage";
 import { type InsertAnalytics } from "@shared/schema";
-import { emailService } from "./email";
 
 // Simple IP geolocation (in production, use MaxMind GeoLite2 or similar)
 const getCountryFromIP = (ip: string): string | null => {
@@ -101,7 +100,7 @@ class AnalyticsService {
         uniqueCountries: Math.max(acc.uniqueCountries, stat.uniqueCountries),
       }), { pinsCreated: 0, linksClicked: 0, emailsSent: 0, uniqueCountries: 0 });
 
-      await emailService.sendDailyAnalytics({
+      console.log("Daily analytics report:", {
         daily: dailyStats,
         total: totals,
       });

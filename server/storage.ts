@@ -1,4 +1,4 @@
-import { users, pins, analytics, dailyStats, otpCodes, userSessions, type User, type InsertUser, type Pin, type InsertPin, type Analytics, type InsertAnalytics, type DailyStats, type InsertDailyStats, type OtpCode, type InsertOtpCode, type UserSession, type InsertUserSession } from "@shared/schema";
+import { users, pins, analytics, dailyStats, type User, type InsertUser, type Pin, type InsertPin, type Analytics, type InsertAnalytics, type DailyStats, type InsertDailyStats } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, sql, and, gte, lt } from "drizzle-orm";
 
@@ -22,15 +22,7 @@ export interface IStorage {
   updateDailyStats(date: string, stats: Partial<InsertDailyStats>): Promise<DailyStats>;
   getDailyStatsForPeriod(startDate: string, endDate: string): Promise<DailyStats[]>;
   
-  // Auth methods
-  createOtpCode(otpCode: InsertOtpCode): Promise<OtpCode>;
-  getValidOtpCode(email: string, code: string): Promise<OtpCode | undefined>;
-  markOtpAsUsed(id: string): Promise<void>;
-  createUserSession(session: InsertUserSession): Promise<UserSession>;
-  getValidUserSession(sessionToken: string): Promise<UserSession | undefined>;
-  deleteUserSession(sessionToken: string): Promise<void>;
-  cleanupExpiredOtpCodes(): Promise<void>;
-  cleanupExpiredSessions(): Promise<void>;
+  // Note: Authentication now handled by Clerk
 }
 
 export class DatabaseStorage implements IStorage {
@@ -186,71 +178,7 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(dailyStats.date));
   }
 
-  // Auth method implementations
-  async createOtpCode(otpCode: InsertOtpCode): Promise<OtpCode> {
-    const [created] = await db
-      .insert(otpCodes)
-      .values(otpCode)
-      .returning();
-    return created;
-  }
-
-  async getValidOtpCode(email: string, code: string): Promise<OtpCode | undefined> {
-    const [otpRecord] = await db
-      .select()
-      .from(otpCodes)
-      .where(and(
-        eq(otpCodes.email, email),
-        eq(otpCodes.code, code),
-        eq(otpCodes.used, false),
-        gte(otpCodes.expiresAt, new Date())
-      ));
-    return otpRecord || undefined;
-  }
-
-  async markOtpAsUsed(id: string): Promise<void> {
-    await db
-      .update(otpCodes)
-      .set({ used: true })
-      .where(eq(otpCodes.id, id));
-  }
-
-  async createUserSession(session: InsertUserSession): Promise<UserSession> {
-    const [created] = await db
-      .insert(userSessions)
-      .values(session)
-      .returning();
-    return created;
-  }
-
-  async getValidUserSession(sessionToken: string): Promise<UserSession | undefined> {
-    const [session] = await db
-      .select()
-      .from(userSessions)
-      .where(and(
-        eq(userSessions.sessionToken, sessionToken),
-        gte(userSessions.expiresAt, new Date())
-      ));
-    return session || undefined;
-  }
-
-  async deleteUserSession(sessionToken: string): Promise<void> {
-    await db
-      .delete(userSessions)
-      .where(eq(userSessions.sessionToken, sessionToken));
-  }
-
-  async cleanupExpiredOtpCodes(): Promise<void> {
-    await db
-      .delete(otpCodes)
-      .where(lt(otpCodes.expiresAt, new Date()));
-  }
-
-  async cleanupExpiredSessions(): Promise<void> {
-    await db
-      .delete(userSessions)
-      .where(lt(userSessions.expiresAt, new Date()));
-  }
+  // Authentication now handled by Clerk - no custom auth methods needed
 }
 
 export const storage = new DatabaseStorage();
