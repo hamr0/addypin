@@ -62,12 +62,15 @@ export default function Sidebar({ coordinates, generatedLink, onLinkGenerated }:
       const response = await apiRequest("POST", "/api/otp/send", { email });
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data, email) => {
       setShowOtpInput(true);
       toast({
-        title: "OTP Sent",
-        description: "Check your email for the verification code (or console in development)",
+        title: "Verification Code Sent",
+        description: "🔍 Development Mode: Check browser console (F12) for the 6-digit code",
+        duration: 8000,
       });
+      // Log to help user find the OTP
+      console.log(`🔑 OTP Code: Looking for verification code sent to ${email}`);
     },
     onError: (error) => {
       toast({
@@ -385,9 +388,9 @@ export default function Sidebar({ coordinates, generatedLink, onLinkGenerated }:
                     type="text"
                     placeholder="123456"
                     value={otpCode}
-                    onChange={(e) => setOtpCode(e.target.value)}
+                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                     maxLength={6}
-                    className="flex-1 border-gray-300 focus:border-addypin-cyan focus:ring-addypin-cyan font-mono"
+                    className="flex-1 border-gray-300 focus:border-addypin-cyan focus:ring-addypin-cyan font-mono text-center text-lg"
                     data-testid="input-otp-code"
                   />
                   <Button
@@ -398,6 +401,9 @@ export default function Sidebar({ coordinates, generatedLink, onLinkGenerated }:
                   >
                     {verifyOtpMutation.isPending ? "Verifying..." : "Verify"}
                   </Button>
+                </div>
+                <div className="text-xs text-orange-600 bg-orange-50 p-2 rounded">
+                  🔍 <strong>Development Mode:</strong> Check browser console (F12) for the 6-digit verification code
                 </div>
               </div>
             )}

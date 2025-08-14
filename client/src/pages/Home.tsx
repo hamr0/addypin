@@ -29,18 +29,8 @@ export default function Home() {
               </nav>
               <button 
                 onClick={() => {
-                  // First check if edit section exists (after pin generation)
-                  const editSection = document.querySelector('[data-testid="edit-coordinates-section"]');
-                  if (editSection) {
-                    editSection.scrollIntoView({ behavior: 'smooth' });
-                  } else {
-                    // If no pin generated yet, scroll to pin generation area
-                    const generateSection = document.querySelector('[data-testid="button-generate"]');
-                    if (generateSection) {
-                      generateSection.scrollIntoView({ behavior: 'smooth' });
-                    }
-                    alert('Please generate a pin first, then you can edit it with OTP verification');
-                  }
+                  // Navigate to dedicated edit page
+                  window.location.href = '/edit';
                 }}
                 className="text-sm text-addypin-medium hover:text-addypin-cyan transition-colors cursor-pointer"
                 data-testid="button-login-to-edit"

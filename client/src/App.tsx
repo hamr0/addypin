@@ -6,12 +6,14 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Home from "@/pages/Home";
 import RedirectPage from "@/pages/RedirectPage";
 import VersionPage from "@/pages/VersionPage";
+import EditPage from "@/pages/EditPage";
 import NotFound from "@/pages/not-found";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/edit" component={EditPage} />
       <Route path="/redirect/:shortcode" component={RedirectPage} />
       <Route path="/versions" component={VersionPage} />
       <Route component={NotFound} />
