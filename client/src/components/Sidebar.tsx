@@ -290,15 +290,6 @@ export default function Sidebar({ coordinates, generatedLink, onLinkGenerated }:
           <Link href="/versions" className="text-addypin-cyan hover:underline" data-testid="link-version-history">
             Version History
           </Link>
-          <a 
-            href="https://www.linkedin.com/company/10224951/admin/products/cairenes-solutions-addypin/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-addypin-cyan hover:underline"
-            data-testid="link-linkedin"
-          >
-            LinkedIn
-          </a>
         </div>
         <p className="text-addypin-medium text-xs mt-2">
           Powered by <span className="text-addypin-cyan font-medium">AddyPin</span>
