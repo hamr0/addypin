@@ -78,7 +78,7 @@ export default function MapSection({ coordinates, onCoordinatesChange, generated
     });
 
     const marker = L.marker([initialLat, initialLng], {
-      draggable: auth.isAuthenticated,
+      draggable: true,
       icon: customIcon,
     }).addTo(map);
 
@@ -86,18 +86,13 @@ export default function MapSection({ coordinates, onCoordinatesChange, generated
     onCoordinatesChange({ lat: initialLat, lng: initialLng });
 
     marker.on('dragend', () => {
-      if (auth.isAuthenticated) {
-        const pos = marker.getLatLng();
-        onCoordinatesChange({ lat: pos.lat, lng: pos.lng });
-      }
+      const pos = marker.getLatLng();
+      onCoordinatesChange({ lat: pos.lat, lng: pos.lng });
     });
 
     map.on('click', (e: L.LeafletMouseEvent) => {
-      if (auth.isAuthenticated) {
-        marker.setLatLng(e.latlng);
-        onCoordinatesChange({ lat: e.latlng.lat, lng: e.latlng.lng });
-      }
-      // Note: Non-authenticated users can still create pins, just can't edit existing ones
+      marker.setLatLng(e.latlng);
+      onCoordinatesChange({ lat: e.latlng.lat, lng: e.latlng.lng });
     });
 
     mapRef.current = map;
@@ -112,16 +107,7 @@ export default function MapSection({ coordinates, onCoordinatesChange, generated
     };
   }, [geoLocation, onCoordinatesChange, auth.isAuthenticated]);
 
-  // Update marker draggable state when authentication changes
-  useEffect(() => {
-    if (markerRef.current) {
-      if (auth.isAuthenticated) {
-        markerRef.current.dragging?.enable();
-      } else {
-        markerRef.current.dragging?.disable();
-      }
-    }
-  }, [auth.isAuthenticated]);
+  // Marker is always draggable for coordinate selection
 
   // Update marker position when coordinates change externally
   useEffect(() => {

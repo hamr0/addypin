@@ -19,8 +19,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return code;
   }
 
-  // Create new pin (requires authentication)
-  app.post("/api/pins", requireAuth, async (req, res) => {
+  // Create new pin (open access)
+  app.post("/api/pins", async (req, res) => {
     try {
       const validatedData = insertPinSchema.parse(req.body);
       
@@ -32,11 +32,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         existingPin = await storage.getPinByShortcode(shortcode);
       } while (existingPin);
 
+      // Set expiry date - 72 hours from now if no email provided
+      const expiresAt = validatedData.createdBy ? null : new Date(Date.now() + 72 * 60 * 60 * 1000);
+
       const pin = await storage.createPin({
         ...validatedData,
         shortcode,
-        userId: req.userId!,
-        createdBy: req.userEmail || undefined,
+        expiresAt,
       });
 
       // Track pin creation analytics

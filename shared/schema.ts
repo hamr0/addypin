@@ -20,6 +20,7 @@ export const pins = pgTable("pins", {
   isActive: boolean("is_active").default(true).notNull(),
   userId: varchar("user_id"), // Clerk user ID (nullable for existing pins)
   createdBy: varchar("created_by"), // Email for display
+  expiresAt: timestamp("expires_at"), // null if permanent (has email), set if temporary
 });
 
 export const analytics = pgTable("analytics", {

@@ -14,18 +14,21 @@ Preferred communication style: Simple, everyday language.
 - Interactive map with draggable pins using Leaflet.js and OpenStreetMap
 - 6-character auto-generated shortcodes (ABC123 format)
 - Dual format support: web links (ABC123.addypin.com) and email format (ABC123@addypin.com)
-- Static redirect page displaying all 13 map app options instead of auto-redirecting
+- Interactive redirect page with map view and editing functionality
 - Real-time statistics dashboard showing pins created, links clicked, and active countries
 - Comprehensive analytics tracking with daily reports sent to avoidaccess@msn.com
-- **Authentication removed** - open access to eliminate email service limits and complexity
+- **Open pin creation** - no login required for pin creation
+- **Optional email storage** - pins without email auto-delete after 72 hours
+- **OTP-based editing** - verify email to edit existing pin coordinates
 
 ✅ **Technical Implementation:**
-- PostgreSQL database with proper schema for pins, analytics, and daily stats
+- PostgreSQL database with proper schema for pins, analytics, daily stats, and expiration tracking
 - Responsive design optimized for mobile, tablet, and desktop
 - All 13 map apps integrated: Google Maps, Apple Maps, Waze, HERE WeGo, MapQuest, Maps.me, OpenStreetMap, Bing Maps, TomTom, Citymapper, OsmAnd, Sygic Maps, Badger Maps
 - Logo design with traditional pin replacing the "P" in AddyPin
-- Clean, lightweight architecture with open access (no authentication barriers)
-- Simplified codebase without email dependencies
+- Clean, lightweight architecture with optional authentication for editing only
+- OTP verification system for secure coordinate editing
+- Automatic cleanup system for temporary pins (72-hour expiry)
 
 ✅ **Privacy & Analytics:**
 - No recent pins display for privacy protection
@@ -62,9 +65,13 @@ Preferred communication style: Simple, everyday language.
   - Users: Support for future authentication features
 
 ### Authentication & Authorization
-- **Current State**: Open access - no authentication required
-- **Design Decision**: Removed all authentication to eliminate email service limits and complexity
-- **User Experience**: Simplified workflow with immediate pin creation and sharing
+- **Current State**: Open pin creation - no authentication required for creating pins
+- **Design Decision**: Hybrid approach - open creation with OTP verification for editing
+- **User Experience**: 
+  - Immediate pin creation without barriers
+  - Optional email field for permanent storage
+  - OTP verification required only for editing existing pins
+  - 72-hour auto-deletion for pins without email addresses
 
 ## External Dependencies
 
