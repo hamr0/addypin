@@ -165,7 +165,7 @@ export default function Sidebar({ coordinates, generatedLink, onLinkGenerated }:
           
           <div>
             <Label htmlFor="creator-email" className="block text-sm font-medium text-addypin-dark mb-2">
-              Email (optional - saves pin permanently)
+              Associate with email (optional)
             </Label>
             <Input
               id="creator-email"
@@ -196,7 +196,7 @@ export default function Sidebar({ coordinates, generatedLink, onLinkGenerated }:
           <div className="mt-4 space-y-3 p-4 bg-green-50 border border-green-200 rounded-lg">
             <h3 className="text-sm font-semibold text-green-800 mb-3">
               <i className="fas fa-check-circle mr-2"></i>
-              Your AddyPin is Ready!
+              Your addypin is ready!
             </h3>
             
             <div>
@@ -346,12 +346,12 @@ export default function Sidebar({ coordinates, generatedLink, onLinkGenerated }:
 
           <div className="space-y-4">
             <p className="text-sm text-gray-600">
-              To edit pin coordinates, verify your email address with OTP.
+              To edit pin coordinates, we'll send you a verification code.
             </p>
             
             <div>
               <Label htmlFor="edit-email" className="block text-sm font-medium text-addypin-dark mb-2">
-                Email for verification
+                Email address
               </Label>
               <div className="flex space-x-2">
                 <Input
