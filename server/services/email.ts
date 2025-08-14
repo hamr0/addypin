@@ -34,7 +34,10 @@ class EmailService {
       });
 
       // For development, log the OTP instead of sending email
-      console.log(`OTP for ${email}: ${code}`);
+      console.log(`\n🔑 ===============================`);
+      console.log(`🔑 OTP CODE FOR ${email.toUpperCase()}`);
+      console.log(`🔑 CODE: ${code}`);
+      console.log(`🔑 ===============================\n`);
       
       // In production, send actual email:
       /*

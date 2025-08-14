@@ -133,9 +133,12 @@ export default function EditPage() {
                           className="border-gray-300 focus:border-addypin-cyan focus:ring-addypin-cyan font-mono text-center text-lg"
                           data-testid="input-otp-code"
                         />
-                        <p className="text-xs text-orange-600 mt-1 bg-orange-50 p-2 rounded">
-                          🔍 <strong>Development Mode:</strong> Check browser console (F12) for the OTP code
-                        </p>
+                        <div className="text-xs text-orange-600 bg-orange-50 p-3 rounded border-l-4 border-orange-400 mt-3">
+                          <div className="font-semibold mb-1">🔍 Development Mode Instructions:</div>
+                          <div>1. Open browser console (F12 or right-click → Inspect)</div>
+                          <div>2. Look for server logs with your email address</div>
+                          <div>3. Find the 6-digit code and copy it here</div>
+                        </div>
                       </div>
                       
                       <Button

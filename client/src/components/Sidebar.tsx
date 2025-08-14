@@ -70,8 +70,13 @@ export default function Sidebar({ coordinates, generatedLink, onLinkGenerated }:
         description: "🔍 Development Mode: Check browser console (F12) for the 6-digit code",
         duration: 8000,
       });
-      // Log to help user find the OTP
-      console.log(`🔑 OTP Code: Looking for verification code sent to ${email}`);
+      // Log prominent instructions to help user find the OTP
+      console.log(`\n🔍 ===============================`);
+      console.log(`🔍 DEVELOPMENT MODE - OTP INSTRUCTIONS`);
+      console.log(`🔍 1. Look for server console logs above`);
+      console.log(`🔍 2. Find: "OTP CODE FOR ${email.toUpperCase()}"`);
+      console.log(`🔍 3. Copy the 6-digit code to verify`);
+      console.log(`🔍 ===============================\n`);
     },
     onError: (error) => {
       toast({
@@ -403,8 +408,11 @@ export default function Sidebar({ coordinates, generatedLink, onLinkGenerated }:
                     {verifyOtpMutation.isPending ? "Verifying..." : "Verify"}
                   </Button>
                 </div>
-                <div className="text-xs text-orange-600 bg-orange-50 p-2 rounded">
-                  🔍 <strong>Development Mode:</strong> Check browser console (F12) for the 6-digit verification code
+                <div className="text-xs text-orange-600 bg-orange-50 p-3 rounded border-l-4 border-orange-400">
+                  <div className="font-semibold mb-1">🔍 Development Mode Instructions:</div>
+                  <div>1. Open browser console (F12 or right-click → Inspect)</div>
+                  <div>2. Look for server logs with your email address</div>
+                  <div>3. Find the 6-digit code and copy it here</div>
                 </div>
               </div>
             )}
