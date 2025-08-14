@@ -369,16 +369,24 @@ export default function RedirectPage() {
                       target="_blank"
                       rel="noopener noreferrer"
                       className="w-full flex items-center"
-                      onClick={() => {
+                      onClick={async () => {
                         // Track which map app was clicked
-                        fetch('/api/map-app-click', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({
-                            pinId: typedPin.id,
-                            appName: appName
-                          })
-                        }).catch(console.error);
+                        try {
+                          await fetch('/api/map-app-click', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              pinId: typedPin.id,
+                              appName: appName
+                            })
+                          });
+                          // Force refresh of stats to update counters immediately
+                          setTimeout(() => {
+                            window.dispatchEvent(new CustomEvent('statsUpdate'));
+                          }, 100);
+                        } catch (error) {
+                          console.error('Failed to track map app click:', error);
+                        }
                       }}
                     >
                       <span className="font-medium">{appName}</span>
