@@ -193,12 +193,17 @@ export default function Sidebar({ coordinates, generatedLink, onLinkGenerated }:
         </div>
 
         {generatedLink && (
-          <div className="space-y-3">
+          <div className="mt-4 space-y-3 p-4 bg-green-50 border border-green-200 rounded-lg">
+            <h3 className="text-sm font-semibold text-green-800 mb-3">
+              <i className="fas fa-check-circle mr-2"></i>
+              Your AddyPin is Ready!
+            </h3>
+            
             <div>
-              <Label className="block text-xs font-medium text-addypin-medium mb-1">
+              <Label className="block text-xs font-medium text-green-700 mb-1">
                 Web Link
               </Label>
-              <div className="flex items-center bg-addypin-light rounded-lg p-3">
+              <div className="flex items-center bg-white rounded-lg p-3 border border-green-200">
                 <Input
                   type="text"
                   value={generatedLink.webLink}
@@ -219,10 +224,10 @@ export default function Sidebar({ coordinates, generatedLink, onLinkGenerated }:
             </div>
 
             <div>
-              <Label className="block text-xs font-medium text-addypin-medium mb-1">
+              <Label className="block text-xs font-medium text-green-700 mb-1">
                 Email Format
               </Label>
-              <div className="flex items-center bg-addypin-light rounded-lg p-3">
+              <div className="flex items-center bg-white rounded-lg p-3 border border-green-200">
                 <Input
                   type="text"
                   value={generatedLink.emailLink}
@@ -329,40 +334,7 @@ export default function Sidebar({ coordinates, generatedLink, onLinkGenerated }:
         </div>
       </div>
 
-      {/* Email Integration */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-addypin-dark mb-4 flex items-center">
-          <i className="fas fa-envelope text-addypin-cyan mr-3"></i>
-          Email Integration
-        </h2>
 
-        <div className="space-y-4">
-          <div>
-            <Input
-              type="email"
-              placeholder="your@email.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-addypin-dark focus:ring-2 focus:ring-addypin-cyan focus:border-transparent transition-colors"
-              data-testid="input-email"
-            />
-          </div>
-
-          <Button
-            onClick={() => sendEmailMutation.mutate()}
-            disabled={!email || !coordinates || sendEmailMutation.isPending}
-            className="w-full bg-gray-100 hover:bg-addypin-cyan hover:text-white text-addypin-dark font-medium py-3 px-4 rounded-lg transition-all duration-200 border border-gray-300 hover:border-addypin-cyan"
-            data-testid="button-send-email"
-          >
-            <i className="fas fa-paper-plane mr-2"></i>
-            {sendEmailMutation.isPending ? "Sending..." : "Send Location via Email"}
-          </Button>
-
-          <p className="text-xs text-addypin-medium">
-            Get coordinates and map links delivered to your inbox
-          </p>
-        </div>
-      </div>
 
       {/* Coordinate Editing Section */}
       {generatedLink && (
