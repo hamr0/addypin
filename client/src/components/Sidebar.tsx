@@ -153,6 +153,16 @@ export default function Sidebar({ coordinates, generatedLink, onLinkGenerated }:
         </h2>
 
         <div className="space-y-4">
+          {/* Honeypot field - hidden from users */}
+          <input
+            type="text"
+            name="website"
+            style={{ display: 'none' }}
+            tabIndex={-1}
+            autoComplete="off"
+            aria-hidden="true"
+          />
+          
           <div>
             <Label htmlFor="creator-email" className="block text-sm font-medium text-addypin-dark mb-2">
               Email (optional - saves pin permanently)

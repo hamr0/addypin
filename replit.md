@@ -37,6 +37,14 @@ Preferred communication style: Simple, everyday language.
 - IP geolocation ready for country tracking (placeholder implemented)
 - Email functionality removed to avoid service limits
 
+✅ **Security & DDoS Protection:**
+- **IP-based rate limiting**: 3 pins per hour, 5 pins per day per IP address
+- **Multi-layer bot protection**: User agent filtering, honeypot fields, behavioral analysis
+- **Request timing analysis**: Blocks suspiciously fast requests (>10 per minute)
+- **Security logging**: Real-time monitoring of rate limits, bot detection, and suspicious activity
+- **API protection**: General rate limiting (100 requests per 15 minutes) across all endpoints
+- **Hidden form fields**: Frontend honeypot implementation to catch automated form submission
+
 ## System Architecture
 
 ### Frontend Architecture

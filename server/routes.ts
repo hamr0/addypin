@@ -7,8 +7,22 @@ import { z } from "zod";
 import { analyticsService } from "./services/analytics";
 import { emailService } from "./services/email";
 import { requireAuth } from "./middleware/auth";
+import { 
+  pinCreationLimiter, 
+  dailyPinLimiter, 
+  generalLimiter, 
+  antibotMiddleware 
+} from "./middleware/rateLimiter";
+import { 
+  honeypotMiddleware, 
+  timingAnalysisMiddleware 
+} from "./middleware/security";
+import { securityLogger } from "./services/securityLogger";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Apply general rate limiting to all routes
+  app.use('/api', generalLimiter);
+
   // Generate shortcode helper
   function generateShortcode(): string {
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -19,8 +33,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return code;
   }
 
-  // Create new pin (open access)
-  app.post("/api/pins", async (req, res) => {
+  // Create new pin (open access with comprehensive protection)
+  app.post("/api/pins", 
+    antibotMiddleware, 
+    timingAnalysisMiddleware,
+    honeypotMiddleware,
+    pinCreationLimiter, 
+    dailyPinLimiter, 
+    async (req, res) => {
     try {
       const validatedData = insertPinSchema.parse(req.body);
       
@@ -189,6 +209,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Verify OTP error:", error);
       res.status(400).json({ message: "Invalid request" });
+    }
+  });
+
+  // Security stats endpoint (for monitoring)
+  app.get("/api/security/stats", async (req, res) => {
+    try {
+      const securityStats = securityLogger.getStats();
+      res.json(securityStats);
+    } catch (error) {
+      console.error("Error fetching security stats:", error);
+      res.status(500).json({ error: "Failed to fetch security stats" });
     }
   });
 
