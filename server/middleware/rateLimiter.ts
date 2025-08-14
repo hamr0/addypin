@@ -164,16 +164,16 @@ export function antibotMiddleware(req: Request, res: Response, next: NextFunctio
   next();
 }
 
-// Specific rate limiters - adjusted for better user experience
+// Specific rate limiters - balanced for security and usability
 export const pinCreationLimiter = createRateLimiter({
   windowMs: 60 * 60 * 1000, // 1 hour
-  maxRequests: 3, // 3 pins per hour per IP
+  maxRequests: 5, // 5 pins per hour per IP
   message: 'Too many pins created from this location. Please try again in an hour.'
 });
 
 export const dailyPinLimiter = createRateLimiter({
   windowMs: 24 * 60 * 60 * 1000, // 24 hours
-  maxRequests: 5, // 5 pins per day per IP
+  maxRequests: 15, // 15 pins per day per IP
   message: 'Daily pin creation limit reached from this location. Please try again tomorrow.'
 });
 

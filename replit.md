@@ -38,7 +38,7 @@ Preferred communication style: Simple, everyday language.
 - Email functionality removed to avoid service limits
 
 ✅ **Security & DDoS Protection:**
-- **IP-based rate limiting**: 3 pins per hour, 5 pins per day per IP address
+- **IP-based rate limiting**: 5 pins per hour, 15 pins per day per IP address
 - **Multi-layer bot protection**: User agent filtering, honeypot fields, behavioral analysis
 - **Request timing analysis**: Blocks suspiciously fast requests (>10 per minute)
 - **Security logging**: Real-time monitoring of rate limits, bot detection, and suspicious activity
