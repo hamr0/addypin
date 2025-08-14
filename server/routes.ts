@@ -5,6 +5,8 @@ import { storage } from "./storage";
 import { insertPinSchema, insertAnalyticsSchema } from "@shared/schema";
 import { z } from "zod";
 import { analyticsService } from "./services/analytics";
+import { emailService } from "./services/email";
+import { requireAuth } from "./middleware/auth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Generate shortcode helper
@@ -17,8 +19,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return code;
   }
 
-  // Create new pin
-  app.post("/api/pins", async (req, res) => {
+  // Create new pin (requires authentication)
+  app.post("/api/pins", requireAuth, async (req, res) => {
     try {
       const validatedData = insertPinSchema.parse(req.body);
       
@@ -33,6 +35,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const pin = await storage.createPin({
         ...validatedData,
         shortcode,
+        userId: req.userId!,
+        createdBy: req.userEmail || undefined,
       });
 
       // Track pin creation analytics
@@ -139,6 +143,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Map app click tracking error:", error);
       res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // Send OTP for coordinate editing
+  app.post("/api/otp/send", async (req, res) => {
+    try {
+      const { email } = z.object({ email: z.string().email() }).parse(req.body);
+      
+      const result = await emailService.sendOtpCode(email);
+      
+      if (result.success) {
+        res.json({ message: result.message });
+      } else {
+        res.status(400).json({ message: result.message });
+      }
+    } catch (error) {
+      console.error("Send OTP error:", error);
+      res.status(400).json({ message: "Invalid request" });
+    }
+  });
+
+  // Verify OTP and allow coordinate editing
+  app.post("/api/otp/verify", async (req, res) => {
+    try {
+      const { email, code } = z.object({ 
+        email: z.string().email(),
+        code: z.string().length(6)
+      }).parse(req.body);
+      
+      const result = await emailService.verifyOtpCode(email, code);
+      
+      if (result.success) {
+        // Generate a temporary edit token (valid for 1 hour)
+        const editToken = Buffer.from(`${email}:${Date.now() + 3600000}`).toString('base64');
+        res.json({ 
+          message: result.message,
+          editToken 
+        });
+      } else {
+        res.status(400).json({ message: result.message });
+      }
+    } catch (error) {
+      console.error("Verify OTP error:", error);
+      res.status(400).json({ message: "Invalid request" });
     }
   });
 

@@ -6,7 +6,11 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useStats } from "@/hooks/useStats";
+import { useAuth } from "@/hooks/useAuth";
 import { Link } from "wouter";
+import { Lock, Unlock } from "lucide-react";
+import { SignInButton } from '@clerk/clerk-react';
+import AuthHeader from "./AuthHeader";
 
 interface SidebarProps {
   coordinates: { lat: number; lng: number } | null;
@@ -16,12 +20,17 @@ interface SidebarProps {
 
 export default function Sidebar({ coordinates, generatedLink, onLinkGenerated }: SidebarProps) {
   const [email, setEmail] = useState("");
+  const [otpCode, setOtpCode] = useState("");
+  const [editToken, setEditToken] = useState("");
+  const [showOtpInput, setShowOtpInput] = useState(false);
   const { toast } = useToast();
   const { data: stats, isLoading: statsLoading } = useStats();
+  const auth = useAuth();
 
   const generatePinMutation = useMutation({
     mutationFn: async () => {
       if (!coordinates) throw new Error("No coordinates set");
+      if (!auth.isAuthenticated) throw new Error("Please login to create pins");
       
       const response = await apiRequest("POST", "/api/pins", {
         latitude: coordinates.lat.toString(),
@@ -44,6 +53,48 @@ export default function Sidebar({ coordinates, generatedLink, onLinkGenerated }:
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to generate link",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const sendOtpMutation = useMutation({
+    mutationFn: async (email: string) => {
+      const response = await apiRequest("POST", "/api/otp/send", { email });
+      return response.json();
+    },
+    onSuccess: () => {
+      setShowOtpInput(true);
+      toast({
+        title: "OTP Sent",
+        description: "Check your email for the verification code (or console in development)",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to send OTP",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const verifyOtpMutation = useMutation({
+    mutationFn: async ({ email, code }: { email: string; code: string }) => {
+      const response = await apiRequest("POST", "/api/otp/verify", { email, code });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setEditToken(data.editToken);
+      toast({
+        title: "Verified",
+        description: "You can now edit pin coordinates",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Invalid OTP",
         variant: "destructive",
       });
     },
@@ -102,15 +153,33 @@ export default function Sidebar({ coordinates, generatedLink, onLinkGenerated }:
           Generate Short Link
         </h2>
 
-        <Button
-          onClick={() => generatePinMutation.mutate()}
-          disabled={!coordinates || generatePinMutation.isPending}
-          className="w-full bg-addypin-cyan hover:bg-cyan-600 text-white font-semibold py-4 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl mb-4"
-          data-testid="button-generate"
-        >
-          <i className="fas fa-magic mr-2"></i>
-          {generatePinMutation.isPending ? "Generating..." : "Generate AddyPin"}
-        </Button>
+        {!auth.isAuthenticated ? (
+          <div className="space-y-3">
+            <p className="text-sm text-amber-700 bg-amber-50 p-3 rounded-lg border border-amber-200 flex items-center">
+              <Lock className="w-4 h-4 mr-2" />
+              Login required to create pins
+            </p>
+            <SignInButton mode="modal">
+              <Button 
+                className="w-full bg-addypin-cyan hover:bg-cyan-600 text-white font-semibold py-4 px-6 rounded-lg transition-all duration-200"
+                data-testid="button-login-to-create"
+              >
+                <Lock className="w-4 h-4 mr-2" />
+                Login to Create Pin
+              </Button>
+            </SignInButton>
+          </div>
+        ) : (
+          <Button
+            onClick={() => generatePinMutation.mutate()}
+            disabled={!coordinates || generatePinMutation.isPending}
+            className="w-full bg-addypin-cyan hover:bg-cyan-600 text-white font-semibold py-4 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl mb-4"
+            data-testid="button-generate"
+          >
+            <i className="fas fa-magic mr-2"></i>
+            {generatePinMutation.isPending ? "Generating..." : "Generate AddyPin"}
+          </Button>
+        )}
 
         {generatedLink && (
           <div className="space-y-3">
@@ -283,6 +352,84 @@ export default function Sidebar({ coordinates, generatedLink, onLinkGenerated }:
           </p>
         </div>
       </div>
+
+      {/* Coordinate Editing Section */}
+      {generatedLink && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-addypin-dark mb-4 flex items-center">
+            <Unlock className="w-5 h-5 text-addypin-cyan mr-3" />
+            Edit Coordinates
+          </h3>
+
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600">
+              To edit pin coordinates, verify your email address with OTP.
+            </p>
+            
+            <div>
+              <Label htmlFor="edit-email" className="block text-sm font-medium text-addypin-dark mb-2">
+                Email for verification
+              </Label>
+              <div className="flex space-x-2">
+                <Input
+                  id="edit-email"
+                  type="email"
+                  placeholder="your@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="flex-1 border-gray-300 focus:border-addypin-cyan focus:ring-addypin-cyan"
+                  data-testid="input-edit-email"
+                />
+                <Button
+                  onClick={() => sendOtpMutation.mutate(email)}
+                  disabled={!email || sendOtpMutation.isPending}
+                  className="bg-addypin-cyan hover:bg-cyan-600 text-white px-4"
+                  data-testid="button-send-otp"
+                >
+                  {sendOtpMutation.isPending ? "Sending..." : "Send OTP"}
+                </Button>
+              </div>
+            </div>
+
+            {showOtpInput && (
+              <div>
+                <Label htmlFor="otp-code" className="block text-sm font-medium text-addypin-dark mb-2">
+                  Verification Code
+                </Label>
+                <div className="flex space-x-2">
+                  <Input
+                    id="otp-code"
+                    type="text"
+                    placeholder="123456"
+                    value={otpCode}
+                    onChange={(e) => setOtpCode(e.target.value)}
+                    maxLength={6}
+                    className="flex-1 border-gray-300 focus:border-addypin-cyan focus:ring-addypin-cyan font-mono"
+                    data-testid="input-otp-code"
+                  />
+                  <Button
+                    onClick={() => verifyOtpMutation.mutate({ email, code: otpCode })}
+                    disabled={!otpCode || verifyOtpMutation.isPending}
+                    className="bg-green-600 hover:bg-green-700 text-white px-4"
+                    data-testid="button-verify-otp"
+                  >
+                    {verifyOtpMutation.isPending ? "Verifying..." : "Verify"}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {editToken && (
+              <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                <p className="text-sm text-green-700 flex items-center">
+                  <Unlock className="w-4 h-4 mr-2" />
+                  Verified! You can now edit coordinates by clicking on the map.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <div className="text-center mt-6">

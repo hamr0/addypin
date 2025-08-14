@@ -18,6 +18,8 @@ export const pins = pgTable("pins", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   userEmail: text("user_email"),
   isActive: boolean("is_active").default(true).notNull(),
+  userId: varchar("user_id"), // Clerk user ID (nullable for existing pins)
+  createdBy: varchar("created_by"), // Email for display
 });
 
 export const analytics = pgTable("analytics", {
@@ -77,7 +79,20 @@ export const insertDailyStatsSchema = createInsertSchema(dailyStats).omit({
   updatedAt: true,
 });
 
-// Note: Authentication now handled by Clerk - removed custom auth tables
+// OTP codes table for email-based coordinate editing
+export const otpCodes = pgTable("otp_codes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: varchar("email", { length: 255 }).notNull(),
+  code: varchar("code", { length: 6 }).notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  used: boolean("used").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertOtpCodeSchema = createInsertSchema(otpCodes).omit({
+  id: true,
+  createdAt: true,
+});
 
 // Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -88,3 +103,5 @@ export type InsertAnalytics = z.infer<typeof insertAnalyticsSchema>;
 export type Analytics = typeof analytics.$inferSelect;
 export type InsertDailyStats = z.infer<typeof insertDailyStatsSchema>;
 export type DailyStats = typeof dailyStats.$inferSelect;
+export type InsertOtpCode = z.infer<typeof insertOtpCodeSchema>;
+export type OtpCode = typeof otpCodes.$inferSelect;

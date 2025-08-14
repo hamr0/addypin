@@ -1,4 +1,4 @@
-import { users, pins, analytics, dailyStats, type User, type InsertUser, type Pin, type InsertPin, type Analytics, type InsertAnalytics, type DailyStats, type InsertDailyStats } from "@shared/schema";
+import { users, pins, analytics, dailyStats, otpCodes, type User, type InsertUser, type Pin, type InsertPin, type Analytics, type InsertAnalytics, type DailyStats, type InsertDailyStats, type OtpCode, type InsertOtpCode } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, sql, and, gte, lt } from "drizzle-orm";
 
@@ -22,7 +22,12 @@ export interface IStorage {
   updateDailyStats(date: string, stats: Partial<InsertDailyStats>): Promise<DailyStats>;
   getDailyStatsForPeriod(startDate: string, endDate: string): Promise<DailyStats[]>;
   
-  // Note: Authentication now handled by Clerk
+  // OTP methods for coordinate editing
+  createOtpCode(otpCode: InsertOtpCode): Promise<OtpCode>;
+  getValidOtpCode(email: string, code: string): Promise<OtpCode | undefined>;
+  markOtpAsUsed(id: string): Promise<void>;
+  cleanupExpiredOtpCodes(): Promise<void>;
+  updatePin(shortcode: string, data: Partial<{ latitude: string; longitude: string }>): Promise<Pin>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -178,7 +183,54 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(dailyStats.date));
   }
 
-  // Authentication now handled by Clerk - no custom auth methods needed
+  // OTP method implementations
+  async createOtpCode(otpCode: InsertOtpCode): Promise<OtpCode> {
+    const [created] = await db
+      .insert(otpCodes)
+      .values(otpCode)
+      .returning();
+    return created;
+  }
+
+  async getValidOtpCode(email: string, code: string): Promise<OtpCode | undefined> {
+    const [otpRecord] = await db
+      .select()
+      .from(otpCodes)
+      .where(and(
+        eq(otpCodes.email, email),
+        eq(otpCodes.code, code),
+        eq(otpCodes.used, false),
+        gte(otpCodes.expiresAt, new Date())
+      ));
+    return otpRecord || undefined;
+  }
+
+  async markOtpAsUsed(id: string): Promise<void> {
+    await db
+      .update(otpCodes)
+      .set({ used: true })
+      .where(eq(otpCodes.id, id));
+  }
+
+  async cleanupExpiredOtpCodes(): Promise<void> {
+    await db
+      .delete(otpCodes)
+      .where(lt(otpCodes.expiresAt, new Date()));
+  }
+
+  async updatePin(shortcode: string, data: Partial<{ latitude: string; longitude: string }>): Promise<Pin> {
+    const [updatedPin] = await db
+      .update(pins)
+      .set(data)
+      .where(eq(pins.shortcode, shortcode))
+      .returning();
+    
+    if (!updatedPin) {
+      throw new Error("Pin not found");
+    }
+    
+    return updatedPin;
+  }
 }
 
 export const storage = new DatabaseStorage();
