@@ -112,12 +112,29 @@ export class DatabaseStorage implements IStorage {
       .from(analytics)
       .where(and(sql`country is not null`, gte(analytics.timestamp, startOfDay)));
 
-    // Get top map apps from metadata - for now, show popular defaults
-    const topMapApps = [
-      { name: 'Google Maps', clicks: Number(clicksResult.count) > 0 ? Math.floor(Number(clicksResult.count) * 0.6) : 0 },
-      { name: 'Apple Maps', clicks: Number(clicksResult.count) > 0 ? Math.floor(Number(clicksResult.count) * 0.3) : 0 },
-      { name: 'Waze', clicks: Number(clicksResult.count) > 0 ? Math.floor(Number(clicksResult.count) * 0.1) : 0 }
-    ];
+    // Get actual map app clicks from analytics metadata
+    const mapAppClicksData = await db
+      .select({ 
+        appName: sql<string>`metadata->>'appName'`,
+        count: sql<number>`count(*)`
+      })
+      .from(analytics)
+      .where(and(
+        eq(analytics.eventType, 'map_app_click'),
+        gte(analytics.timestamp, startOfDay),
+        sql`metadata->>'appName' is not null`
+      ))
+      .groupBy(sql`metadata->>'appName'`)
+      .orderBy(sql`count(*) desc`)
+      .limit(3);
+
+    const topMapApps = mapAppClicksData.length > 0 
+      ? mapAppClicksData.map(item => ({ name: item.appName, clicks: Number(item.count) }))
+      : [
+          { name: 'Google Maps', clicks: 0 },
+          { name: 'Apple Maps', clicks: 0 },
+          { name: 'Waze', clicks: 0 }
+        ];
 
     return {
       pinsCreated: Number(pinsResult.count) || 0,

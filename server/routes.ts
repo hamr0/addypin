@@ -199,7 +199,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         pinId: pin.id,
         eventType: "click",
         userAgent: req.headers['user-agent'],
-        ipAddress: req.ip,
+        ipAddress: req.ip || req.connection.remoteAddress || '127.0.0.1',
       });
 
       // Serve the React app which will show the RedirectPage with all map options

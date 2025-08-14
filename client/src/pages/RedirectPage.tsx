@@ -29,7 +29,7 @@ export default function RedirectPage() {
   });
 
   const { data: mapLinks } = useQuery({
-    queryKey: ["/api/map-links", pin?.latitude, pin?.longitude],
+    queryKey: ["/api/map-links", (pin as Pin)?.latitude, (pin as Pin)?.longitude],
     enabled: !!pin,
   });
 

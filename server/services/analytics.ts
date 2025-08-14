@@ -4,9 +4,16 @@ import { emailService } from "./email";
 
 // Simple IP geolocation (in production, use MaxMind GeoLite2 or similar)
 const getCountryFromIP = (ip: string): string | null => {
-  // This is a placeholder - in production use proper geolocation service
-  // For now, return null to avoid mock data
-  return null;
+  // For development/testing purposes, return some sample countries based on IP patterns
+  // In production, use proper geolocation service like MaxMind
+  if (!ip || ip === '::1' || ip.startsWith('127.') || ip.startsWith('192.168.') || ip.startsWith('10.')) {
+    return 'Local'; // Local development
+  }
+  
+  // Sample mapping for demonstration (replace with real geolocation service)
+  const lastOctet = parseInt(ip.split('.').pop() || '0');
+  const countries = ['Netherlands', 'United States', 'Germany', 'France', 'United Kingdom', 'Canada', 'Australia'];
+  return countries[lastOctet % countries.length];
 };
 
 const parseUserAgent = (userAgent: string | undefined): { browser: string | null; os: string | null } => {
