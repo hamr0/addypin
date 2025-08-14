@@ -27,9 +27,19 @@ export default function Home() {
                   Help
                 </a>
               </nav>
-              <span className="text-sm text-addypin-medium">
-                OTP verification for pin editing
-              </span>
+              <button 
+                onClick={() => {
+                  // Scroll to the coordinate editing section
+                  const editSection = document.querySelector('[data-testid="edit-coordinates-section"]');
+                  if (editSection) {
+                    editSection.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }}
+                className="text-sm text-addypin-medium hover:text-addypin-cyan transition-colors cursor-pointer"
+                data-testid="button-login-to-edit"
+              >
+                Login to edit
+              </button>
             </div>
             <button className="md:hidden text-addypin-medium" data-testid="mobile-menu">
               <i className="fas fa-bars text-xl"></i>
@@ -85,7 +95,7 @@ export default function Home() {
             </div>
           </div>
           <div className="border-t border-gray-200 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
-            <p className="text-sm text-addypin-medium">© 2025 addypin. Open-source project.</p>
+            <p className="text-sm text-addypin-medium">© 2025 addypin</p>
             <div className="flex space-x-4 mt-4 md:mt-0">
               <a 
                 href="https://www.linkedin.com/company/10224951/admin/products/cairenes-solutions-addypin/"
