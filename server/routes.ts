@@ -153,6 +153,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Missing pinId or appName" });
       }
 
+      // Verify pin exists before tracking
+      const pin = await storage.getPinById(pinId);
+      if (!pin) {
+        console.log(`Pin ${pinId} not found, skipping analytics tracking`);
+        return res.json({ success: true }); // Still return success to avoid errors
+      }
+
       await analyticsService.trackEvent({
         pinId: pinId,
         eventType: "map_app_click",
