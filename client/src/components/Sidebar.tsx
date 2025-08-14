@@ -9,6 +9,7 @@ import { useStats } from "@/hooks/useStats";
 import { useAuth } from "@/hooks/useAuth";
 import { Link } from "wouter";
 import { Lock, Unlock } from "lucide-react";
+import AddyPinIcon from "./AddyPinIcon";
 import { SignInButton } from '@clerk/clerk-react';
 import AuthHeader from "./AuthHeader";
 
@@ -151,7 +152,7 @@ export default function Sidebar({ coordinates, generatedLink, onLinkGenerated }:
       {/* Short Link Generator */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <h2 className="text-lg font-semibold text-addypin-dark mb-4 flex items-center">
-          <i className="fas fa-link text-addypin-cyan mr-3"></i>
+          <AddyPinIcon className="text-addypin-cyan mr-3" size={20} />
           Generate addypin!
         </h2>
 
@@ -190,8 +191,8 @@ export default function Sidebar({ coordinates, generatedLink, onLinkGenerated }:
             className="w-full bg-addypin-cyan hover:bg-cyan-600 text-white font-semibold py-4 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl"
             data-testid="button-generate"
           >
-            <i className="fas fa-magic mr-2"></i>
-            {generatePinMutation.isPending ? "Generating..." : "Generate AddyPin"}
+            <AddyPinIcon className="mr-2" size={18} />
+            {generatePinMutation.isPending ? "Generating..." : "Generate!"}
           </Button>
         </div>
 
