@@ -2,6 +2,7 @@ import { useRoute } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import Logo from "@/components/Logo";
 
 interface Pin {
@@ -167,6 +168,17 @@ export default function RedirectPage() {
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-full h-full flex flex-col items-center justify-center"
+                  onClick={() => {
+                    // Track which map app was clicked
+                    fetch('/api/map-app-click', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        pinId: typedPin.id,
+                        appName: app.name
+                      })
+                    }).catch(console.error);
+                  }}
                 >
                   <i className={`${app.icon} text-lg mb-1 group-hover:scale-110 transition-transform`}></i>
                   <span className="text-xs font-medium text-center leading-tight">{app.name}</span>

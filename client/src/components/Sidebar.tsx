@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useStats } from "@/hooks/useStats";
+import { Link } from "wouter";
 
 interface SidebarProps {
   coordinates: { lat: number; lng: number } | null;
@@ -281,6 +282,18 @@ export default function Sidebar({ coordinates, generatedLink, onLinkGenerated }:
             Get coordinates and map links delivered to your inbox
           </p>
         </div>
+      </div>
+
+      {/* Footer */}
+      <div className="text-center mt-6">
+        <div className="flex justify-center space-x-4 text-xs">
+          <Link href="/versions" className="text-addypin-cyan hover:underline" data-testid="link-version-history">
+            Version History
+          </Link>
+        </div>
+        <p className="text-addypin-medium text-xs mt-2">
+          Powered by <span className="text-addypin-cyan font-medium">AddyPin</span>
+        </p>
       </div>
     </div>
   );

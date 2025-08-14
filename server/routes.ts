@@ -154,6 +154,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Track map app clicks
+  app.post("/api/map-app-click", async (req, res) => {
+    try {
+      const { pinId, appName } = req.body;
+      
+      if (!pinId || !appName) {
+        return res.status(400).json({ message: "Missing pinId or appName" });
+      }
+
+      await analyticsService.trackEvent({
+        pinId: pinId,
+        eventType: "map_app_click",
+        userAgent: req.headers['user-agent'],
+        ipAddress: req.ip,
+        metadata: { appName },
+      });
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Map app click tracking error:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
   // Subdomain redirect handling (this would typically be handled by nginx or similar)
   app.get("/redirect/:shortcode", async (req, res) => {
     try {
