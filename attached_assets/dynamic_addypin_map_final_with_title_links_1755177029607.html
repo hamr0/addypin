@@ -1,0 +1,130 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AddyPin</title>
+    <meta charset="utf-8" />
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 0;
+            padding: 0;
+            text-align: center;
+        }
+        h1 {
+            margin-top: 20px;
+        }
+        #map {
+            height: 300px;
+            width: 80%;
+            margin: 20px auto;
+        }
+        #coords {
+            margin: 10px;
+        }
+        #shortcode {
+            margin: 10px;
+        }
+        #mapLinks {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            padding: 20px;
+        }
+        #mapLinks a {
+            display: block;
+            padding: 8px;
+            background: #f0f0f0;
+            border-radius: 5px;
+            text-decoration: none;
+            color: #333;
+            font-weight: bold;
+        }
+    </style>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+</head>
+<body>
+    <h1>AddyPin</h1>
+    <div id="map"></div>
+    <div id="coords">
+        Latitude: <input type="text" id="lat" readonly />
+        Longitude: <input type="text" id="lon" readonly />
+    </div>
+    <div id="shortcode">
+        <button onclick="generateShortcode()">Generate Shortcode</button>
+        <input type="text" id="shortcodeBox" readonly />
+    </div>
+    <div id="mapLinks"></div>
+
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        let map, marker;
+
+        function updateLinks(lat, lon) {
+            const links = {
+                "Google Maps": `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`,
+                "Apple Maps": `https://maps.apple.com/?ll=${lat},${lon}`,
+                "Waze": `https://waze.com/ul?ll=${lat},${lon}&navigate=yes`,
+                "HERE WeGo": `https://share.here.com/l/${lat},${lon}`,
+                "MapQuest": `https://www.mapquest.com/latlng/${lat},${lon}`,
+                "Maps.me": `https://maps.me/?map=${lat},${lon},18`,
+                "OpenStreetMap": `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}#map=18/${lat}/${lon}`,
+                "Bing Maps": `https://www.bing.com/maps?cp=${lat}~${lon}&lvl=18`,
+                "TomTom": `https://mydrive.tomtom.com/en_gb/#mode=search+viewport=${lat},${lon},18,0,-0+search=${lat},${lon}`,
+                "Citymapper": `https://citymapper.com/directions?endcoord=${lat},${lon}&endname=Location`,
+                "OsmAnd": `https://osmand.net/go?lat=${lat}&lon=${lon}&z=18`,
+                "Sygic Maps": `https://maps.sygic.com/?lat=${lat}&lon=${lon}&zoom=18`,
+                "Badger Maps": `https://web.badgermapping.com/map?lat=${lat}&lng=${lon}`
+            };
+
+            const container = document.getElementById("mapLinks");
+            container.innerHTML = "";
+            for (const [name, url] of Object.entries(links)) {
+                const a = document.createElement("a");
+                a.href = url;
+                a.textContent = name;
+                a.target = "_blank";
+                container.appendChild(a);
+            }
+        }
+
+        function generateShortcode() {
+            const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            let code = "";
+            for (let i = 0; i < 6; i++) {
+                code += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            document.getElementById("shortcodeBox").value = `${code}.addypin.com`;
+        }
+
+        function initMap(lat, lon) {
+            map = L.map('map').setView([lat, lon], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+            marker = L.marker([lat, lon], { draggable: true }).addTo(map);
+            document.getElementById("lat").value = lat;
+            document.getElementById("lon").value = lon;
+            updateLinks(lat, lon);
+
+            marker.on('dragend', function (e) {
+                const pos = marker.getLatLng();
+                document.getElementById("lat").value = pos.lat.toFixed(6);
+                document.getElementById("lon").value = pos.lng.toFixed(6);
+                updateLinks(pos.lat.toFixed(6), pos.lng.toFixed(6));
+            });
+        }
+
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(function (position) {
+                initMap(position.coords.latitude, position.coords.longitude);
+            }, function () {
+                initMap(51.505, -0.09); // fallback
+            });
+        } else {
+            initMap(51.505, -0.09); // fallback
+        }
+    </script>
+</body>
+</html>
