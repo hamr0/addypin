@@ -254,7 +254,7 @@ export default function MapSection({ coordinates, onCoordinatesChange, generated
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-semibold text-addypin-dark">Drop Your Pin</h1>
+            <h1 className="text-2xl font-semibold text-addypin-dark">Search above or drag to your location</h1>
             <p className="text-addypin-medium mt-1">Search above or click to set your location</p>
           </div>
           <div className="flex items-center gap-4">
