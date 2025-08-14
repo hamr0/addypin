@@ -1,0 +1,206 @@
+import { useEffect, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useGeolocation } from "@/hooks/useGeolocation";
+
+// Fix for default markers in Leaflet
+import icon from "leaflet/dist/images/marker-icon.png";
+import iconShadow from "leaflet/dist/images/marker-shadow.png";
+
+let DefaultIcon = L.icon({
+  iconUrl: icon,
+  shadowUrl: iconShadow,
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
+});
+
+L.Marker.prototype.options.icon = DefaultIcon;
+
+interface MapSectionProps {
+  coordinates: { lat: number; lng: number } | null;
+  onCoordinatesChange: (coords: { lat: number; lng: number }) => void;
+  generatedLink: { webLink: string; emailLink: string } | null;
+}
+
+export default function MapSection({ coordinates, onCoordinatesChange, generatedLink }: MapSectionProps) {
+  const mapRef = useRef<L.Map | null>(null);
+  const markerRef = useRef<L.Marker | null>(null);
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const [mapLinks, setMapLinks] = useState<Record<string, string>>({});
+  
+  const { location: geoLocation, error: geoError } = useGeolocation();
+
+  // Fetch map links when coordinates change
+  const { data: fetchedMapLinks } = useQuery({
+    queryKey: ["/api/map-links", coordinates?.lat, coordinates?.lng],
+    enabled: !!coordinates,
+  });
+
+  useEffect(() => {
+    if (fetchedMapLinks && typeof fetchedMapLinks === 'object') {
+      setMapLinks(fetchedMapLinks as Record<string, string>);
+    }
+  }, [fetchedMapLinks]);
+
+  // Initialize map
+  useEffect(() => {
+    if (!mapContainerRef.current || mapRef.current) return;
+
+    const initialLat = geoLocation?.coords.latitude || 52.247904;
+    const initialLng = geoLocation?.coords.longitude || 4.761194;
+
+    const map = L.map(mapContainerRef.current).setView([initialLat, initialLng], 13);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors',
+      maxZoom: 19,
+    }).addTo(map);
+
+    // Custom pin icon
+    const customIcon = L.divIcon({
+      className: 'custom-pin',
+      html: `<div class="w-8 h-8 bg-addypin-cyan rounded-full border-4 border-white shadow-lg transform rotate-45 relative">
+        <div class="w-3 h-3 bg-white rounded-full absolute top-1 left-1 transform -rotate-45"></div>
+      </div>`,
+      iconSize: [32, 32],
+      iconAnchor: [16, 32],
+    });
+
+    const marker = L.marker([initialLat, initialLng], {
+      draggable: true,
+      icon: customIcon,
+    }).addTo(map);
+
+    // Set initial coordinates
+    onCoordinatesChange({ lat: initialLat, lng: initialLng });
+
+    marker.on('dragend', () => {
+      const pos = marker.getLatLng();
+      onCoordinatesChange({ lat: pos.lat, lng: pos.lng });
+    });
+
+    map.on('click', (e: L.LeafletMouseEvent) => {
+      marker.setLatLng(e.latlng);
+      onCoordinatesChange({ lat: e.latlng.lat, lng: e.latlng.lng });
+    });
+
+    mapRef.current = map;
+    markerRef.current = marker;
+
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+        markerRef.current = null;
+      }
+    };
+  }, [geoLocation, onCoordinatesChange]);
+
+  // Update marker position when coordinates change externally
+  useEffect(() => {
+    if (coordinates && markerRef.current) {
+      markerRef.current.setLatLng([coordinates.lat, coordinates.lng]);
+      if (mapRef.current) {
+        mapRef.current.setView([coordinates.lat, coordinates.lng], mapRef.current.getZoom());
+      }
+    }
+  }, [coordinates]);
+
+  const mapApps = [
+    { name: "Google Maps", icon: "fab fa-google" },
+    { name: "Apple Maps", icon: "fab fa-apple" },
+    { name: "Waze", icon: "fas fa-route" },
+    { name: "HERE WeGo", icon: "fas fa-map" },
+    { name: "MapQuest", icon: "fas fa-compass" },
+    { name: "Maps.me", icon: "fas fa-map-marked-alt" },
+    { name: "OpenStreetMap", icon: "fas fa-globe" },
+    { name: "Bing Maps", icon: "fab fa-microsoft" },
+    { name: "TomTom", icon: "fas fa-car" },
+    { name: "Citymapper", icon: "fas fa-subway" },
+    { name: "OsmAnd", icon: "fas fa-location-arrow" },
+    { name: "Sygic Maps", icon: "fas fa-road" },
+    { name: "Badger Maps", icon: "fas fa-briefcase" },
+  ];
+
+  return (
+    <div className="lg:col-span-2 space-y-6">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-semibold text-addypin-dark">Drop Your Pin</h1>
+            <p className="text-addypin-medium mt-1">Click or drag to set your location</p>
+          </div>
+          <div className="flex items-center text-sm text-addypin-medium">
+            <i className="fas fa-map-marker-alt text-addypin-cyan mr-2"></i>
+            <span>Location set</span>
+          </div>
+        </div>
+
+        <div 
+          ref={mapContainerRef}
+          className="w-full h-80 bg-addypin-light rounded-xl shadow-inner"
+          data-testid="map-container"
+        />
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+          <div>
+            <Label htmlFor="latitude" className="block text-sm font-medium text-addypin-dark mb-2">
+              Latitude
+            </Label>
+            <Input
+              id="latitude"
+              type="text"
+              value={coordinates ? coordinates.lat.toFixed(6) : ""}
+              readOnly
+              className="bg-addypin-light border border-gray-300 font-mono text-sm"
+              placeholder="52.247904"
+              data-testid="input-latitude"
+            />
+          </div>
+          <div>
+            <Label htmlFor="longitude" className="block text-sm font-medium text-addypin-dark mb-2">
+              Longitude
+            </Label>
+            <Input
+              id="longitude"
+              type="text"
+              value={coordinates ? coordinates.lng.toFixed(6) : ""}
+              readOnly
+              className="bg-addypin-light border border-gray-300 font-mono text-sm"
+              placeholder="4.761194"
+              data-testid="input-longitude"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Map Apps Grid */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <h2 className="text-lg font-semibold text-addypin-dark mb-4 flex items-center">
+          <i className="fas fa-external-link-alt text-addypin-cyan mr-3"></i>
+          Open in Map Apps
+        </h2>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+          {mapApps.map((app) => (
+            <a
+              key={app.name}
+              href={mapLinks[app.name] || "#"}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center p-3 bg-addypin-light hover:bg-addypin-cyan hover:text-white transition-all duration-200 rounded-lg text-sm font-medium text-addypin-dark group"
+              data-testid={`link-${app.name.toLowerCase().replace(/\s+/g, '-')}`}
+            >
+              <i className={`${app.icon} mr-2 group-hover:scale-110 transition-transform`}></i>
+              <span>{app.name}</span>
+            </a>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}

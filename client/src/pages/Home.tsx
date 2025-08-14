@@ -1,0 +1,96 @@
+import { useState } from "react";
+import MapSection from "@/components/MapSection";
+import Sidebar from "@/components/Sidebar";
+import Logo from "@/components/Logo";
+
+export default function Home() {
+  const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
+  const [generatedLink, setGeneratedLink] = useState<{ webLink: string; emailLink: string } | null>(null);
+
+  return (
+    <div className="min-h-screen bg-gray-50 font-inter">
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <Logo />
+            <nav className="hidden md:flex space-x-6">
+              <a href="#" className="text-addypin-medium hover:text-addypin-dark transition-colors">
+                Features
+              </a>
+              <a href="#" className="text-addypin-medium hover:text-addypin-dark transition-colors">
+                API
+              </a>
+              <a href="#" className="text-addypin-medium hover:text-addypin-dark transition-colors">
+                Help
+              </a>
+            </nav>
+            <button className="md:hidden text-addypin-medium" data-testid="mobile-menu">
+              <i className="fas fa-bars text-xl"></i>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <MapSection 
+            coordinates={coordinates}
+            onCoordinatesChange={setCoordinates}
+            generatedLink={generatedLink}
+          />
+          <Sidebar 
+            coordinates={coordinates}
+            generatedLink={generatedLink}
+            onLinkGenerated={setGeneratedLink}
+          />
+        </div>
+      </main>
+
+      {/* Footer */}
+      <footer className="bg-white border-t border-gray-200 mt-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div className="col-span-1 md:col-span-2">
+              <div className="mb-4">
+                <Logo />
+              </div>
+              <p className="text-addypin-medium text-sm">
+                The simplest way to share locations across all map apps. 
+                Open source and privacy-focused.
+              </p>
+            </div>
+            <div>
+              <h3 className="font-semibold text-addypin-dark mb-3">Resources</h3>
+              <ul className="space-y-2 text-sm text-addypin-medium">
+                <li><a href="#" className="hover:text-addypin-cyan transition-colors">API Documentation</a></li>
+                <li><a href="#" className="hover:text-addypin-cyan transition-colors">GitHub Repository</a></li>
+                <li><a href="#" className="hover:text-addypin-cyan transition-colors">Help Center</a></li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="font-semibold text-addypin-dark mb-3">Legal</h3>
+              <ul className="space-y-2 text-sm text-addypin-medium">
+                <li><a href="#" className="hover:text-addypin-cyan transition-colors">Privacy Policy</a></li>
+                <li><a href="#" className="hover:text-addypin-cyan transition-colors">Terms of Service</a></li>
+                <li><a href="#" className="hover:text-addypin-cyan transition-colors">Cookie Policy</a></li>
+              </ul>
+            </div>
+          </div>
+          <div className="border-t border-gray-200 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
+            <p className="text-sm text-addypin-medium">© 2024 AddyPin. Open source project.</p>
+            <div className="flex space-x-4 mt-4 md:mt-0">
+              <a href="#" className="text-addypin-medium hover:text-addypin-cyan transition-colors">
+                <i className="fab fa-github text-lg"></i>
+              </a>
+              <a href="#" className="text-addypin-medium hover:text-addypin-cyan transition-colors">
+                <i className="fab fa-twitter text-lg"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}
