@@ -39,8 +39,18 @@ export function UserPinsList({ onPinSelect, onStartEditing }: UserPinsListProps)
       }
     };
 
+    const handlePinCreated = () => {
+      if (isAuthenticated && email) {
+        refetchPins();
+      }
+    };
+
     window.addEventListener('pinUpdated', handlePinUpdate);
-    return () => window.removeEventListener('pinUpdated', handlePinUpdate);
+    window.addEventListener('pinCreated', handlePinCreated);
+    return () => {
+      window.removeEventListener('pinUpdated', handlePinUpdate);
+      window.removeEventListener('pinCreated', handlePinCreated);
+    };
   }, [isAuthenticated, email, refetchPins]);
 
   // Delete pin mutation

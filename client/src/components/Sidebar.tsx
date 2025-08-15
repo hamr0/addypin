@@ -45,6 +45,10 @@ export default function Sidebar({ coordinates, generatedLink, onLinkGenerated, i
         webLink: data.webLink,
         emailLink: data.emailLink,
       });
+      // Trigger pin list refresh if user is authenticated and has matching email
+      if (data.createdBy) {
+        window.dispatchEvent(new CustomEvent('pinCreated'));
+      }
       toast({
         title: "addypin generated!",
         description: "Your short link is ready to share.",
@@ -213,22 +217,22 @@ export default function Sidebar({ coordinates, generatedLink, onLinkGenerated, i
         </div>
 
         {generatedLink && (
-          <div className="mt-4 space-y-3 p-4 bg-green-50 border border-green-200 rounded-lg">
-            <h3 className="text-sm font-semibold text-green-800 mb-3">
+          <div className={`mt-4 space-y-3 p-4 rounded-lg ${email ? 'bg-green-50 border border-green-200' : 'bg-gray-50 border border-gray-200'}`}>
+            <h3 className={`text-sm font-semibold mb-3 ${email ? 'text-green-800' : 'text-gray-600'}`}>
               <i className="fas fa-check-circle mr-2"></i>
-              Your addypin is ready!
+              {email ? 'Your addypin is ready!' : 'Sample addypin (expires in 72 hours)'}
             </h3>
             
             <div>
-              <Label className="block text-xs font-medium text-green-700 mb-1">
+              <Label className={`block text-xs font-medium mb-1 ${email ? 'text-green-700' : 'text-gray-500'}`}>
                 addypin link
               </Label>
-              <div className="flex items-center bg-white rounded-lg p-3 border border-green-200">
+              <div className={`flex items-center bg-white rounded-lg p-3 ${email ? 'border border-green-200' : 'border border-gray-300'}`}>
                 <Input
                   type="text"
                   value={generatedLink.webLink}
                   readOnly
-                  className="flex-1 bg-transparent text-sm font-mono text-addypin-dark border-none p-0 focus-visible:ring-0"
+                  className={`flex-1 bg-transparent text-sm font-mono border-none p-0 focus-visible:ring-0 ${email ? 'text-addypin-dark' : 'text-gray-500'}`}
                   data-testid="input-web-link"
                 />
                 <Button
@@ -244,15 +248,15 @@ export default function Sidebar({ coordinates, generatedLink, onLinkGenerated, i
             </div>
 
             <div>
-              <Label className="block text-xs font-medium text-green-700 mb-1">
+              <Label className={`block text-xs font-medium mb-1 ${email ? 'text-green-700' : 'text-gray-500'}`}>
                 addypin email
               </Label>
-              <div className="flex items-center bg-white rounded-lg p-3 border border-green-200">
+              <div className={`flex items-center bg-white rounded-lg p-3 ${email ? 'border border-green-200' : 'border border-gray-300'}`}>
                 <Input
                   type="text"
                   value={generatedLink.emailLink}
                   readOnly
-                  className="flex-1 bg-transparent text-sm font-mono text-addypin-dark border-none p-0 focus-visible:ring-0"
+                  className={`flex-1 bg-transparent text-sm font-mono border-none p-0 focus-visible:ring-0 ${email ? 'text-addypin-dark' : 'text-gray-500'}`}
                   data-testid="input-email-link"
                 />
                 <Button
