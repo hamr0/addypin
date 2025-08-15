@@ -36,10 +36,13 @@ export function UserPinsList({ onPinSelect, onStartEditing }: UserPinsListProps)
     },
     onSuccess: (data) => {
       setShowOtpInput(true);
+      const otpCode = data.code;
       toast({
         title: "Code Sent! 📧",
-        description: "🔍 Development Mode: Check browser console (F12) for the 6-digit code",
-        duration: 8000,
+        description: otpCode 
+          ? `Development Mode: Your code is ${otpCode}`
+          : "Check your email for the 6-digit verification code",
+        duration: 10000,
       });
       // Log prominent instructions to help user find the OTP
       console.log(`\n🔍 ===============================`);

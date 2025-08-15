@@ -5,6 +5,7 @@ import Sidebar from "@/components/Sidebar";
 import Logo from "@/components/Logo";
 import { EditModal } from "@/components/EditModal";
 import { UserPinsList } from "@/components/UserPinsList";
+import { QuickStats } from "@/components/QuickStats";
 import type { Pin } from "@shared/schema";
 
 export default function Home() {
@@ -46,7 +47,7 @@ export default function Home() {
       {/* Main Content */}
       <main className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 ${showEditModal ? 'opacity-50 grayscale pointer-events-none' : ''}`}>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 space-y-8">
             <MapSection 
               coordinates={coordinates}
               onCoordinatesChange={setCoordinates}
@@ -62,8 +63,15 @@ export default function Home() {
                 }
               }}
             />
+            <Sidebar 
+              coordinates={coordinates}
+              generatedLink={generatedLink}
+              onLinkGenerated={setGeneratedLink}
+              isMapWidth={true}
+            />
           </div>
           <div className="space-y-8">
+            <QuickStats />
             <UserPinsList
               onPinSelect={(pin) => {
                 setEditingPin(pin);
@@ -75,11 +83,6 @@ export default function Home() {
               onStartEditing={() => {
                 setIsEditing(true);
               }}
-            />
-            <Sidebar 
-              coordinates={coordinates}
-              generatedLink={generatedLink}
-              onLinkGenerated={setGeneratedLink}
             />
           </div>
         </div>

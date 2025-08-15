@@ -68,7 +68,8 @@ class EmailService {
         success: true,
         message: process.env.NODE_ENV === 'development' 
           ? `Verification code sent! Development code: ${code}` 
-          : "Verification code sent to your email"
+          : "Verification code sent to your email",
+        code: process.env.NODE_ENV === 'development' ? code : undefined
       };
     } catch (error) {
       console.error("Send OTP error:", error);
