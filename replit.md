@@ -16,7 +16,7 @@ Preferred communication style: Simple, everyday language.
 - **Email auto-responder tested**: Branded emails with 13 map apps, custom logo, and professional template operational
 - **Subdomain routing ready**: Middleware detects shortcode subdomains for when custom domain goes live
 - **Email webhook prepared**: Inbound email processing endpoint ready for open-source email receiving solutions
-- **Simple email solution selected**: smtp2http chosen as free, lightweight email-to-webhook forwarder for complete independence
+- **Self-hosted email research complete**: Maddy mail server identified as ideal solution - single binary, built-in webhooks, zero monthly costs
 - **Security fix complete**: GitHub API key exposure resolved, new RESEND_API_KEY secured in environment
 - **GitHub integration complete**: Repository connected at `https://github.com/amrhas82/addypin` with active Git workflow
 - **Version control established**: Replit Git panel configured for ongoing development and updates
