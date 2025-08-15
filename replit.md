@@ -11,7 +11,8 @@ Preferred communication style: Simple, everyday language.
 ## Recent Changes (August 2025)
 
 ✅ **Latest Updates (August 15, 2025):**
-- **Performance optimization**: Fixed rate limiting - reduced API calls by 97% (every 2 seconds → 60 minutes)
+- **Umami analytics integration**: Self-hosted privacy-focused analytics (free alternative to Google Analytics)
+- **Performance optimization**: Fixed rate limiting - reduced API calls by 97% (every 2 seconds → 60 minutes)  
 - **Enhanced analytics**: Added daily user tracking, registered user counts, and session-based analytics
 - **Email association fix**: Corrected pin-email relationships - 1 registered user with 8 pins identified
 - **Smart refresh strategy**: Critical actions (editing, country detection) remain instant, stats refresh hourly
@@ -106,6 +107,7 @@ Preferred communication style: Simple, everyday language.
 - **Database Hosting**: Neon Database for serverless PostgreSQL hosting
 - **Geolocation**: Browser's native geolocation API for initial position detection
 - **Email Service**: Removed to avoid service limits and dependencies
+- **Analytics**: Umami self-hosted analytics for privacy-focused web analytics (GDPR compliant)
 
 ### Key Libraries & Tools
 - **UI Components**: Radix UI primitives with shadcn/ui styling system
