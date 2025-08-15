@@ -21,6 +21,7 @@ import {
   timingAnalysisMiddleware 
 } from "./middleware/security";
 import { securityLogger } from "./services/securityLogger";
+import { sendMapAutoResponse } from "./services/email-autoresponder";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Apply general rate limiting to all routes
@@ -484,9 +485,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Email auto-responder for ak7n1z@addypin.com format
+  app.post("/api/email-autorespond", async (req, res) => {
+    try {
+      const { fromEmail, shortcode } = req.body;
+
+      if (!fromEmail || !shortcode) {
+        return res.status(400).json({ error: "Missing email or shortcode" });
+      }
+
+      // Basic email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(fromEmail)) {
+        return res.status(400).json({ error: "Invalid email address" });
+      }
+
+      // Validate shortcode format (6 characters, alphanumeric)
+      const shortcodeRegex = /^[A-Z0-9]{6}$/;
+      if (!shortcodeRegex.test(shortcode)) {
+        return res.status(400).json({ error: "Invalid shortcode format" });
+      }
+
+      const result = await sendMapAutoResponse({ fromEmail, shortcode });
+      
+      if (result.success) {
+        res.json({ success: true, message: result.message });
+      } else {
+        res.status(404).json({ error: result.message });
+      }
+    } catch (error) {
+      console.error("Email auto-responder error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // Authentication removed - open access to avoid email limits
 
-  // Handle shortcode URL patterns - /shortcode directly (like /ak7n1z)
+  // Handle subdomain patterns for ak7n1z.addypin.com (when custom domain is live)
+  app.use((req, res, next) => {
+    const host = req.get('host') || '';
+    
+    // Check for shortcode subdomain pattern: ak7n1z.addypin.com
+    const subdomainMatch = host.match(/^([A-Z0-9]{6})\.addypin\.com$/i);
+    if (subdomainMatch) {
+      const shortcode = subdomainMatch[1].toUpperCase();
+      req.params.shortcode = shortcode;
+      // Continue to shortcode handler
+    }
+    next();
+  });
+
+  // Handle shortcode URL patterns - /shortcode directly (like /ak7n1z) and subdomains
   app.get("/:shortcode([A-Z0-9]{6})", async (req, res) => {
     try {
       const { shortcode } = req.params;
