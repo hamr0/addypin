@@ -51,8 +51,8 @@ export function UserPinsList({ onPinSelect, onStartEditing }: UserPinsListProps)
     },
     onSuccess: (data, shortcode) => {
       toast({
-        title: "Pin Deleted! 🗑️",
-        description: `Pin ${shortcode} has been permanently deleted`,
+        title: "AddyPin Deleted! 🗑️", 
+        description: `AddyPin ${shortcode} has been permanently deleted`,
         duration: 5000,
       });
       refetchPins();
@@ -62,7 +62,7 @@ export function UserPinsList({ onPinSelect, onStartEditing }: UserPinsListProps)
     onError: (error) => {
       toast({
         title: "Delete Failed",
-        description: error instanceof Error ? error.message : "Failed to delete pin",
+        description: error instanceof Error ? error.message : "Failed to delete addypin",
         variant: "destructive",
       });
     },
@@ -333,9 +333,9 @@ export function UserPinsList({ onPinSelect, onStartEditing }: UserPinsListProps)
         <AlertDialog open={!!showDeleteConfirm} onOpenChange={(open) => !open && setShowDeleteConfirm(null)}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Delete Pin</AlertDialogTitle>
+              <AlertDialogTitle>Delete AddyPin</AlertDialogTitle>
               <AlertDialogDescription>
-                Are you sure you want to delete pin {showDeleteConfirm}? This action cannot be undone, but the shortcode can be reused for new pins.
+                Are you sure you want to delete addypin {showDeleteConfirm}? This action cannot be undone, but the shortcode can be reused for new addypins.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -344,7 +344,7 @@ export function UserPinsList({ onPinSelect, onStartEditing }: UserPinsListProps)
                 onClick={() => showDeleteConfirm && deletePinMutation.mutate(showDeleteConfirm)}
                 className="bg-red-600 hover:bg-red-700 text-white"
               >
-                Delete Pin
+                Delete AddyPin
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

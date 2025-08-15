@@ -54,16 +54,10 @@ export default function Sidebar({ coordinates, generatedLink, onLinkGenerated, i
       // Check if it's a PIN_LIMIT_EXCEEDED error
       if (error instanceof Error && error.message.includes("PIN_LIMIT_EXCEEDED")) {
         toast({
-          title: "Pin Limit Reached",
-          description: "You have reached the 5 pin limit for this email. Please delete some pins to create new ones.",
+          title: "AddyPin Limit Reached",
+          description: "You have reached the 5 addypin limit for this email. Please delete some addypins to create new ones.",
           variant: "destructive",
-          action: {
-            altText: "Edit Pins",
-            onClick: () => {
-              // Trigger the edit flow by opening the pin management
-              window.scrollTo(0, document.body.scrollHeight);
-            }
-          }
+
         });
       } else {
         toast({

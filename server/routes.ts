@@ -4,7 +4,7 @@ import path from "path";
 import { storage } from "./storage";
 import { insertPinSchema, insertAnalyticsSchema, pins } from "@shared/schema";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { z } from "zod";
 import { analyticsService } from "./services/analytics";
 import { emailService } from "./services/email";
@@ -51,7 +51,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const pinCount = await storage.getPinCountByEmail(validatedData.createdBy);
         if (pinCount >= 5) {
           return res.status(400).json({ 
-            message: "Pin limit reached. You can have a maximum of 5 registered pins per email address.",
+            message: "AddyPin limit reached. You can have a maximum of 5 registered addypins per email address.",
             code: "PIN_LIMIT_EXCEEDED"
           });
         }
