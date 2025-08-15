@@ -120,5 +120,5 @@ if (process.env.NODE_ENV === 'production') {
     if (now.getUTCHours() === 0 && now.getUTCMinutes() === 0) {
       await analyticsService.sendDailyReport();
     }
-  }, 60000); // Check every minute
+  }, 300000); // Check every 5 minutes (much more reasonable)
 }

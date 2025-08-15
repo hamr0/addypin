@@ -3,7 +3,9 @@ import { useQuery } from "@tanstack/react-query";
 export function useStats() {
   return useQuery({
     queryKey: ["/api/stats"],
-    refetchInterval: 2000, // Refresh every 2 seconds for faster updates
-    staleTime: 0, // Always consider data stale to force refresh
+    refetchInterval: 60000, // Refresh every 60 seconds (much more reasonable)
+    staleTime: 30000, // Consider data fresh for 30 seconds
+    refetchOnWindowFocus: false, // Don't refetch when window gains focus
+    refetchOnMount: true, // Only refetch on initial mount
   });
 }
