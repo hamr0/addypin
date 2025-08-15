@@ -472,7 +472,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await analyticsService.trackEvent({
         pinId: pin.id,
         eventType: "click",
-        userAgent: req.headers['user-agent'],
+        userAgent: req.headers['user-agent'] || '',
         ipAddress: req.ip || req.connection.remoteAddress || '127.0.0.1',
       });
 

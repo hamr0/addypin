@@ -195,6 +195,7 @@ export default function RedirectPage() {
   const getCountryFromCoords = (lat: number, lng: number): string => {
     // Enhanced coordinate ranges for better country detection
     if (lat >= 24 && lat <= 49 && lng >= -125 && lng <= -66) return "USA";
+    if (lat >= 4 && lat <= 21 && lng >= 116 && lng <= 127) return "Philippines";
     if (lat >= 50.5 && lat <= 53.7 && lng >= 3.2 && lng <= 7.3) return "Netherlands";
     if (lat >= 30 && lat <= 37 && lng >= 66 && lng <= 78) return "Pakistan"; 
     if (lat >= 51.2 && lat <= 56 && lng >= -5.8 && lng <= 2) return "United Kingdom";
