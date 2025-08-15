@@ -26,10 +26,12 @@ export function EditModal({ isOpen, onClose }: EditModalProps) {
       return response.json();
     },
     onSuccess: (data) => {
+      console.log("OTP Success:", data);
       setShowOtpInput(true);
       toast({
         title: "Code Sent! 📧",
         description: data.message,
+        duration: 5000,
       });
     },
     onError: (error) => {

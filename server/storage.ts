@@ -1,6 +1,6 @@
 import { users, pins, analytics, dailyStats, otpCodes, type User, type InsertUser, type Pin, type InsertPin, type Analytics, type InsertAnalytics, type DailyStats, type InsertDailyStats, type OtpCode, type InsertOtpCode } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, sql, and, gte, lt } from "drizzle-orm";
+import { eq, desc, sql, and, gte, lt, or } from "drizzle-orm";
 
 export interface IStorage {
   // User methods
@@ -101,11 +101,11 @@ export class DatabaseStorage implements IStorage {
       .select({ count: sql<number>`count(*)` })
       .from(pins);
 
-    // Get total clicks count (cumulative since AddyPin started)
+    // Get total clicks count (cumulative since AddyPin started - includes both 'click' and 'map_app_click')
     const [clicksResult] = await db
       .select({ count: sql<number>`count(*)` })
       .from(analytics)
-      .where(eq(analytics.eventType, 'click'));
+      .where(or(eq(analytics.eventType, 'click'), eq(analytics.eventType, 'map_app_click')));
 
     // Get total emails count (cumulative)
     const [emailsResult] = await db
