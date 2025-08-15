@@ -2,7 +2,9 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import path from "path";
 import { storage } from "./storage";
-import { insertPinSchema, insertAnalyticsSchema } from "@shared/schema";
+import { insertPinSchema, insertAnalyticsSchema, pins } from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { analyticsService } from "./services/analytics";
 import { emailService } from "./services/email";
@@ -49,7 +51,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let existingPin;
       do {
         shortcode = generateShortcode();
-        existingPin = await storage.getPinByShortcode(shortcode);
+        // Check both active and inactive pins to prevent code reuse
+        const results = await db.select().from(pins).where(eq(pins.shortcode, shortcode));
+        existingPin = results[0];
       } while (existingPin);
 
       // Set expiry date - 72 hours from now if no email provided
@@ -80,6 +84,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get user pins by email (authenticated)
+  app.get("/api/user/pins/:email", async (req, res) => {
+    try {
+      const { email } = req.params;
+      const userPins = await storage.getPinsByEmail(email);
+      res.json(userPins);
+    } catch (error) {
+      console.error("Get user pins error:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
   // Get pin by shortcode (for redirects)
   app.get("/api/pins/:shortcode", async (req, res) => {
     try {
@@ -87,7 +103,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const pin = await storage.getPinByShortcode(shortcode);
 
       if (!pin) {
-        return res.status(404).json({ message: "Pin not found" });
+        return res.status(404).json({ message: "Wrong pin" });
+      }
+
+      // Check if pin is inactive (returns wrong pin)
+      if (!pin.isActive) {
+        return res.status(404).json({ message: "Wrong pin" });
       }
 
       // Track click analytics
@@ -172,6 +193,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Map app click tracking error:", error);
       res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // Update pin coordinates route
+  app.patch("/api/pins/:shortcode", async (req, res) => {
+    try {
+      const { shortcode } = req.params;
+      const { latitude, longitude } = req.body;
+      
+      if (!latitude || !longitude) {
+        return res.status(400).json({ message: "Latitude and longitude are required" });
+      }
+
+      const updatedPin = await storage.updatePin(shortcode, {
+        latitude: latitude.toString(),
+        longitude: longitude.toString()
+      });
+
+      res.json({
+        success: true,
+        pin: updatedPin,
+        message: "Pin coordinates updated successfully"
+      });
+    } catch (error) {
+      console.error("Update pin error:", error);
+      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to update pin" });
     }
   });
 

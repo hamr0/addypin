@@ -6,18 +6,23 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Edit, Mail, KeyRound } from "lucide-react";
+import { Edit, Mail, KeyRound, Save } from "lucide-react";
+import { PinSelector } from "./PinSelector";
+import type { Pin } from "@shared/schema";
 
 interface EditModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onPinSelect?: (pin: Pin) => void;
+  onStartEditing?: () => void;
 }
 
-export function EditModal({ isOpen, onClose }: EditModalProps) {
+export function EditModal({ isOpen, onClose, onPinSelect, onStartEditing }: EditModalProps) {
   const [email, setEmail] = useState("");
   const [otpCode, setOtpCode] = useState("");
   const [showOtpInput, setShowOtpInput] = useState(false);
   const [editToken, setEditToken] = useState("");
+  const [selectedPin, setSelectedPin] = useState<Pin | undefined>();
   const { toast } = useToast();
 
   const sendOtpMutation = useMutation({
@@ -69,12 +74,13 @@ export function EditModal({ isOpen, onClose }: EditModalProps) {
     setOtpCode("");
     setShowOtpInput(false);
     setEditToken("");
+    setSelectedPin(undefined);
     onClose();
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md z-[9999]">
+      <DialogContent className="sm:max-w-lg z-[9999] bg-white/95 backdrop-blur-sm border-2 shadow-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center">
             <Edit className="w-5 h-5 text-addypin-cyan mr-2" />
@@ -154,18 +160,49 @@ export function EditModal({ isOpen, onClose }: EditModalProps) {
               )}
             </>
           ) : (
-            <div className="text-center space-y-4">
-              <div className="text-green-600 text-lg font-semibold">✓ Authentication Successful</div>
-              <p className="text-addypin-medium">
-                You can now edit coordinates by entering a shortcode and new coordinates.
-              </p>
-              <div className="text-xs text-gray-500 bg-gray-50 p-3 rounded">
-                <strong>How to edit:</strong><br />
-                1. Visit any pin redirect page (e.g., ABC123.addypin.com)<br />
-                2. Use the edit form that appears<br />
-                3. Your authentication will be valid for 1 hour
+            <div className="space-y-4">
+              <div className="text-center">
+                <div className="text-green-600 text-lg font-semibold mb-2">✓ Authentication Successful</div>
+                <p className="text-sm text-addypin-medium mb-4">
+                  Choose a pin to edit coordinates
+                </p>
               </div>
-              <div className="flex gap-2">
+              
+              <PinSelector 
+                email={email}
+                onPinSelect={(pin) => {
+                  setSelectedPin(pin);
+                  if (onPinSelect) {
+                    onPinSelect(pin);
+                  }
+                }}
+                selectedPin={selectedPin}
+              />
+              
+              {selectedPin && (
+                <div className="space-y-3 pt-3 border-t">
+                  <div className="text-sm font-medium text-addypin-dark">
+                    Editing: {selectedPin.shortcode}
+                  </div>
+                  <div className="text-xs text-gray-600">
+                    Current location: {Number(selectedPin.latitude).toFixed(4)}, {Number(selectedPin.longitude).toFixed(4)}
+                  </div>
+                  <Button 
+                    onClick={() => {
+                      if (onStartEditing) {
+                        onStartEditing();
+                      }
+                      handleClose();
+                    }}
+                    className="w-full bg-addypin-cyan hover:bg-cyan-600 text-white"
+                    data-testid="button-start-editing"
+                  >
+                    Start Editing on Map
+                  </Button>
+                </div>
+              )}
+              
+              <div className="flex gap-2 pt-2">
                 <Button onClick={handleClose} variant="outline" className="flex-1">
                   Close
                 </Button>

@@ -28,6 +28,10 @@ export interface IStorage {
   markOtpAsUsed(id: string): Promise<void>;
   cleanupExpiredOtpCodes(): Promise<void>;
   updatePin(shortcode: string, data: Partial<{ latitude: string; longitude: string }>): Promise<Pin>;
+  
+  // User pin management
+  getPinsByEmail(email: string): Promise<Pin[]>;
+  deactivatePin(shortcode: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -229,6 +233,19 @@ export class DatabaseStorage implements IStorage {
     }
     
     return updatedPin;
+  }
+
+  async getPinsByEmail(email: string): Promise<Pin[]> {
+    return await db.select().from(pins)
+      .where(and(eq(pins.createdBy, email), eq(pins.isActive, true)))
+      .orderBy(pins.createdAt);
+  }
+
+  async deactivatePin(shortcode: string): Promise<void> {
+    await db
+      .update(pins)
+      .set({ isActive: false })
+      .where(eq(pins.shortcode, shortcode));
   }
 }
 

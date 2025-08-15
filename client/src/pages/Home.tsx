@@ -4,11 +4,15 @@ import MapSection from "@/components/MapSection";
 import Sidebar from "@/components/Sidebar";
 import Logo from "@/components/Logo";
 import { EditModal } from "@/components/EditModal";
+import type { Pin } from "@shared/schema";
 
 export default function Home() {
   const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
   const [generatedLink, setGeneratedLink] = useState<{ webLink: string; emailLink: string } | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [editingPin, setEditingPin] = useState<Pin | undefined>();
+  const [isEditing, setIsEditing] = useState(false);
+  const [originalCoordinates, setOriginalCoordinates] = useState<{ lat: number; lng: number } | null>(null);
 
   return (
     <div className="min-h-screen bg-gray-50 font-inter">
@@ -51,6 +55,15 @@ export default function Home() {
             coordinates={coordinates}
             onCoordinatesChange={setCoordinates}
             generatedLink={generatedLink}
+            editingPin={editingPin}
+            isEditing={isEditing}
+            onEditComplete={(newCoords) => {
+              if (editingPin && newCoords) {
+                // Save the new coordinates
+                setCoordinates(newCoords);
+                setIsEditing(false);
+              }
+            }}
           />
           <Sidebar 
             coordinates={coordinates}
@@ -109,7 +122,21 @@ export default function Home() {
       
       <EditModal 
         isOpen={showEditModal} 
-        onClose={() => setShowEditModal(false)} 
+        onClose={() => setShowEditModal(false)}
+        onPinSelect={(pin) => {
+          setEditingPin(pin);
+          setOriginalCoordinates({
+            lat: Number(pin.latitude),
+            lng: Number(pin.longitude)
+          });
+          setCoordinates({
+            lat: Number(pin.latitude),
+            lng: Number(pin.longitude)
+          });
+        }}
+        onStartEditing={() => {
+          setIsEditing(true);
+        }}
       />
     </div>
   );

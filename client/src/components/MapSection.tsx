@@ -1,13 +1,16 @@
 import { useEffect, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Search, MapPin, X, LocateFixed } from "lucide-react";
+import { Search, MapPin, X, LocateFixed, Save } from "lucide-react";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { useAuth } from "@/hooks/useAuth";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import type { Pin } from "@shared/schema";
 
 
 // Fix for default markers in Leaflet
@@ -28,9 +31,12 @@ interface MapSectionProps {
   coordinates: { lat: number; lng: number } | null;
   onCoordinatesChange: (coords: { lat: number; lng: number }) => void;
   generatedLink: { webLink: string; emailLink: string } | null;
+  editingPin?: Pin;
+  isEditing?: boolean;
+  onEditComplete?: (newCoords: { lat: number; lng: number }) => void;
 }
 
-export default function MapSection({ coordinates, onCoordinatesChange, generatedLink }: MapSectionProps) {
+export default function MapSection({ coordinates, onCoordinatesChange, generatedLink, editingPin, isEditing, onEditComplete }: MapSectionProps) {
   const mapRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -40,6 +46,36 @@ export default function MapSection({ coordinates, onCoordinatesChange, generated
   
   const { location: geoLocation, error: geoError } = useGeolocation();
   const auth = useAuth();
+  const { toast } = useToast();
+
+  // Save coordinates mutation
+  const saveCoordinatesMutation = useMutation({
+    mutationFn: async (coords: { lat: number; lng: number }) => {
+      if (!editingPin?.shortcode) throw new Error("No pin selected for editing");
+      const response = await apiRequest("PATCH", `/api/pins/${editingPin.shortcode}`, {
+        latitude: coords.lat,
+        longitude: coords.lng
+      });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Changes Saved! ✅",
+        description: `Pin ${editingPin?.shortcode} coordinates updated successfully`,
+        variant: "default",
+      });
+      if (onEditComplete && coordinates) {
+        onEditComplete(coordinates);
+      }
+    },
+    onError: (error) => {
+      toast({
+        title: "Save Failed",
+        description: error instanceof Error ? error.message : "Failed to save coordinates",
+        variant: "destructive",
+      });
+    },
+  });
 
   // Fetch map links when coordinates change
   const { data: fetchedMapLinks } = useQuery({
@@ -265,13 +301,54 @@ export default function MapSection({ coordinates, onCoordinatesChange, generated
           </div>
         </div>
 
-        <div 
-          ref={mapContainerRef}
-          className="w-full h-80 bg-addypin-light rounded-xl shadow-inner"
-          data-testid="map-container"
-        />
+        <div className="space-y-4">
+          <div>
+            <Label className="text-sm font-medium text-addypin-dark mb-2 block">
+              {isEditing && editingPin ? `Editing Pin: ${editingPin.shortcode}` : "Pick a location"}
+            </Label>
+            <p className="text-xs text-gray-500 mb-4">
+              {isEditing && editingPin 
+                ? "Drag the pin to update coordinates, then click Save Changes below the map" 
+                : "Click anywhere on the map or drag the pin to set coordinates"
+              }
+            </p>
+            <div 
+              ref={mapContainerRef}
+              className="w-full h-80 bg-addypin-light rounded-xl shadow-inner"
+              data-testid="map-container"
+            />
+            
+            {/* Save Changes Button - appears under map during editing */}
+            {isEditing && editingPin && coordinates && (
+              <div className="mt-4 p-4 bg-yellow-50 border-2 border-yellow-200 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-medium text-yellow-800">
+                      Editing {editingPin.shortcode}
+                    </div>
+                    <div className="text-sm text-yellow-700">
+                      New coordinates: {coordinates.lat.toFixed(4)}, {coordinates.lng.toFixed(4)}
+                    </div>
+                  </div>
+                  <Button
+                    onClick={() => {
+                      if (coordinates) {
+                        saveCoordinatesMutation.mutate(coordinates);
+                      }
+                    }}
+                    disabled={saveCoordinatesMutation.isPending}
+                    className="bg-addypin-cyan hover:bg-cyan-600 text-white"
+                    data-testid="button-save-changes"
+                  >
+                    <Save className="w-4 h-4 mr-2" />
+                    {saveCoordinatesMutation.isPending ? "Saving..." : "Save Changes"}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
           <div>
             <Label htmlFor="latitude" className="block text-sm font-medium text-addypin-dark mb-2">
               Latitude
@@ -301,6 +378,7 @@ export default function MapSection({ coordinates, onCoordinatesChange, generated
             />
           </div>
         </div>
+        </div>
       </div>
 
       {/* Map Apps Grid */}
@@ -325,8 +403,6 @@ export default function MapSection({ coordinates, onCoordinatesChange, generated
           ))}
         </div>
       </div>
-
-
     </div>
   );
 }
