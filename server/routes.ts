@@ -7,6 +7,7 @@ import { db } from "./db";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
 import { analyticsService } from "./services/analytics";
+import { umamiService } from "./services/umami";
 
 import { requireAuth } from "./middleware/auth";
 import { 
@@ -101,6 +102,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         eventType: "create",
         userAgent: req.headers['user-agent'],
         ipAddress: req.ip,
+      });
+
+      // Track in Umami (privacy-focused analytics)
+      await umamiService.trackEvent({
+        website: process.env.UMAMI_WEBSITE_ID || '',
+        name: 'pin_created',
+        data: { 
+          country: req.headers['cf-ipcountry'] || 'Unknown',
+          hasEmail: !!validatedData.createdBy 
+        }
       });
 
       res.json({
