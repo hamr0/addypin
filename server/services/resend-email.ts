@@ -25,7 +25,7 @@ export async function sendOTPEmail({ to, code }: OTPEmailParams): Promise<{ succ
 
     // Production - send actual email
     const { data, error } = await resend.emails.send({
-      from: 'onboarding@resend.dev',
+      from: 'addypin <noreply@addypin.com>',
       to: [to],
       subject: 'Your addypin Verification Code',
       html: `
