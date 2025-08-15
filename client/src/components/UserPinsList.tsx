@@ -346,7 +346,7 @@ export function UserPinsList({ onPinSelect, onStartEditing }: UserPinsListProps)
             <AlertDialogHeader>
               <AlertDialogTitle>Delete addypin</AlertDialogTitle>
               <AlertDialogDescription>
-                Are you sure you want to delete addypin {showDeleteConfirm}? This action cannot be undone, but the shortcode can be reused for new addypins.
+                Are you sure you want to delete addypin {showDeleteConfirm}? It can't be undone and {showDeleteConfirm} addypin can be reused.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

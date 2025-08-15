@@ -57,6 +57,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // Check for duplicate coordinates first
+      const duplicatePin = await db.select().from(pins).where(
+        and(
+          eq(pins.latitude, validatedData.latitude),
+          eq(pins.longitude, validatedData.longitude),
+          eq(pins.isActive, true)
+        )
+      );
+      
+      if (duplicatePin.length > 0) {
+        return res.status(400).json({
+          message: `addypin: ${duplicatePin[0].shortcode} is already created`,
+          code: "DUPLICATE_COORDINATES"
+        });
+      }
+
       // Generate unique shortcode (allow reuse of deleted/inactive pins)
       let shortcode: string;
       let existingPin;
