@@ -11,12 +11,12 @@ Preferred communication style: Simple, everyday language.
 ## Recent Changes (August 2025)
 
 ✅ **Latest Updates (August 15, 2025):**
-- **Features page**: Comprehensive features page with all AddyPin capabilities in simple bullet points
-- **Enhanced analytics**: Map app click tracking working perfectly, real-time counter updates every 2 seconds
-- **Fixed country detection**: Shows proper countries (USA, Pakistan, etc.) instead of "Unknown"
+- **Simplified Features page**: Removed security details, streamlined to 3 bullet points per feature to avoid exposing limitations
+- **Fixed edit workflow**: Improved button timing and state management for immediate Save Changes display
+- **Enhanced country detection**: Created shared utility for consistent Philippines and other country detection
+- **Fixed redirect URLs**: Working properly in browser, serve React app with all map options
 - **Improved duplicate detection**: Prevents same email from creating multiple addypins at identical coordinates
 - **Contact form system**: Floating "Help" button with modal dialog, console logging for support requests
-- **Map apps integration**: All 13 map services generate working URLs, redirect links serve React app correctly
 
 ✅ **Previous Fixes:**
 - Fixed modal z-index issues - login modal now appears above map

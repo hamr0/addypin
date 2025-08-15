@@ -93,10 +93,8 @@ export default function Home() {
               }}
               onStartEditing={() => {
                 setIsEditing(true);
-                // Force a re-render to show the Save Changes button immediately
-                setTimeout(() => {
-                  setCoordinates(prevCoords => prevCoords ? {...prevCoords} : null);
-                }, 50);
+                // Force immediate UI update
+                setCoordinates(prevCoords => prevCoords ? {...prevCoords} : prevCoords);
               }}
             />
           </div>

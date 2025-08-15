@@ -287,9 +287,12 @@ export function UserPinsList({ onPinSelect, onStartEditing }: UserPinsListProps)
                     <Button
                       onClick={(e) => {
                         e.stopPropagation();
-                        // First select the pin, then start editing
+                        // Immediately select pin and start editing
                         handlePinSelect(pin);
-                        setTimeout(() => handleStartEditing(), 100);
+                        setSelectedPin(pin);
+                        if (onStartEditing) {
+                          onStartEditing();
+                        }
                       }}
                       size="sm"
                       variant="outline"
