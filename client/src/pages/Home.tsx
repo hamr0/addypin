@@ -3,10 +3,12 @@ import { Link } from "wouter";
 import MapSection from "@/components/MapSection";
 import Sidebar from "@/components/Sidebar";
 import Logo from "@/components/Logo";
+import { EditModal } from "@/components/EditModal";
 
 export default function Home() {
   const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
   const [generatedLink, setGeneratedLink] = useState<{ webLink: string; emailLink: string } | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   return (
     <div className="min-h-screen bg-gray-50 font-inter">
@@ -28,10 +30,7 @@ export default function Home() {
                 </a>
               </nav>
               <button 
-                onClick={() => {
-                  // Navigate to dedicated edit page
-                  window.location.href = '/edit';
-                }}
+                onClick={() => setShowEditModal(true)}
                 className="text-sm text-addypin-medium hover:text-addypin-cyan transition-colors cursor-pointer"
                 data-testid="button-login-to-edit"
               >
@@ -107,6 +106,11 @@ export default function Home() {
           </div>
         </div>
       </footer>
+      
+      <EditModal 
+        isOpen={showEditModal} 
+        onClose={() => setShowEditModal(false)} 
+      />
     </div>
   );
 }
