@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { MapPin, Edit, Mail, KeyRound, Eye, EyeOff } from "lucide-react";
+import { MapPin, Edit, Mail, KeyRound, LogOut } from "lucide-react";
 import type { Pin } from "@shared/schema";
 
 interface UserPinsListProps {
@@ -28,6 +28,18 @@ export function UserPinsList({ onPinSelect, onStartEditing }: UserPinsListProps)
     queryKey: [`/api/user/pins/${email}`],
     enabled: isAuthenticated && !!email,
   });
+
+  // Listen for pin updates to refresh the list
+  useEffect(() => {
+    const handlePinUpdate = () => {
+      if (isAuthenticated && email) {
+        refetchPins();
+      }
+    };
+
+    window.addEventListener('pinUpdated', handlePinUpdate);
+    return () => window.removeEventListener('pinUpdated', handlePinUpdate);
+  }, [isAuthenticated, email, refetchPins]);
 
   const sendOtpMutation = useMutation({
     mutationFn: async (email: string) => {
@@ -201,8 +213,8 @@ export function UserPinsList({ onPinSelect, onStartEditing }: UserPinsListProps)
             size="sm"
             className="text-xs"
           >
-            <EyeOff className="w-3 h-3 mr-1" />
-            Hide
+            <LogOut className="w-3 h-3 mr-1" />
+            Log out
           </Button>
         </CardTitle>
       </CardHeader>

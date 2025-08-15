@@ -72,6 +72,8 @@ export default function MapSection({ coordinates, onCoordinatesChange, generated
         description: `Pin ${editingPin?.shortcode} coordinates updated successfully`,
         variant: "default",
       });
+      // Trigger pin list refresh
+      window.dispatchEvent(new CustomEvent('pinUpdated'));
       if (onEditComplete && coordinates) {
         onEditComplete(coordinates);
       }
