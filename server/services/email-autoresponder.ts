@@ -69,7 +69,7 @@ export async function sendMapAutoResponse({ fromEmail, shortcode }: AutoResponse
     const { data, error } = await resend.emails.send({
       from: 'addypin <noreply@addypin.com>',
       to: [fromEmail],
-      subject: `Your addypin Location - ${shortcode} - ${country}`,
+      subject: `${shortcode} - ${country}`,
       html: `
         <!DOCTYPE html>
         <html>
