@@ -8,6 +8,7 @@ addypin is a modern location sharing service that generates short, memorable lin
 
 Preferred communication style: Simple, everyday language.
 Project organization: Keep main folder clean - documentation moved to `/docs` folder.
+Documentation strategy: Maintain detailed .md files as development journal and troubleshooting knowledge base for complex setups.
 
 ## Recent Changes (August 2025)
 
