@@ -87,10 +87,6 @@ export default function Home() {
                 setIsEditing(true);
               }}
             />
-            
-            <div id="contact">
-              <ContactForm />
-            </div>
           </div>
         </div>
       </main>

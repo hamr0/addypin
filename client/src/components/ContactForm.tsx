@@ -3,17 +3,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { Mail, Send } from "lucide-react";
+import { HelpCircle, Send } from "lucide-react";
 
 export function ContactForm() {
   const [email, setEmail] = useState("");
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
   const { toast } = useToast();
 
   const sendContactMutation = useMutation({
@@ -27,10 +27,11 @@ export function ContactForm() {
         description: "Your message has been logged for review. We'll get back to you soon.",
         duration: 5000,
       });
-      // Reset form
+      // Reset form and close dialog
       setEmail("");
       setSubject("");
       setMessage("");
+      setIsOpen(false);
     },
     onError: (error) => {
       toast({
@@ -55,14 +56,28 @@ export function ContactForm() {
   };
 
   return (
-    <Card className="w-full max-w-md">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-addypin-dark">
-          <Mail size={20} />
-          Contact Support
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button
+          variant="outline"
+          size="sm"
+          className="fixed bottom-6 right-6 z-50 shadow-lg bg-white hover:bg-addypin-light border-addypin-cyan text-addypin-dark"
+          data-testid="button-help"
+        >
+          <HelpCircle className="mr-2" size={16} />
+          Help
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-addypin-dark">
+            <HelpCircle size={20} />
+            Contact Support
+          </DialogTitle>
+          <DialogDescription>
+            Need help with AddyPin? Send us a message and we'll get back to you.
+          </DialogDescription>
+        </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <Label htmlFor="contact-email" className="block text-sm font-medium text-addypin-dark mb-2">
@@ -83,16 +98,15 @@ export function ContactForm() {
             <Label htmlFor="contact-subject" className="block text-sm font-medium text-addypin-dark mb-2">
               Subject
             </Label>
-            <Select value={subject} onValueChange={setSubject}>
-              <SelectTrigger className="border-gray-300 focus:border-addypin-cyan focus:ring-addypin-cyan" data-testid="select-contact-subject">
-                <SelectValue placeholder="Choose a subject" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Complaint">Complaint</SelectItem>
-                <SelectItem value="Product Feedback">Product Feedback</SelectItem>
-                <SelectItem value="Other">Other</SelectItem>
-              </SelectContent>
-            </Select>
+            <Input
+              id="contact-subject"
+              type="text"
+              placeholder="What can we help you with?"
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              className="border-gray-300 focus:border-addypin-cyan focus:ring-addypin-cyan"
+              data-testid="input-contact-subject"
+            />
           </div>
 
           <div>
@@ -120,7 +134,7 @@ export function ContactForm() {
             {sendContactMutation.isPending ? "Sending..." : "Send Message"}
           </Button>
         </form>
-      </CardContent>
-    </Card>
+      </DialogContent>
+    </Dialog>
   );
 }
