@@ -495,15 +495,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Email webhook for receiving emails via SendGrid Inbound Parse
+  // Email webhook for receiving emails via Maddy Mail Server
   app.post("/api/webhook/email-inbound", async (req, res) => {
     try {
-      // SendGrid sends multipart/form-data, not JSON
-      const { to, from, subject, html, text } = req.body;
+      // Maddy sends JSON payload
+      const { from, to, subject, body, headers } = req.body;
       
       // Log the incoming email
-      console.log('📧 INCOMING EMAIL (SendGrid):');
-      console.log(`To: ${to}`);
+      console.log('📧 INCOMING EMAIL (Maddy):');
+      console.log(`To: ${Array.isArray(to) ? to[0] : to}`);
       console.log(`From: ${from}`);
       console.log(`Subject: ${subject}`);
       console.log('---');
@@ -512,8 +512,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Missing to or from address" });
       }
 
+      // Handle to field as array or string
+      const recipientEmail = Array.isArray(to) ? to[0] : to;
+
       // Extract shortcode from recipient email (ak7n1z@addypin.com)
-      const emailMatch = to.match(/^([A-Z0-9]{6})@addypin\.com$/i);
+      const emailMatch = recipientEmail.match(/^([A-Z0-9]{6})@addypin\.com$/i);
       if (!emailMatch) {
         return res.status(400).json({ error: "Invalid recipient format" });
       }
@@ -526,14 +529,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (result.success) {
         console.log(`✅ Auto-response sent successfully`);
-        res.status(200).send('OK'); // SendGrid expects 200 response
+        res.status(200).json({ status: "processed" }); // Maddy expects JSON response
       } else {
         console.log(`❌ Auto-response failed: ${result.message}`);
-        res.status(200).send('OK'); // Still return 200 to prevent retries
+        res.status(200).json({ status: "failed", message: result.message });
       }
     } catch (error) {
       console.error("Email webhook error:", error);
-      res.status(200).send('OK'); // Return 200 to prevent SendGrid retries
+      res.status(500).json({ error: "Webhook processing failed" });
     }
   });
 
