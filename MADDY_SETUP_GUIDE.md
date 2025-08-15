@@ -1,5 +1,18 @@
 # Maddy Mail Server Setup for addypin.com
 
+## AWS EC2 Setup
+
+### Step 1: Launch EC2 Instance
+1. **Launch Ubuntu 22.04 LTS** (t3.nano is sufficient)
+2. **Security Group**: Allow inbound traffic on ports 22 (SSH) and 25 (SMTP)
+3. **Note your instance's public IP address**
+
+### Step 2: Configure Security Group
+```
+Type: SSH, Protocol: TCP, Port: 22, Source: 0.0.0.0/0
+Type: SMTP, Protocol: TCP, Port: 25, Source: 0.0.0.0/0
+```
+
 ## DNS Records Required
 
 Replace your existing MX record with:
@@ -7,7 +20,7 @@ Replace your existing MX record with:
 ```
 Record Type: MX
 Name: addypin.com (or @)
-Value: 10 your-server-ip-address
+Value: 10 YOUR-AWS-EC2-IP-ADDRESS
 TTL: 300
 ```
 
@@ -29,8 +42,14 @@ TTL: 300
 
 ## Complete Maddy Installation
 
-### Step 1: Download and Install
+### Step 1: Connect to AWS and Install
 ```bash
+# SSH into your AWS EC2 instance
+ssh -i your-key.pem ubuntu@YOUR-AWS-EC2-IP
+
+# Update system
+sudo apt update && sudo apt upgrade -y
+
 # Download latest Maddy
 wget https://github.com/foxcpp/maddy/releases/latest/download/maddy-linux-amd64
 chmod +x maddy-linux-amd64
@@ -56,7 +75,7 @@ smtp tcp://0.0.0.0:25 {
     source addypin.com {
         # Forward all emails to webhook
         deliver_to webhook {
-            target https://your-replit-app.replit.app/api/webhook/email-inbound
+            target https://musical-walleye-79.replit.app/api/webhook/email-inbound
             timeout 30s
             max_tries 3
         }
@@ -136,12 +155,75 @@ Maddy will send HTTP POST requests to your webhook with this format:
 }
 ```
 
+## Quick Setup Commands for AWS
+
+Copy and paste these commands on your AWS EC2 instance:
+
+```bash
+# Complete installation
+sudo apt update && sudo apt upgrade -y
+wget https://github.com/foxcpp/maddy/releases/latest/download/maddy-linux-amd64
+chmod +x maddy-linux-amd64
+sudo mv maddy-linux-amd64 /usr/local/bin/maddy
+sudo useradd -r -s /bin/false -d /var/lib/maddy maddy
+sudo mkdir -p /var/lib/maddy /etc/maddy
+sudo chown maddy:maddy /var/lib/maddy
+
+# Create config file
+sudo tee /etc/maddy/maddy.conf << 'EOF'
+state_dir /var/lib/maddy
+runtime_dir /run/maddy
+
+smtp tcp://0.0.0.0:25 {
+    hostname addypin.com
+    source addypin.com {
+        deliver_to webhook {
+            target https://musical-walleye-79.replit.app/api/webhook/email-inbound
+            timeout 30s
+            max_tries 3
+        }
+    }
+    default_source {
+        reject 550 5.1.1 "Domain not served here"
+    }
+}
+$(hostname) = addypin.com
+$(primary_domain) = addypin.com
+EOF
+
+# Create systemd service
+sudo tee /etc/systemd/system/maddy.service << 'EOF'
+[Unit]
+Description=Maddy Mail Server
+After=network.target
+Wants=network.target
+
+[Service]
+Type=notify
+User=maddy
+Group=maddy
+ExecStart=/usr/local/bin/maddy -config /etc/maddy/maddy.conf
+ExecReload=/bin/kill -USR1 $MAINPID
+Restart=always
+RestartSec=1
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# Start Maddy
+sudo systemctl daemon-reload
+sudo systemctl enable maddy
+sudo systemctl start maddy
+sudo systemctl status maddy
+```
+
 ## Testing
 
 Once DNS propagates (up to 48 hours):
-1. Send email to `r46n3k@addypin.com`
+1. Send email to any valid shortcode like `r46n3k@addypin.com`
 2. Check Maddy logs: `sudo journalctl -u maddy -f`
-3. Verify webhook receives the email
+3. Verify webhook receives the email in your Replit logs
 4. Confirm auto-response is sent
 
 ## Monitoring
