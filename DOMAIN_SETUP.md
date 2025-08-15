@@ -1,190 +1,64 @@
-# addypin Domain Setup Guide
+# Custom Domain Setup for addypin.com
 
-## DNS Configuration for addypin.com
+## Overview
+Configure your own domain (addypin.com) instead of using the default .replit.app domain.
 
-### Required DNS Records
+## Prerequisites
+- Domain registered (addypin.com purchased from registrar)
+- Replit deployment already created and running
+- Access to your domain's DNS settings
 
-Add these DNS records to your AWS Route 53 (or current DNS provider):
+## Step-by-Step Instructions
 
-```
-# Main domain
-A    addypin.com              -> [YOUR_SERVER_IP]
-AAAA addypin.com              -> [YOUR_IPv6_IF_AVAILABLE]
+### 1. Deploy First (If Not Done)
+- Complete your Replit deployment to get the default .replit.app URL
+- Test that everything works on the default domain
 
-# Wildcard subdomain for shortcodes (ABC123.addypin.com)
-A    *.addypin.com            -> [YOUR_SERVER_IP]
-AAAA *.addypin.com            -> [YOUR_IPv6_IF_AVAILABLE]
+### 2. Domain Configuration in Replit
+1. Go to your deployment dashboard in Replit
+2. Click on your deployment
+3. Navigate to "Settings" or "Domains" section
+4. Click "Add Custom Domain"
+5. Enter: `addypin.com`
+6. Replit will provide DNS configuration details
 
-# Email handling for ABC123@addypin.com format
-MX   addypin.com              -> 10 [YOUR_MAIL_SERVER]
-TXT  addypin.com              -> "v=spf1 include:_spf.google.com ~all"
-```
+### 3. DNS Configuration at Your Registrar
+Configure these DNS records at your domain registrar:
 
-### Server Configuration
+**For Root Domain (addypin.com):**
+- Record Type: `CNAME` or `A`
+- Name: `@` or leave blank
+- Value: `[provided by Replit]`
 
-#### 1. Nginx Configuration (Recommended)
+**For WWW Subdomain (www.addypin.com):**
+- Record Type: `CNAME`
+- Name: `www`
+- Value: `[provided by Replit]`
 
-```nginx
-# /etc/nginx/sites-available/addypin.conf
+### 4. SSL Certificate
+- Replit automatically provisions SSL certificates
+- HTTPS will be enabled automatically
+- May take 10-60 minutes to propagate
 
-# Main site
-server {
-    listen 80;
-    listen 443 ssl;
-    server_name addypin.com;
-    
-    # SSL configuration
-    ssl_certificate /path/to/addypin.com.crt;
-    ssl_certificate_key /path/to/addypin.com.key;
-    
-    location / {
-        proxy_pass http://localhost:5000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_cache_bypass $http_upgrade;
-    }
-}
+### 5. Verification
+Test these URLs once DNS propagates:
+- `https://addypin.com`
+- `https://www.addypin.com`
+- Pin creation and all map redirects
+- Analytics dashboard at `https://addypin.com/api/stats`
 
-# Shortcode subdomains (ABC123.addypin.com)
-server {
-    listen 80;
-    listen 443 ssl;
-    server_name *.addypin.com;
-    
-    # SSL configuration (wildcard certificate)
-    ssl_certificate /path/to/wildcard.addypin.com.crt;
-    ssl_certificate_key /path/to/wildcard.addypin.com.key;
-    
-    location / {
-        # Extract shortcode from subdomain
-        if ($host ~* ^([a-zA-Z0-9]{6})\.addypin\.com$) {
-            set $shortcode $1;
-            return 302 http://addypin.com/redirect/$shortcode;
-        }
-        
-        # Fallback to main site
-        return 302 http://addypin.com;
-    }
-}
-```
+## Expected Timeline
+- DNS propagation: 5 minutes - 24 hours
+- SSL certificate: 10-60 minutes after DNS
+- Full functionality: Usually within 1-2 hours
 
-#### 2. Email Handling Setup
+## Troubleshooting
+- Check DNS propagation: `dig addypin.com` or online DNS checker
+- Verify SSL: Browser should show secure lock icon
+- Contact Replit support if issues persist beyond 24 hours
 
-For `ABC123@addypin.com` email format, you'll need:
+## Post-Setup Updates
+Update any hardcoded URLs in your application to use the new domain if needed.
 
-**Option A: Gmail Workspace (Recommended)**
-1. Set up Gmail Workspace for addypin.com
-2. Create a catch-all email forwarding rule
-3. Configure webhook to process incoming emails
-
-**Option B: Postfix + Custom Script**
-```bash
-# Install Postfix
-sudo apt-get install postfix
-
-# Configure /etc/postfix/main.cf
-myhostname = mail.addypin.com
-mydomain = addypin.com
-virtual_alias_domains = addypin.com
-virtual_alias_maps = regexp:/etc/postfix/virtual_regexp
-
-# Create /etc/postfix/virtual_regexp
-/^([A-Z0-9]{6})@addypin\.com$/ addypin-handler@localhost
-
-# Create email processing script
-/usr/local/bin/addypin-email-handler
-```
-
-### SSL Certificates
-
-#### Using Let's Encrypt (Free)
-
-```bash
-# Install Certbot
-sudo apt-get install certbot python3-certbot-nginx
-
-# Get certificates
-sudo certbot --nginx -d addypin.com -d *.addypin.com
-
-# Auto-renewal
-sudo crontab -e
-# Add: 0 12 * * * /usr/bin/certbot renew --quiet
-```
-
-### Environment Variables
-
-Set these on your production server:
-
-```bash
-# Application
-NODE_ENV=production
-PORT=5000
-DATABASE_URL=[YOUR_POSTGRES_URL]
-
-# Email (for Nodemailer)
-EMAIL_USER=noreply@addypin.com  # Your Gmail address
-EMAIL_PASS=[GMAIL_APP_PASSWORD] # Gmail App Password
-
-# Domain
-DOMAIN=addypin.com
-```
-
-### Deployment Commands
-
-```bash
-# Clone repository
-git clone [YOUR_REPO_URL] /var/www/addypin
-cd /var/www/addypin
-
-# Install dependencies
-npm ci --production
-
-# Build application
-npm run build
-
-# Start with PM2 (process manager)
-sudo npm install -g pm2
-pm2 start ecosystem.config.js
-pm2 startup
-pm2 save
-
-# Enable firewall
-sudo ufw allow 80
-sudo ufw allow 443
-sudo ufw allow 22
-sudo ufw enable
-```
-
-### Testing
-
-1. **DNS Propagation**: `dig addypin.com`, `dig ABC123.addypin.com`
-2. **SSL**: `curl -I https://addypin.com`
-3. **Shortcode redirect**: Visit `https://ABC123.addypin.com`
-4. **Email**: Send test email to `ABC123@addypin.com`
-
-### Monitoring
-
-- Set up monitoring for uptime, SSL expiry, and email delivery
-- Consider using services like UptimeRobot or Pingdom
-- Monitor DNS propagation globally
-
-### Estimated Costs
-
-- **Domain**: $12-15/year (already owned)
-- **SSL**: Free (Let's Encrypt)
-- **Server**: $5-20/month (DigitalOcean, Linode, AWS EC2)
-- **Email**: Free (Gmail) or $6/month (Google Workspace)
-- **Total**: ~$5-35/month depending on server choice
-
-### Performance Optimization
-
-- Enable gzip compression
-- Set up CDN (CloudFlare free tier)
-- Configure caching headers
-- Use HTTP/2
-- Optimize images and assets
+---
+**Note**: Exact steps may vary based on Replit's current interface. Check their deployment documentation for the latest instructions.
