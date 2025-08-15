@@ -10,6 +10,7 @@ import RedirectPage from "@/pages/RedirectPage";
 import VersionPage from "@/pages/VersionPage";
 import EditPage from "@/pages/EditPage";
 import FeaturesPage from "@/pages/FeaturesPage";
+import AnalyticsDashboard from "@/pages/AnalyticsDashboard";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -20,6 +21,7 @@ function Router() {
       <Route path="/redirect/:shortcode" component={RedirectPage} />
       <Route path="/versions" component={VersionPage} />
       <Route path="/features" component={FeaturesPage} />
+      <Route path="/analytics" component={AnalyticsDashboard} />
       <Route component={NotFound} />
     </Switch>
   );
