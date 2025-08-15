@@ -114,26 +114,26 @@ export const getCountryFromCoords = (lat: number, lng: number): string => {
   if (lat >= 4.6 && lat <= 21.1 && lng >= 116.9 && lng <= 126.6) return "Philippines";
   if (lat >= 21.9 && lat <= 25.3 && lng >= 120.1 && lng <= 122.0) return "Taiwan";
   if (lat >= 41.6 && lat <= 52.1 && lng >= 87.7 && lng <= 119.9) return "Mongolia";
-  if (lat >= 25.1 && lat <= 39.8 && lng >= 44.0 && lng <= 63.3) return "Iran";
+  if (lat >= 25.1 && lat <= 39.8 && lng >= 44.0 && lng <= 63.3 && !(lat >= 24.4 && lat <= 26.2 && lng >= 50.7 && lng <= 51.7)) return "Iran";
   if (lat >= 36.5 && lat <= 47.1 && lng >= 55.0 && lng <= 73.1) return "Kazakhstan";
   if (lat >= 37.2 && lat <= 43.2 && lng >= 56.2 && lng <= 73.1) return "Uzbekistan";
   if (lat >= 37.0 && lat <= 43.3 && lng >= 67.4 && lng <= 75.0) return "Kyrgyzstan";
   if (lat >= 36.7 && lat <= 41.0 && lng >= 67.4 && lng <= 75.4) return "Tajikistan";
   if (lat >= 35.1 && lat <= 42.8 && lng >= 52.3 && lng <= 66.7) return "Turkmenistan";
   
-  // Middle East
-  if (lat >= 24.5 && lat <= 26.1 && lng >= 50.8 && lng <= 51.6) return "Qatar";
-  if (lat >= 22.6 && lat <= 26.1 && lng >= 51.6 && lng <= 56.4) return "United Arab Emirates";
-  if (lat >= 16.4 && lat <= 32.2 && lng >= 34.5 && lng <= 55.7) return "Saudi Arabia";
+  // Middle East (ordered by specificity - smaller countries first to avoid overlap)
+  if (lat >= 25.8 && lat <= 26.3 && lng >= 50.4 && lng <= 50.7) return "Bahrain";
+  if (lat >= 24.4 && lat <= 26.2 && lng >= 50.7 && lng <= 51.7) return "Qatar";
+  if (lat >= 22.6 && lat <= 26.1 && lng >= 51.0 && lng <= 56.4) return "United Arab Emirates";
+  if (lat >= 28.5 && lat <= 30.1 && lng >= 46.5 && lng <= 48.4) return "Kuwait";
+  if (lat >= 16.6 && lat <= 26.4 && lng >= 51.0 && lng <= 59.8) return "Oman";
+  if (lat >= 29.5 && lat <= 33.4 && lng >= 34.3 && lng <= 35.7) return "Israel";
+  if (lat >= 33.1 && lat <= 34.7 && lng >= 35.1 && lng <= 36.6) return "Lebanon";
+  if (lat >= 29.2 && lat <= 33.4 && lng >= 34.9 && lng <= 39.3) return "Jordan";
   if (lat >= 32.3 && lat <= 37.3 && lng >= 35.7 && lng <= 42.4) return "Syria";
   if (lat >= 29.1 && lat <= 37.4 && lng >= 38.8 && lng <= 48.6) return "Iraq";
-  if (lat >= 29.5 && lat <= 33.4 && lng >= 34.3 && lng <= 35.7) return "Israel";
-  if (lat >= 29.2 && lat <= 33.4 && lng >= 34.9 && lng <= 39.3) return "Jordan";
-  if (lat >= 33.1 && lat <= 34.7 && lng >= 35.1 && lng <= 36.6) return "Lebanon";
-  if (lat >= 28.5 && lat <= 30.1 && lng >= 46.5 && lng <= 48.4) return "Kuwait";
-  if (lat >= 16.6 && lat <= 26.4 && lng >= 51.1 && lng <= 59.8) return "Oman";
-  if (lat >= 25.8 && lat <= 26.3 && lng >= 50.4 && lng <= 50.7) return "Bahrain";
   if (lat >= 12.1 && lat <= 19.0 && lng >= 42.6 && lng <= 54.5) return "Yemen";
+  if (lat >= 16.4 && lat <= 32.2 && lng >= 34.5 && lng <= 55.7) return "Saudi Arabia";
   
   // Africa
   if (lat >= 22.0 && lat <= 31.7 && lng >= 25.0 && lng <= 37.0) return "Egypt";
