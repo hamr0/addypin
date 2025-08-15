@@ -6,6 +6,7 @@ import Logo from "@/components/Logo";
 import { EditModal } from "@/components/EditModal";
 import { UserPinsList } from "@/components/UserPinsList";
 import { QuickStats } from "@/components/QuickStats";
+import { ContactForm } from "@/components/ContactForm";
 import type { Pin } from "@shared/schema";
 
 export default function Home() {
@@ -31,7 +32,7 @@ export default function Home() {
                 <a href="#" className="text-addypin-medium hover:text-addypin-dark transition-colors">
                   API
                 </a>
-                <a href="#" className="text-addypin-medium hover:text-addypin-dark transition-colors">
+                <a href="#contact" className="text-addypin-medium hover:text-addypin-dark transition-colors">
                   Help
                 </a>
               </nav>
@@ -86,6 +87,10 @@ export default function Home() {
                 setIsEditing(true);
               }}
             />
+            
+            <div id="contact">
+              <ContactForm />
+            </div>
           </div>
         </div>
       </main>
