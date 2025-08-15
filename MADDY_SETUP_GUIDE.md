@@ -155,9 +155,9 @@ Maddy will send HTTP POST requests to your webhook with this format:
 }
 ```
 
-## Quick Setup Commands for AWS
+## Quick Setup Commands for RackNerd VPS
 
-Copy and paste these commands on your AWS EC2 instance:
+After purchasing your RackNerd VPS, SSH in and copy/paste these commands:
 
 ```bash
 # Complete installation
