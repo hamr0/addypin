@@ -17,10 +17,14 @@
 
 Since we can't set up real subdomains locally, test using the redirect endpoint:
 ```
-http://localhost:5000/redirect/ABC123
+http://localhost:5000/redirect/SHORTCODE
 ```
 
-Replace `ABC123` with your actual shortcode.
+Replace `SHORTCODE` with your actual 6-character code (e.g., `ZA4I7D`).
+
+**Important**: The correct test URL format is:
+- ✅ Correct: `http://localhost:5000/redirect/ZA4I7D`
+- ❌ Wrong: `http://localhost:5000/redirect/ZA4I7D.addypin.com`
 
 ### 2. Testing the Login/Edit Modal
 
@@ -31,7 +35,7 @@ Replace `ABC123` with your actual shortcode.
 4. Check the console logs in the workflow for your OTP code (6-digit number)
 5. Enter the OTP code and verify
 
-**Current OTP for testing:** `746954` (for test@example.com)
+**OTP codes are now shown directly in the toast message when you request them in development mode.**
 
 ### 3. Testing Analytics and Stats
 

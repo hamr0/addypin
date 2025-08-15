@@ -210,7 +210,7 @@ export default function Sidebar({ coordinates, generatedLink, onLinkGenerated }:
             
             <div>
               <Label className="block text-xs font-medium text-green-700 mb-1">
-                Web Link
+                addypin link
               </Label>
               <div className="flex items-center bg-white rounded-lg p-3 border border-green-200">
                 <Input
@@ -234,7 +234,7 @@ export default function Sidebar({ coordinates, generatedLink, onLinkGenerated }:
 
             <div>
               <Label className="block text-xs font-medium text-green-700 mb-1">
-                Email Format
+                addypin email
               </Label>
               <div className="flex items-center bg-white rounded-lg p-3 border border-green-200">
                 <Input

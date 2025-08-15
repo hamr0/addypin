@@ -143,7 +143,7 @@ export class DatabaseStorage implements IStorage {
         ];
 
     return {
-      pinsCreated: Number(pinsResult.count) || 0,
+      pinsCreated: Number(totalPinsResult.count) || 0,  // Use total pins, not today's pins
       linksClicked: Number(clicksResult.count) || 0,
       emailsSent: Number(emailsResult.count) || 0,
       activeCountries: Number(countriesResult.count) || 0,

@@ -39,6 +39,9 @@ class EmailService {
       console.log(`🔑 CODE: ${code}`);
       console.log(`🔑 ===============================\n`);
       
+      // Also send it in the response for frontend debugging
+      console.log(`📧 EMAIL SERVICE: OTP ${code} generated for ${email}`);
+      
       // In production, send actual email:
       /*
       const mailOptions = {
@@ -63,7 +66,9 @@ class EmailService {
 
       return {
         success: true,
-        message: "Verification code sent to your email (check console in development)"
+        message: process.env.NODE_ENV === 'development' 
+          ? `Verification code sent! Development code: ${code}` 
+          : "Verification code sent to your email"
       };
     } catch (error) {
       console.error("Send OTP error:", error);

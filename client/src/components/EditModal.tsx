@@ -25,11 +25,11 @@ export function EditModal({ isOpen, onClose }: EditModalProps) {
       const response = await apiRequest("POST", "/api/otp/send", { email });
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       setShowOtpInput(true);
       toast({
         title: "Code Sent! 📧",
-        description: "Check the console logs for your verification code",
+        description: data.message,
       });
     },
     onError: (error) => {
@@ -97,7 +97,7 @@ export function EditModal({ isOpen, onClose }: EditModalProps) {
                   data-testid="input-edit-email"
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  We'll send you a 6-digit verification code (check console logs in development)
+                  We'll send you a 6-digit verification code
                 </p>
               </div>
 
