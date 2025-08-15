@@ -82,18 +82,25 @@ export default function Sidebar({ coordinates, generatedLink, onLinkGenerated, i
     },
     onSuccess: (data, email) => {
       setShowOtpInput(true);
-      toast({
-        title: "Verification Code Sent",
-        description: "🔍 Development Mode: Check browser console (F12) for the 6-digit code",
-        duration: 8000,
-      });
-      // Log prominent instructions to help user find the OTP
-      console.log(`\n🔍 ===============================`);
-      console.log(`🔍 DEVELOPMENT MODE - OTP INSTRUCTIONS`);
-      console.log(`🔍 1. Look for server console logs above`);
-      console.log(`🔍 2. Find: "OTP CODE FOR ${email.toUpperCase()}"`);
-      console.log(`🔍 3. Copy the 6-digit code to verify`);
-      console.log(`🔍 ===============================\n`);
+      
+      // Check if we have a code (development mode)
+      if (data.code) {
+        toast({
+          title: "Verification Code Sent",
+          description: "Development Mode: Check server console for the 6-digit code",
+          duration: 8000,
+        });
+        console.log(`\n🔑 ===============================`);
+        console.log(`🔑 OTP CODE FOR ${email.toUpperCase()}: ${data.code}`);
+        console.log(`🔑 ===============================\n`);
+      } else {
+        // Production mode - email sent
+        toast({
+          title: "Verification Code Sent",
+          description: "Check your email for the 6-digit verification code",
+          duration: 5000,
+        });
+      }
     },
     onError: (error) => {
       toast({
