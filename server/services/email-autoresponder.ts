@@ -1,5 +1,6 @@
 import { Resend } from 'resend';
 import { storage } from '../storage';
+import { getCountryFromCoords } from '../../shared/utils';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -34,21 +35,24 @@ export async function sendMapAutoResponse({ fromEmail, shortcode }: AutoResponse
       };
     }
 
-    // Generate map app links
+    // Get country name from coordinates
+    const country = getCountryFromCoords(parseFloat(pin.latitude.toString()), parseFloat(pin.longitude.toString()));
+
+    // Generate map app links with icons
     const mapLinks = {
-      "Google Maps": `https://www.google.com/maps?q=${pin.latitude},${pin.longitude}`,
-      "Apple Maps": `https://maps.apple.com/?q=${pin.latitude},${pin.longitude}`,
-      "Waze": `https://waze.com/ul?q=${pin.latitude}%2C${pin.longitude}&navigate=yes`,
-      "HERE WeGo": `https://wego.here.com/directions/mix//${pin.latitude},${pin.longitude}`,
-      "MapQuest": `https://www.mapquest.com/directions/to/us/${pin.latitude},${pin.longitude}`,
-      "Maps.me": `https://maps.me/map/${pin.latitude},${pin.longitude}`,
-      "OpenStreetMap": `https://www.openstreetmap.org/?mlat=${pin.latitude}&mlon=${pin.longitude}#map=16/${pin.latitude}/${pin.longitude}`,
-      "Bing Maps": `https://www.bing.com/maps?q=${pin.latitude},${pin.longitude}`,
-      "TomTom": `https://www.tomtom.com/en_us/maps/map?lat=${pin.latitude}&lng=${pin.longitude}`,
-      "Citymapper": `https://citymapper.com/directions?endcoord=${pin.latitude}%2C${pin.longitude}`,
-      "OsmAnd": `https://osmand.net/map#16/${pin.latitude}/${pin.longitude}`,
-      "Sygic Maps": `https://www.sygic.com/en/gps-navigation-maps/sygic-maps`,
-      "Badger Maps": `https://www.badgermapping.com/`
+      "🗺️ Google Maps": `https://www.google.com/maps?q=${pin.latitude},${pin.longitude}`,
+      "🍎 Apple Maps": `https://maps.apple.com/?q=${pin.latitude},${pin.longitude}`,
+      "🚗 Waze": `https://waze.com/ul?q=${pin.latitude}%2C${pin.longitude}&navigate=yes`,
+      "🧭 HERE WeGo": `https://wego.here.com/directions/mix//${pin.latitude},${pin.longitude}`,
+      "🗺️ MapQuest": `https://www.mapquest.com/directions/to/us/${pin.latitude},${pin.longitude}`,
+      "📱 Maps.me": `https://maps.me/map/${pin.latitude},${pin.longitude}`,
+      "🌍 OpenStreetMap": `https://www.openstreetmap.org/?mlat=${pin.latitude}&mlon=${pin.longitude}#map=16/${pin.latitude}/${pin.longitude}`,
+      "🔍 Bing Maps": `https://www.bing.com/maps?q=${pin.latitude},${pin.longitude}`,
+      "🚗 TomTom": `https://www.tomtom.com/en_us/maps/map?lat=${pin.latitude}&lng=${pin.longitude}`,
+      "🚇 Citymapper": `https://citymapper.com/directions?endcoord=${pin.latitude}%2C${pin.longitude}`,
+      "🗺️ OsmAnd": `https://osmand.net/map#16/${pin.latitude}/${pin.longitude}`,
+      "📍 Sygic Maps": `https://www.sygic.com/en/gps-navigation-maps/sygic-maps`,
+      "📊 Badger Maps": `https://www.badgermapping.com/`
     };
 
     // Create HTML email with map links
@@ -65,7 +69,7 @@ export async function sendMapAutoResponse({ fromEmail, shortcode }: AutoResponse
     const { data, error } = await resend.emails.send({
       from: 'addypin <noreply@addypin.com>',
       to: [fromEmail],
-      subject: `Your addypin Location - ${shortcode}`,
+      subject: `Your addypin Location - ${shortcode} - ${country}`,
       html: `
         <!DOCTYPE html>
         <html>
@@ -168,20 +172,15 @@ export async function sendMapAutoResponse({ fromEmail, shortcode }: AutoResponse
                 <p>Location sharing made simple</p>
               </div>
               <div class="content">
-                <h2 style="margin-top: 0; color: #1f2937;">Your Location: ${shortcode}</h2>
-                <p>Here are your coordinates and map options:</p>
+                <h2 style="margin-top: 0; color: #1f2937;">${shortcode} - ${country}</h2>
                 
-                <div class="coordinates">
-                  ${pin.latitude}, ${pin.longitude}
-                </div>
-                
-                <h3>Open in Your Favorite Map App:</h3>
+                <h3>Open in Map Apps:</h3>
                 <div class="map-links">
                   ${mapLinksHtml}
                 </div>
                 
                 <p style="color: #6b7280; margin-top: 30px;">
-                  You can also visit: <strong>addypin.com/${shortcode}</strong>
+                  You can also visit: <strong>${shortcode}.addypin.com</strong>
                 </p>
               </div>
               <div class="footer">
@@ -192,14 +191,12 @@ export async function sendMapAutoResponse({ fromEmail, shortcode }: AutoResponse
         </html>
       `,
       text: `
-        addypin - Your Location: ${shortcode}
+        addypin - ${shortcode} - ${country}
         
-        Coordinates: ${pin.latitude}, ${pin.longitude}
-        
-        Open in your favorite map app:
+        Open in Map Apps:
         ${Object.entries(mapLinks).map(([name, url]) => `${name}: ${url}`).join('\n')}
         
-        You can also visit: addypin.com/${shortcode}
+        You can also visit: ${shortcode}.addypin.com
         
         © 2025 addypin - Secure location sharing
       `
