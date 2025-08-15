@@ -25,23 +25,25 @@ export default function EditPage() {
     onSuccess: (data, email) => {
       setShowOtpInput(true);
       
-      // Check if we have a code (development mode)
-      if (data.code) {
-        toast({
-          title: "Verification Code Sent",
-          description: "Development Mode: Check server console for the 6-digit code",
-          duration: 8000,
-        });
-        console.log(`\n🔑 ===============================`);
-        console.log(`🔑 OTP CODE FOR ${email.toUpperCase()}: ${data.code}`);
-        console.log(`🔑 ===============================\n`);
-      } else {
-        // Production mode - email sent
+      // Check message to determine if email was sent successfully
+      if (data.message.includes('sent to your email')) {
+        // Actual email sent
         toast({
           title: "Verification Code Sent",
           description: "Check your email for the 6-digit verification code",
           duration: 5000,
         });
+      } else {
+        // Console fallback mode
+        toast({
+          title: "Verification Code Sent",
+          description: data.message,
+          duration: 8000,
+        });
+        console.log(`\n🔑 ===============================`);
+        console.log(`🔑 CHECK SERVER CONSOLE ABOVE FOR OTP CODE`);
+        console.log(`🔑 EMAIL: ${email.toUpperCase()}`);
+        console.log(`🔑 ===============================\n`);
       }
     },
     onError: (error) => {
