@@ -48,6 +48,9 @@ sudo tee /etc/maddy/maddy.conf << 'EOF'
 state_dir /var/lib/maddy
 runtime_dir /run/maddy
 
+# TLS configuration (required directive)
+tls off
+
 smtp tcp://0.0.0.0:25 {
     hostname addypin.com
     source addypin.com {
