@@ -8,6 +8,7 @@ import Home from "@/pages/Home";
 import RedirectPage from "@/pages/RedirectPage";
 import VersionPage from "@/pages/VersionPage";
 import EditPage from "@/pages/EditPage";
+import FeaturesPage from "@/pages/FeaturesPage";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -17,6 +18,7 @@ function Router() {
       <Route path="/edit" component={EditPage} />
       <Route path="/redirect/:shortcode" component={RedirectPage} />
       <Route path="/versions" component={VersionPage} />
+      <Route path="/features" component={FeaturesPage} />
       <Route component={NotFound} />
     </Switch>
   );

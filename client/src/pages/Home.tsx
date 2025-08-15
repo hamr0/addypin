@@ -26,9 +26,9 @@ export default function Home() {
             <Logo />
             <div className="flex items-center space-x-6">
               <nav className="hidden md:flex space-x-6">
-                <a href="#" className="text-addypin-medium hover:text-addypin-dark transition-colors">
+                <Link href="/features" className="text-addypin-medium hover:text-addypin-dark transition-colors">
                   Features
-                </a>
+                </Link>
                 <a href="#" className="text-addypin-medium hover:text-addypin-dark transition-colors">
                   API
                 </a>
@@ -107,6 +107,7 @@ export default function Home() {
             <div>
               <h3 className="font-semibold text-addypin-dark mb-3">Resources</h3>
               <ul className="space-y-2 text-sm text-addypin-medium">
+                <li><Link href="/features" className="hover:text-addypin-cyan transition-colors">Features</Link></li>
                 <li><a href="#" className="hover:text-addypin-cyan transition-colors">API Documentation</a></li>
                 <li><Link href="/versions" className="hover:text-addypin-cyan transition-colors" data-testid="link-version-history-footer">Version History</Link></li>
                 <li><a href="#" className="hover:text-addypin-cyan transition-colors">Help Center</a></li>

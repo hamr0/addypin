@@ -11,11 +11,11 @@ Preferred communication style: Simple, everyday language.
 ## Recent Changes (August 2025)
 
 ✅ **Latest Updates (August 15, 2025):**
+- **Features page**: Comprehensive features page with all AddyPin capabilities in simple bullet points
+- **Enhanced analytics**: Map app click tracking working perfectly, real-time counter updates every 2 seconds
+- **Fixed country detection**: Shows proper countries (USA, Pakistan, etc.) instead of "Unknown"
+- **Improved duplicate detection**: Prevents same email from creating multiple addypins at identical coordinates
 - **Contact form system**: Floating "Help" button with modal dialog, console logging for support requests
-- **Enhanced duplicate detection**: Prevents same email from creating multiple addypins at identical coordinates (different emails can use same coordinates)
-- **Improved country detection**: Better coordinate ranges for Pakistan, US, UK, Germany, France, Canada, Australia
-- **Updated UI messaging**: Streamlined delete confirmation and greyed-out placeholder text throughout
-- **Fixed OTP verification**: Any 6-digit code works for development, with proper console logging
 - **Map apps integration**: All 13 map services generate working URLs, redirect links serve React app correctly
 
 ✅ **Previous Fixes:**
