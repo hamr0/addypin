@@ -411,7 +411,7 @@ export default function MapSection({ coordinates, onCoordinatesChange, generated
               href={mapLinks[app.name] || "#"}
               target="_blank"
               rel="noopener noreferrer"
-              onClick={async () => {
+              onClick={async (e) => {
                 // Track map app click analytics
                 if (coordinates) {
                   try {
@@ -420,6 +420,7 @@ export default function MapSection({ coordinates, onCoordinatesChange, generated
                       latitude: coordinates.lat,
                       longitude: coordinates.lng
                     });
+                    console.log(`Tracked click for ${app.name}`);
                   } catch (error) {
                     console.log("Analytics tracking failed:", error);
                   }

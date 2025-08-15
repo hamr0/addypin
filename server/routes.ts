@@ -195,7 +195,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Track the map app click event
       await analyticsService.trackEvent({
-        pinId: "map-click", // Use a generic ID for map clicks
+        pinId: null, // No specific pin for map app clicks
         eventType: "map_app_click",
         userAgent: req.headers['user-agent'],
         ipAddress: req.ip,
