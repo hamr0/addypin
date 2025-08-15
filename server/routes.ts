@@ -268,6 +268,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
 
+  // Get user pins by email
+  app.get("/api/user/pins/:email", async (req, res) => {
+    try {
+      const { email } = req.params;
+      if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+      }
+
+      const userPins = await storage.getPinsByEmail(email);
+      res.json(userPins);
+    } catch (error) {
+      console.error("Get user pins error:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // Get pin by shortcode - API endpoint
+  app.get("/api/pins/:shortcode", async (req, res) => {
+    try {
+      const { shortcode } = req.params;
+      const pin = await storage.getPinByShortcode(shortcode);
+      
+      if (!pin) {
+        return res.status(404).json({ message: "Pin not found" });
+      }
+      
+      res.json(pin);
+    } catch (error) {
+      console.error("Get pin by shortcode error:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
   // Security stats endpoint (for monitoring)
   app.get("/api/security/stats", async (req, res) => {
     try {

@@ -48,6 +48,14 @@ export default function MapSection({ coordinates, onCoordinatesChange, generated
   const auth = useAuth();
   const { toast } = useToast();
 
+  // Get country from coordinates (placeholder - would use reverse geocoding in production)
+  const getCountryFromCoords = (lat: number, lng: number): string => {
+    // Simple mapping based on coordinate ranges - would be replaced with proper geocoding
+    if (lat >= 49 && lat <= 71 && lng >= -10 && lng <= 30) return "Netherlands"; 
+    if (lat >= 20 && lat <= 40 && lng >= 25 && lng <= 40) return "Egypt";
+    return "Unknown";
+  };
+
   // Save coordinates mutation
   const saveCoordinatesMutation = useMutation({
     mutationFn: async (coords: { lat: number; lng: number }) => {
@@ -304,7 +312,7 @@ export default function MapSection({ coordinates, onCoordinatesChange, generated
         <div className="space-y-4">
           <div>
             <Label className="text-sm font-medium text-addypin-dark mb-2 block">
-              {isEditing && editingPin ? `Editing Pin: ${editingPin.shortcode}` : "Pick a location"}
+              {isEditing && editingPin ? `Editing ${editingPin.shortcode} - ${getCountryFromCoords(Number(editingPin.latitude), Number(editingPin.longitude))}` : "Pick a location"}
             </Label>
             <p className="text-xs text-gray-500 mb-4">
               {isEditing && editingPin 
@@ -324,7 +332,7 @@ export default function MapSection({ coordinates, onCoordinatesChange, generated
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="font-medium text-yellow-800">
-                      Editing {editingPin.shortcode}
+                      Editing {editingPin.shortcode} - {getCountryFromCoords(Number(editingPin.latitude), Number(editingPin.longitude))}
                     </div>
                     <div className="text-sm text-yellow-700">
                       New coordinates: {coordinates.lat.toFixed(4)}, {coordinates.lng.toFixed(4)}

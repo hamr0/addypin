@@ -34,13 +34,7 @@ export default function Home() {
                   Help
                 </a>
               </nav>
-              <button 
-                onClick={() => setShowEditModal(true)}
-                className="text-sm text-addypin-medium hover:text-addypin-cyan transition-colors cursor-pointer"
-                data-testid="button-login-to-edit"
-              >
-                Login to edit
-              </button>
+
             </div>
             <button className="md:hidden text-addypin-medium" data-testid="mobile-menu">
               <i className="fas fa-bars text-xl"></i>

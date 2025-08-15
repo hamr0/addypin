@@ -25,7 +25,7 @@ export function UserPinsList({ onPinSelect, onStartEditing }: UserPinsListProps)
 
   // Fetch user pins after authentication
   const { data: userPins, refetch: refetchPins } = useQuery({
-    queryKey: ["/api/user/pins", email],
+    queryKey: [`/api/user/pins/${email}`],
     enabled: isAuthenticated && !!email,
   });
 
@@ -102,7 +102,7 @@ export function UserPinsList({ onPinSelect, onStartEditing }: UserPinsListProps)
         <CardHeader>
           <CardTitle className="flex items-center">
             <Mail className="w-5 h-5 text-addypin-cyan mr-2" />
-            My Pins
+            My addypins
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -175,7 +175,7 @@ export function UserPinsList({ onPinSelect, onStartEditing }: UserPinsListProps)
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center">
             <MapPin className="w-5 h-5 text-addypin-cyan mr-2" />
-            My Pins ({(userPins as Pin[])?.length || 0})
+            My addypins ({(userPins as Pin[])?.length || 0})
           </div>
           <Button
             onClick={() => {

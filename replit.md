@@ -10,11 +10,18 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (August 2025)
 
-✅ **Latest Fixes (August 15, 2025):**
+✅ **Latest Updates (August 15, 2025):**
+- **Enhanced pin management**: "My Pins" renamed to "My addypins" and moved to main page for multi-pin editing
+- **Statistics differentiation**: "Pinned" counter shows registered pins (with email), "Total" shows all pins
+- **Edit title improvements**: Now displays "Editing ZA4I7D - Country" format with country information
+- **Layout optimization**: Updated to 4-column grid for better pin management workflow
+- **Header cleanup**: Removed "Login to edit" button from header since authentication is now handled on main page
+- **Complete editing workflow**: Login → View pins → Select pin → Edit on map → Save changes
+
+✅ **Previous Fixes:**
 - Fixed modal z-index issues - login modal now appears above map
 - Added Save Changes button after successful OTP authentication
 - Fixed cumulative statistics counting (includes both regular clicks and map app clicks)
-- Changed "Today" label to "Created" for better clarity
 - Map app counter working correctly (shows individual app click counts)
 - OTP codes now display in toast notifications with proper debugging
 
