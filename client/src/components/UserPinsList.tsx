@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { MapPin, Edit, Mail, KeyRound, LogOut } from "lucide-react";
+import { MapPin, Edit, Mail, KeyRound, LogOut, Trash2 } from "lucide-react";
 import type { Pin } from "@shared/schema";
 
 interface UserPinsListProps {
@@ -21,6 +22,7 @@ export function UserPinsList({ onPinSelect, onStartEditing }: UserPinsListProps)
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [selectedPin, setSelectedPin] = useState<Pin | null>(null);
   const [editToken, setEditToken] = useState("");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const { toast } = useToast();
 
   // Fetch user pins after authentication
@@ -40,6 +42,31 @@ export function UserPinsList({ onPinSelect, onStartEditing }: UserPinsListProps)
     window.addEventListener('pinUpdated', handlePinUpdate);
     return () => window.removeEventListener('pinUpdated', handlePinUpdate);
   }, [isAuthenticated, email, refetchPins]);
+
+  // Delete pin mutation
+  const deletePinMutation = useMutation({
+    mutationFn: async (shortcode: string) => {
+      const response = await apiRequest("DELETE", `/api/pins/${shortcode}`, {});
+      return response.json();
+    },
+    onSuccess: (data, shortcode) => {
+      toast({
+        title: "Pin Deleted! 🗑️",
+        description: `Pin ${shortcode} has been permanently deleted`,
+        duration: 5000,
+      });
+      refetchPins();
+      setSelectedPin(null);
+      setShowDeleteConfirm(null);
+    },
+    onError: (error) => {
+      toast({
+        title: "Delete Failed",
+        description: error instanceof Error ? error.message : "Failed to delete pin",
+        variant: "destructive",
+      });
+    },
+  });
 
   const sendOtpMutation = useMutation({
     mutationFn: async (email: string) => {
@@ -113,9 +140,14 @@ export function UserPinsList({ onPinSelect, onStartEditing }: UserPinsListProps)
 
   // Get country from coordinates (placeholder - would use reverse geocoding in production)
   const getCountryFromCoords = (lat: number, lng: number): string => {
-    // Simple mapping based on coordinate ranges - would be replaced with proper geocoding
+    // More comprehensive mapping based on coordinate ranges
+    if (lat >= 25 && lat <= 49 && lng >= -125 && lng <= -66) return "USA";
     if (lat >= 49 && lat <= 71 && lng >= -10 && lng <= 30) return "Netherlands"; 
     if (lat >= 20 && lat <= 40 && lng >= 25 && lng <= 40) return "Egypt";
+    if (lat >= 35 && lat <= 42 && lng >= 25 && lng <= 45) return "Turkey";
+    if (lat >= 45 && lat <= 55 && lng >= 2 && lng <= 8) return "France";
+    if (lat >= 47 && lat <= 55 && lng >= 5 && lng <= 15) return "Germany";
+    if (lat >= 50 && lat <= 60 && lng >= -8 && lng <= 2) return "United Kingdom";
     return "Unknown";
   };
 
@@ -253,22 +285,33 @@ export function UserPinsList({ onPinSelect, onStartEditing }: UserPinsListProps)
                       📅 {new Date(pin.createdAt).toLocaleDateString()}
                     </div>
                   </div>
-                  {selectedPin?.id === pin.id && (
-                    <div className="ml-3">
-                      <Button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleStartEditing();
-                        }}
-                        size="sm"
-                        className="bg-addypin-cyan hover:bg-cyan-600 text-white"
-                        data-testid="button-edit-selected-pin"
-                      >
-                        <Edit className="w-3 h-3 mr-1" />
-                        Edit
-                      </Button>
-                    </div>
-                  )}
+                  <div className="ml-3 flex gap-1">
+                    <Button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedPin(pin);
+                        handleStartEditing();
+                      }}
+                      size="sm"
+                      variant="outline"
+                      className="p-2"
+                      data-testid={`button-edit-pin-${pin.shortcode}`}
+                    >
+                      <Edit className="w-3 h-3" />
+                    </Button>
+                    <Button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowDeleteConfirm(pin.shortcode);
+                      }}
+                      size="sm"
+                      variant="outline"
+                      className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                      data-testid={`button-delete-pin-${pin.shortcode}`}
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -285,6 +328,27 @@ export function UserPinsList({ onPinSelect, onStartEditing }: UserPinsListProps)
             </div>
           </div>
         )}
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={!!showDeleteConfirm} onOpenChange={(open) => !open && setShowDeleteConfirm(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Pin</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete pin {showDeleteConfirm}? This action cannot be undone, but the shortcode can be reused for new pins.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => showDeleteConfirm && deletePinMutation.mutate(showDeleteConfirm)}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                Delete Pin
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </CardContent>
     </Card>
   );

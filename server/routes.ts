@@ -46,13 +46,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertPinSchema.parse(req.body);
       
-      // Generate unique shortcode
+      // Check email-based pin limit (5 pins max per email)
+      if (validatedData.createdBy) {
+        const pinCount = await storage.getPinCountByEmail(validatedData.createdBy);
+        if (pinCount >= 5) {
+          return res.status(400).json({ 
+            message: "Pin limit reached. You can have a maximum of 5 registered pins per email address.",
+            code: "PIN_LIMIT_EXCEEDED"
+          });
+        }
+      }
+      
+      // Generate unique shortcode (allow reuse of deleted/inactive pins)
       let shortcode: string;
       let existingPin;
       do {
         shortcode = generateShortcode();
-        // Check both active and inactive pins to prevent code reuse
-        const results = await db.select().from(pins).where(eq(pins.shortcode, shortcode));
+        // Only check active pins to allow deleted pin codes to be reused
+        const results = await db.select().from(pins).where(and(eq(pins.shortcode, shortcode), eq(pins.isActive, true)));
         existingPin = results[0];
       } while (existingPin);
 
@@ -301,6 +312,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Get pin by shortcode error:", error);
       res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // Update pin coordinates
+  app.patch("/api/pins/:shortcode", async (req, res) => {
+    try {
+      const { shortcode } = req.params;
+      const { latitude, longitude } = z.object({
+        latitude: z.number(),
+        longitude: z.number(),
+      }).parse(req.body);
+
+      const updatedPin = await storage.updatePinCoordinates(shortcode, latitude, longitude);
+      
+      if (!updatedPin) {
+        return res.status(404).json({ message: "Pin not found" });
+      }
+
+      res.json({ success: true, pin: updatedPin });
+    } catch (error) {
+      console.error("Error updating pin:", error);
+      res.status(500).json({ message: "Failed to update pin" });
+    }
+  });
+
+  // Delete pin
+  app.delete("/api/pins/:shortcode", async (req, res) => {
+    try {
+      const { shortcode } = req.params;
+      
+      const deleted = await storage.deletePin(shortcode);
+      
+      if (!deleted) {
+        return res.status(404).json({ message: "Pin not found" });
+      }
+
+      res.json({ success: true, message: "Pin deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting pin:", error);
+      res.status(500).json({ message: "Failed to delete pin" });
     }
   });
 

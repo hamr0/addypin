@@ -32,6 +32,9 @@ export interface IStorage {
   // User pin management
   getPinsByEmail(email: string): Promise<Pin[]>;
   deactivatePin(shortcode: string): Promise<void>;
+  deletePin(shortcode: string): Promise<boolean>;
+  updatePinCoordinates(shortcode: string, latitude: number, longitude: number): Promise<Pin | null>;
+  getPinCountByEmail(email: string): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -254,6 +257,38 @@ export class DatabaseStorage implements IStorage {
       .update(pins)
       .set({ isActive: false })
       .where(eq(pins.shortcode, shortcode));
+  }
+
+  async deletePin(shortcode: string): Promise<boolean> {
+    const result = await db
+      .update(pins)
+      .set({ isActive: false })
+      .where(eq(pins.shortcode, shortcode))
+      .returning();
+    
+    return result.length > 0;
+  }
+
+  async updatePinCoordinates(shortcode: string, latitude: number, longitude: number): Promise<Pin | null> {
+    const [updatedPin] = await db
+      .update(pins)
+      .set({ 
+        latitude: latitude.toString(), 
+        longitude: longitude.toString() 
+      })
+      .where(eq(pins.shortcode, shortcode))
+      .returning();
+    
+    return updatedPin || null;
+  }
+
+  async getPinCountByEmail(email: string): Promise<number> {
+    const result = await db
+      .select({ count: sql`count(*)` })
+      .from(pins)
+      .where(and(eq(pins.createdBy, email), eq(pins.isActive, true)));
+    
+    return Number(result[0]?.count) || 0;
   }
 }
 
