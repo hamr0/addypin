@@ -385,22 +385,18 @@ export default function RedirectPage() {
                       rel="noopener noreferrer"
                       className="w-full flex items-center"
                       onClick={async () => {
-                        // Track which map app was clicked
-                        try {
-                          await fetch('/api/map-app-click', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                              pinId: typedPin.id,
-                              appName: appName
-                            })
-                          });
-                          // Force refresh of stats to update counters immediately
-                          setTimeout(() => {
-                            window.dispatchEvent(new CustomEvent('statsUpdate'));
-                          }, 100);
-                        } catch (error) {
-                          console.error('Failed to track map app click:', error);
+                        // Track map app click analytics
+                        if (coordinates) {
+                          try {
+                            await apiRequest("POST", "/api/analytics/map-click", {
+                              appName: appName,
+                              latitude: coordinates.lat,
+                              longitude: coordinates.lng
+                            });
+                            console.log(`Tracked click for ${appName}`);
+                          } catch (error) {
+                            console.log("Analytics tracking failed:", error);
+                          }
                         }
                       }}
                     >
