@@ -51,9 +51,9 @@ export default function MapSection({ coordinates, onCoordinatesChange, generated
   // Get country from coordinates (enhanced coordinate mapping)
   const getCountryFromCoords = (lat: number, lng: number): string => {
     // Enhanced coordinate ranges for better country detection
+    if (lat >= 24 && lat <= 49 && lng >= -125 && lng <= -66) return "USA";
     if (lat >= 50.5 && lat <= 53.7 && lng >= 3.2 && lng <= 7.3) return "Netherlands";
     if (lat >= 30 && lat <= 37 && lng >= 66 && lng <= 78) return "Pakistan"; 
-    if (lat >= 37.5 && lat <= 42 && lng >= -122.5 && lng <= -121.5) return "United States";
     if (lat >= 51.2 && lat <= 56 && lng >= -5.8 && lng <= 2) return "United Kingdom";
     if (lat >= 47 && lat <= 55.1 && lng >= 5.9 && lng <= 15.0) return "Germany";
     if (lat >= 41.3 && lat <= 51.1 && lng >= -5.5 && lng <= 9.6) return "France";
@@ -411,6 +411,20 @@ export default function MapSection({ coordinates, onCoordinatesChange, generated
               href={mapLinks[app.name] || "#"}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={async () => {
+                // Track map app click analytics
+                if (coordinates) {
+                  try {
+                    await apiRequest("POST", "/api/analytics/map-click", {
+                      appName: app.name,
+                      latitude: coordinates.lat,
+                      longitude: coordinates.lng
+                    });
+                  } catch (error) {
+                    console.log("Analytics tracking failed:", error);
+                  }
+                }
+              }}
               className="flex items-center justify-center p-3 bg-addypin-light hover:bg-addypin-cyan hover:text-white transition-all duration-200 rounded-lg text-sm font-medium text-addypin-dark group"
               data-testid={`link-${app.name.toLowerCase().replace(/\s+/g, '-')}`}
             >

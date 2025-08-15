@@ -184,6 +184,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(404).json({ message: "Email functionality disabled to avoid service limits" });
   });
 
+  // Track map app clicks for analytics
+  app.post("/api/analytics/map-click", async (req, res) => {
+    try {
+      const { appName, latitude, longitude } = req.body;
+      
+      if (!appName || !latitude || !longitude) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+
+      // Track the map app click event
+      await analyticsService.trackEvent({
+        pinId: "map-click", // Use a generic ID for map clicks
+        eventType: "map_app_click",
+        userAgent: req.headers['user-agent'],
+        ipAddress: req.ip,
+        metadata: { appName, latitude, longitude }
+      });
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Map click analytics error:", error);
+      res.status(500).json({ message: "Failed to track analytics" });
+    }
+  });
+
   // Get current stats
   app.get("/api/stats", async (req, res) => {
     try {
