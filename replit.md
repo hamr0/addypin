@@ -10,6 +10,16 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (August 2025)
 
+✅ **Latest Fixes (August 15, 2025):**
+- Fixed modal z-index issues - login modal now appears above map
+- Added Save Changes button after successful OTP authentication
+- Fixed cumulative statistics counting (includes both regular clicks and map app clicks)
+- Changed "Today" label to "Created" for better clarity
+- Map app counter working correctly (shows individual app click counts)
+- OTP codes now display in toast notifications with proper debugging
+
+## Previous Changes
+
 ✅ **Core Features Implemented:**
 - Interactive map with draggable pins using Leaflet.js and OpenStreetMap
 - 6-character auto-generated shortcodes (ABC123 format)

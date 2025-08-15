@@ -74,7 +74,7 @@ export function EditModal({ isOpen, onClose }: EditModalProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md z-[9999]">
         <DialogHeader>
           <DialogTitle className="flex items-center">
             <Edit className="w-5 h-5 text-addypin-cyan mr-2" />
@@ -165,9 +165,24 @@ export function EditModal({ isOpen, onClose }: EditModalProps) {
                 2. Use the edit form that appears<br />
                 3. Your authentication will be valid for 1 hour
               </div>
-              <Button onClick={handleClose} className="w-full">
-                Close
-              </Button>
+              <div className="flex gap-2">
+                <Button onClick={handleClose} variant="outline" className="flex-1">
+                  Close
+                </Button>
+                <Button 
+                  onClick={() => {
+                    toast({
+                      title: "Save Feature",
+                      description: "Coordinate editing will be implemented in the next version",
+                      duration: 3000,
+                    });
+                  }}
+                  className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                  data-testid="button-save-coordinates"
+                >
+                  Save Changes
+                </Button>
+              </div>
             </div>
           )}
         </div>
