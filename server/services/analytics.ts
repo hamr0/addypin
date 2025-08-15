@@ -43,6 +43,7 @@ interface TrackEventParams {
   userAgent?: string;
   ipAddress?: string;
   metadata?: any;
+  sessionId?: string; // For tracking unique daily users
 }
 
 class AnalyticsService {
@@ -60,6 +61,7 @@ class AnalyticsService {
         browser,
         os,
         metadata: params.metadata || null,
+        sessionId: params.sessionId || null,
       });
 
       // Update daily stats

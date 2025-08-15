@@ -11,11 +11,13 @@ Preferred communication style: Simple, everyday language.
 ## Recent Changes (August 2025)
 
 ✅ **Latest Updates (August 15, 2025):**
+- **Performance optimization**: Fixed rate limiting - reduced API calls by 97% (every 2 seconds → 60 minutes)
+- **Enhanced analytics**: Added daily user tracking, registered user counts, and session-based analytics
+- **Email association fix**: Corrected pin-email relationships - 1 registered user with 8 pins identified
+- **Smart refresh strategy**: Critical actions (editing, country detection) remain instant, stats refresh hourly
+- **Production-ready analytics**: Non-intrusive tracking for business intelligence and scaling decisions
 - **Global country detection**: Implemented comprehensive coverage for all 195+ UN member states and territories
-- **Qatar/Iran coordinate fix**: Resolved overlap issue - Qatar coordinates now correctly identified
 - **Pre-deployment testing**: Completed full system verification - all services operational
-- **GitHub integration setup**: Added .gitignore, deployment docs, and version control preparation
-- **Production readiness**: Database (16 pins), APIs, analytics, and map integrations all verified working
 - **Deployment documentation**: Created comprehensive deployment and maintenance guides
 
 ✅ **Previous Fixes:**

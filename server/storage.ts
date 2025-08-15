@@ -18,7 +18,7 @@ export interface IStorage {
   getAnalyticsByPin(pinId: string): Promise<Analytics[]>;
   
   // Stats methods
-  getTodaysStats(): Promise<{ pinsCreated: number; pinnedCount: number; linksClicked: number; emailsSent: number; activeCountries: number; totalPins: number; topMapApps: Array<{ name: string; clicks: number }> }>;
+  getTodaysStats(): Promise<{ pinsCreated: number; pinnedCount: number; linksClicked: number; emailsSent: number; activeCountries: number; totalPins: number; topMapApps: Array<{ name: string; clicks: number }>; dailyUsers: number; registeredUsers: number }>;
   updateDailyStats(date: string, stats: Partial<InsertDailyStats>): Promise<DailyStats>;
   getDailyStatsForPeriod(startDate: string, endDate: string): Promise<DailyStats[]>;
   
@@ -96,6 +96,8 @@ export class DatabaseStorage implements IStorage {
     activeCountries: number;
     totalPins: number;
     topMapApps: Array<{ name: string; clicks: number }>;
+    dailyUsers: number;
+    registeredUsers: number;
   }> {
     const today = new Date().toISOString().split('T')[0];
     const startOfDay = new Date(today + 'T00:00:00Z');
@@ -158,6 +160,21 @@ export class DatabaseStorage implements IStorage {
           { name: 'Waze', clicks: 0 }
         ];
 
+    // Get today's unique sessions (daily users)
+    const [dailyUsersResult] = await db
+      .select({ count: sql<number>`count(distinct session_id)` })
+      .from(analytics)
+      .where(and(
+        gte(analytics.timestamp, startOfDay),
+        sql`session_id is not null`
+      ));
+
+    // Get registered users (unique emails with pins)
+    const [registeredUsersResult] = await db
+      .select({ count: sql<number>`count(distinct user_email)` })
+      .from(pins)
+      .where(sql`user_email is not null and user_email != ''`);
+
     return {
       pinsCreated: Number(totalPinsResult.count) || 0,  // Use total pins, not today's pins
       pinnedCount: Number(pinnedResult.count) || 0,     // Registered pins with email
@@ -166,6 +183,8 @@ export class DatabaseStorage implements IStorage {
       activeCountries: Number(countriesResult.count) || 0,
       totalPins: Number(totalPinsResult.count) || 0,
       topMapApps: topMapApps,
+      dailyUsers: Number(dailyUsersResult.count) || 0,
+      registeredUsers: Number(registeredUsersResult.count) || 0,
     };
   }
 

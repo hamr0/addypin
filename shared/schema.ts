@@ -26,7 +26,7 @@ export const pins = pgTable("pins", {
 export const analytics = pgTable("analytics", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   pinId: varchar("pin_id").references(() => pins.id),
-  eventType: text("event_type").notNull(), // 'create', 'click', 'email_sent'
+  eventType: text("event_type").notNull(), // 'create', 'click', 'email_sent', 'visit'
   userAgent: text("user_agent"),
   ipAddress: text("ip_address"),
   country: text("country"),
@@ -34,6 +34,7 @@ export const analytics = pgTable("analytics", {
   os: text("os"),
   timestamp: timestamp("timestamp").defaultNow().notNull(),
   metadata: jsonb("metadata"), // Additional event-specific data
+  sessionId: varchar("session_id"), // Track unique sessions for daily users
 });
 
 export const dailyStats = pgTable("daily_stats", {
@@ -43,6 +44,8 @@ export const dailyStats = pgTable("daily_stats", {
   linksClicked: integer("links_clicked").default(0).notNull(),
   emailsSent: integer("emails_sent").default(0).notNull(),
   uniqueCountries: integer("unique_countries").default(0).notNull(),
+  dailyUsers: integer("daily_users").default(0).notNull(), // Unique sessions per day
+  registeredUsers: integer("registered_users").default(0).notNull(), // Users with email pins
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 

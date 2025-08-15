@@ -195,7 +195,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Track the map app click event
       await analyticsService.trackEvent({
-        pinId: null, // No specific pin for map app clicks
+        pinId: "", // No specific pin for map app clicks
         eventType: "map_app_click",
         userAgent: req.headers['user-agent'],
         ipAddress: req.ip,
@@ -206,6 +206,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Map click analytics error:", error);
       res.status(500).json({ message: "Failed to track analytics" });
+    }
+  });
+
+  // Track page visits for daily user analytics
+  app.post("/api/analytics/visit", async (req, res) => {
+    try {
+      const { page, sessionId } = req.body;
+      
+      if (!sessionId) {
+        return res.status(400).json({ message: "Missing sessionId" });
+      }
+
+      // Track the visit event
+      await analyticsService.trackEvent({
+        pinId: "", // No specific pin for visits
+        eventType: "visit",
+        userAgent: req.headers['user-agent'],
+        ipAddress: req.ip,
+        sessionId: sessionId,
+        metadata: { page }
+      });
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Visit analytics error:", error);
+      res.status(500).json({ message: "Failed to track visit" });
     }
   });
 
