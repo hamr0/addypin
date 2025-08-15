@@ -21,7 +21,7 @@ const versions: VersionEntry[] = [
     date: "2025-08-14",
     type: "major",
     title: "Initial Release",
-    description: "AddyPin launches as a complete location sharing service with dual-format URLs and comprehensive analytics.",
+    description: "addypin launches as a complete location sharing service with dual-format URLs and comprehensive analytics.",
     features: [
       "Interactive map with draggable pins using Leaflet.js",
       "6-character auto-generated shortcodes (ABC123 format)",

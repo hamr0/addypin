@@ -37,7 +37,7 @@ export default function FeaturesPage() {
             Features that make location sharing simple
           </h1>
           <p className="text-xl text-addypin-medium mb-8">
-            AddyPin transforms complex GPS coordinates into memorable, shareable links that work everywhere.
+            addypin transforms complex GPS coordinates into memorable, shareable links that work everywhere.
           </p>
         </div>
       </section>
@@ -154,7 +154,7 @@ export default function FeaturesPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center">
             <Logo />
-            <p className="text-sm text-addypin-medium">© 2025 AddyPin. All rights reserved.</p>
+            <p className="text-sm text-addypin-medium">© 2025 addypin. All rights reserved.</p>
           </div>
         </div>
       </footer>

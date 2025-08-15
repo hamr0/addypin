@@ -1,6 +1,6 @@
-# AddyPin Testing Guide
+# addypin Testing Guide
 
-## How to Test AddyPin Features
+## How to Test addypin Features
 
 ### 1. Creating and Testing Pins
 

@@ -1,8 +1,8 @@
-# AddyPin - Location Sharing Service
+# addypin - Location Sharing Service
 
 ## Overview
 
-AddyPin is a modern location sharing service that generates short, memorable links for geographic coordinates. Users can pin locations on an interactive map and share them via short URLs (like `ABC123.addypin.com`) or email addresses (like `ABC123@addypin.com`). The application provides seamless redirection to 13+ popular mapping services and includes comprehensive analytics tracking.
+addypin is a modern location sharing service that generates short, memorable links for geographic coordinates. Users can pin locations on an interactive map and share them via short URLs (like `ABC123.addypin.com`) or email addresses (like `ABC123@addypin.com`). The application provides seamless redirection to 13+ popular mapping services and includes comprehensive analytics tracking.
 
 ## User Preferences
 
@@ -11,12 +11,12 @@ Preferred communication style: Simple, everyday language.
 ## Recent Changes (August 2025)
 
 ✅ **Latest Updates (August 15, 2025):**
+- **Changed branding to lowercase**: Updated all mentions of "AddyPin" to lowercase "addypin" throughout the website
 - **Simplified Features page**: Removed security details, streamlined to 3 bullet points per feature to avoid exposing limitations
 - **Fixed edit workflow**: Improved button timing and state management for immediate Save Changes display
 - **Enhanced country detection**: Created shared utility for consistent Philippines and other country detection
 - **Fixed redirect URLs**: Working properly in browser, serve React app with all map options
 - **Improved duplicate detection**: Prevents same email from creating multiple addypins at identical coordinates
-- **Contact form system**: Floating "Help" button with modal dialog, console logging for support requests
 
 ✅ **Previous Fixes:**
 - Fixed modal z-index issues - login modal now appears above map

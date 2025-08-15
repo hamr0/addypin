@@ -1,8 +1,8 @@
-# AddyPin 📍
+# addypin 📍
 
 > The simplest way to share locations across all map apps
 
-AddyPin is a lightweight, open-source location sharing service that generates short, memorable links for GPS coordinates. Share any location via web links (`ABC123.addypin.com`) or email format (`ABC123@addypin.com`) that work with 13+ popular map applications.
+addypin is a lightweight, open-source location sharing service that generates short, memorable links for GPS coordinates. Share any location via web links (`ABC123.addypin.com`) or email format (`ABC123@addypin.com`) that work with 13+ popular map applications.
 
 ## ✨ Features
 

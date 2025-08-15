@@ -1,4 +1,4 @@
-# AddyPin Domain Setup Guide
+# addypin Domain Setup Guide
 
 ## DNS Configuration for addypin.com
 

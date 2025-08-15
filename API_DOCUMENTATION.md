@@ -1,7 +1,7 @@
-# AddyPin API Documentation
+# addypin API Documentation
 
 ## Overview
-AddyPin provides a RESTful API for creating short links for GPS coordinates. The API supports creating pins, retrieving pin data, and accessing analytics.
+addypin provides a RESTful API for creating short links for GPS coordinates. The API supports creating pins, retrieving pin data, and accessing analytics.
 
 ## Base URL
 - Development: `http://localhost:5000/api`
