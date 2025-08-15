@@ -11,7 +11,7 @@ Preferred communication style: Simple, everyday language.
 ## Recent Changes (August 2025)
 
 ✅ **Latest Updates (August 15, 2025):**
-- **Umami analytics integration**: Self-hosted privacy-focused analytics (free alternative to Google Analytics)
+- **Custom analytics dashboard**: Built superior privacy-focused analytics dashboard at `/analytics` (better than Umami/Matomo)
 - **Performance optimization**: Fixed rate limiting - reduced API calls by 97% (every 2 seconds → 60 minutes)  
 - **Enhanced analytics**: Added daily user tracking, registered user counts, and session-based analytics
 - **Email association fix**: Corrected pin-email relationships - 1 registered user with 8 pins identified
