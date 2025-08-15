@@ -77,11 +77,19 @@ export default function Home() {
             />
             <UserPinsList
               onPinSelect={(pin) => {
+                // Reset editing state when selecting a new pin
+                setIsEditing(false);
                 setEditingPin(pin);
+                setOriginalCoordinates({
+                  lat: Number(pin.latitude),
+                  lng: Number(pin.longitude)
+                });
                 setCoordinates({
                   lat: Number(pin.latitude),
                   lng: Number(pin.longitude)
                 });
+                // Clear any existing generated link
+                setGeneratedLink(null);
               }}
               onStartEditing={() => {
                 setIsEditing(true);
