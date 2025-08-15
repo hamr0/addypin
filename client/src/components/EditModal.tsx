@@ -161,10 +161,13 @@ export function EditModal({ isOpen, onClose, onPinSelect, onStartEditing }: Edit
             </>
           ) : (
             <div className="space-y-4">
-              <div className="text-center">
-                <div className="text-green-600 text-lg font-semibold mb-2">✓ Authentication Successful</div>
-                <p className="text-sm text-addypin-medium mb-4">
-                  Choose a pin to edit coordinates
+              <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center text-green-800">
+                  <KeyRound className="w-4 h-4 mr-2" />
+                  <span className="font-medium">Email Verified!</span>
+                </div>
+                <p className="text-sm text-green-700 mt-1">
+                  Select a pin below to start editing its coordinates
                 </p>
               </div>
               
@@ -180,15 +183,22 @@ export function EditModal({ isOpen, onClose, onPinSelect, onStartEditing }: Edit
               />
               
               {selectedPin && (
-                <div className="space-y-3 pt-3 border-t">
-                  <div className="text-sm font-medium text-addypin-dark">
-                    Editing: {selectedPin.shortcode}
-                  </div>
-                  <div className="text-xs text-gray-600">
-                    Current location: {Number(selectedPin.latitude).toFixed(4)}, {Number(selectedPin.longitude).toFixed(4)}
+                <div className="space-y-3 pt-3 border-t border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-sm font-medium text-addypin-dark">
+                        Selected Pin: {selectedPin.shortcode}
+                      </div>
+                      <div className="text-xs text-gray-600">
+                        Current: {Number(selectedPin.latitude).toFixed(4)}, {Number(selectedPin.longitude).toFixed(4)}
+                      </div>
+                    </div>
                   </div>
                   <Button 
                     onClick={() => {
+                      if (onPinSelect) {
+                        onPinSelect(selectedPin);
+                      }
                       if (onStartEditing) {
                         onStartEditing();
                       }
@@ -197,29 +207,11 @@ export function EditModal({ isOpen, onClose, onPinSelect, onStartEditing }: Edit
                     className="w-full bg-addypin-cyan hover:bg-cyan-600 text-white"
                     data-testid="button-start-editing"
                   >
+                    <Edit className="w-4 h-4 mr-2" />
                     Start Editing on Map
                   </Button>
                 </div>
               )}
-              
-              <div className="flex gap-2 pt-2">
-                <Button onClick={handleClose} variant="outline" className="flex-1">
-                  Close
-                </Button>
-                <Button 
-                  onClick={() => {
-                    toast({
-                      title: "Save Feature",
-                      description: "Coordinate editing will be implemented in the next version",
-                      duration: 3000,
-                    });
-                  }}
-                  className="flex-1 bg-green-600 hover:bg-green-700 text-white"
-                  data-testid="button-save-coordinates"
-                >
-                  Save Changes
-                </Button>
-              </div>
             </div>
           )}
         </div>
