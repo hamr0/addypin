@@ -75,7 +75,7 @@ export function ContactForm() {
             Contact Support
           </DialogTitle>
           <DialogDescription>
-            Need help with AddyPin? Send us a message and we'll get back to you.
+            Help? Send us a message and we'll get back to you.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -86,10 +86,10 @@ export function ContactForm() {
             <Input
               id="contact-email"
               type="email"
-              placeholder="your@email.com"
+              placeholder="example@domain.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="border-gray-300 focus:border-addypin-cyan focus:ring-addypin-cyan"
+              className="border-gray-300 focus:border-addypin-cyan focus:ring-addypin-cyan placeholder:text-gray-400"
               data-testid="input-contact-email"
             />
           </div>
@@ -101,10 +101,10 @@ export function ContactForm() {
             <Input
               id="contact-subject"
               type="text"
-              placeholder="What can we help you with?"
+              placeholder="Bug report, feature request, billing question..."
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
-              className="border-gray-300 focus:border-addypin-cyan focus:ring-addypin-cyan"
+              className="border-gray-300 focus:border-addypin-cyan focus:ring-addypin-cyan placeholder:text-gray-400"
               data-testid="input-contact-subject"
             />
           </div>
@@ -115,11 +115,11 @@ export function ContactForm() {
             </Label>
             <Textarea
               id="contact-message"
-              placeholder="Describe your issue or feedback..."
+              placeholder="I'm having trouble with... The app crashed when... Could you add a feature for..."
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               rows={4}
-              className="border-gray-300 focus:border-addypin-cyan focus:ring-addypin-cyan resize-none"
+              className="border-gray-300 focus:border-addypin-cyan focus:ring-addypin-cyan resize-none placeholder:text-gray-400"
               data-testid="textarea-contact-message"
             />
           </div>
