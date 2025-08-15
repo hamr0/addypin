@@ -326,20 +326,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { sendOTPEmail } = await import('./services/resend-email.js');
       const result = await sendOTPEmail({ to: email, code: otp });
       
-      if (result.success) {
-        // Store OTP temporarily in memory (in production, use Redis or database)
-        // For now, we'll include it in development mode
-        const responseData: any = { message: result.message };
-        
-        // Include code in development mode only
-        if (!process.env.RESEND_API_KEY) {
-          responseData.code = otp;
-        }
-        
-        res.json(responseData);
-      } else {
-        res.status(400).json({ message: result.message });
-      }
+      // Always return success with the appropriate message
+      res.json({ message: result.message });
     } catch (error) {
       console.error("Send OTP error:", error);
       res.status(400).json({ message: "Failed to send verification code" });

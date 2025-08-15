@@ -83,15 +83,16 @@ export default function Sidebar({ coordinates, generatedLink, onLinkGenerated, i
     onSuccess: (data, email) => {
       setShowOtpInput(true);
       
-      // Check if we have a code (development mode)
-      if (data.code) {
+      // Check message to determine mode
+      if (data.message.includes('server console') || data.message.includes('console')) {
         toast({
           title: "Verification Code Sent",
-          description: "Development Mode: Check server console for the 6-digit code",
+          description: data.message,
           duration: 8000,
         });
         console.log(`\n🔑 ===============================`);
-        console.log(`🔑 OTP CODE FOR ${email.toUpperCase()}: ${data.code}`);
+        console.log(`🔑 CHECK SERVER CONSOLE ABOVE FOR OTP CODE`);
+        console.log(`🔑 EMAIL: ${email.toUpperCase()}`);
         console.log(`🔑 ===============================\n`);
       } else {
         // Production mode - email sent
