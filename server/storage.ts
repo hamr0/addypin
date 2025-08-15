@@ -96,30 +96,30 @@ export class DatabaseStorage implements IStorage {
       .from(pins)
       .where(gte(pins.createdAt, startOfDay));
 
-    // Get total pins count
+    // Get total pins count (cumulative)
     const [totalPinsResult] = await db
       .select({ count: sql<number>`count(*)` })
       .from(pins);
 
-    // Get today's clicks count
+    // Get total clicks count (cumulative since AddyPin started)
     const [clicksResult] = await db
       .select({ count: sql<number>`count(*)` })
       .from(analytics)
-      .where(and(eq(analytics.eventType, 'click'), gte(analytics.timestamp, startOfDay)));
+      .where(eq(analytics.eventType, 'click'));
 
-    // Get today's emails count
+    // Get total emails count (cumulative)
     const [emailsResult] = await db
       .select({ count: sql<number>`count(*)` })
       .from(analytics)
-      .where(and(eq(analytics.eventType, 'email_sent'), gte(analytics.timestamp, startOfDay)));
+      .where(eq(analytics.eventType, 'email_sent'));
 
-    // Get unique countries count
+    // Get total unique countries count (cumulative)
     const [countriesResult] = await db
       .select({ count: sql<number>`count(distinct country)` })
       .from(analytics)
-      .where(and(sql`country is not null`, gte(analytics.timestamp, startOfDay)));
+      .where(sql`country is not null`);
 
-    // Get actual map app clicks from analytics metadata
+    // Get cumulative map app clicks from analytics metadata
     const mapAppClicksData = await db
       .select({ 
         appName: sql<string>`metadata->>'appName'`,
@@ -128,7 +128,6 @@ export class DatabaseStorage implements IStorage {
       .from(analytics)
       .where(and(
         eq(analytics.eventType, 'map_app_click'),
-        gte(analytics.timestamp, startOfDay),
         sql`metadata->>'appName' is not null`
       ))
       .groupBy(sql`metadata->>'appName'`)

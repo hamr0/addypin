@@ -39,6 +39,7 @@ const WHITELISTED_IPS = [
   '127.0.0.1',
   'localhost',
   '172.31.76.98', // Your current IP for testing
+  '172.31.93.34', // User's current IP
 ];
 
 export function createRateLimiter(options: {

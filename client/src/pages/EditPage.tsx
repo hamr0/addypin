@@ -81,7 +81,7 @@ export default function EditPage() {
             <CardHeader>
               <CardTitle className="flex items-center">
                 <Edit className="w-5 h-5 text-addypin-cyan mr-2" />
-                Email Verification
+                Log in
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -95,10 +95,9 @@ export default function EditPage() {
                       id="edit-email"
                       type="email"
                       placeholder="your@email.com"
-                      style={{ color: '#6b7280' }}
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="border-gray-300 focus:border-addypin-cyan focus:ring-addypin-cyan"
+                      className="border-gray-300 focus:border-addypin-cyan focus:ring-addypin-cyan placeholder:text-gray-400"
                       data-testid="input-edit-email"
                     />
                     <p className="text-xs text-gray-500 mt-1">
