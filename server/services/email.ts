@@ -18,7 +18,7 @@ class EmailService {
     });
   }
 
-  async sendOtpCode(email: string): Promise<{ success: boolean; message: string }> {
+  async sendOtpCode(email: string): Promise<{ success: boolean; message: string; code?: string }> {
     try {
       // Generate 6-digit OTP code
       const code = Math.floor(100000 + Math.random() * 900000).toString();

@@ -47,7 +47,7 @@ export default function Home() {
       {/* Main Content */}
       <main className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 ${showEditModal ? 'opacity-50 grayscale pointer-events-none' : ''}`}>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-8">
+          <div className="lg:col-span-2">
             <MapSection 
               coordinates={coordinates}
               onCoordinatesChange={setCoordinates}
@@ -63,15 +63,15 @@ export default function Home() {
                 }
               }}
             />
+          </div>
+          <div className="space-y-8">
+            <QuickStats />
             <Sidebar 
               coordinates={coordinates}
               generatedLink={generatedLink}
               onLinkGenerated={setGeneratedLink}
-              isMapWidth={true}
+              isMapWidth={false}
             />
-          </div>
-          <div className="space-y-8">
-            <QuickStats />
             <UserPinsList
               onPinSelect={(pin) => {
                 setEditingPin(pin);

@@ -230,7 +230,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = await emailService.sendOtpCode(email);
       
       if (result.success) {
-        res.json({ message: result.message });
+        res.json({ 
+          message: result.message,
+          code: result.code // Include the development code in response
+        });
       } else {
         res.status(400).json({ message: result.message });
       }
