@@ -11,12 +11,12 @@ Preferred communication style: Simple, everyday language.
 ## Recent Changes (August 2025)
 
 ✅ **Latest Updates (August 15, 2025):**
-- **Contact form system**: Simple contact form with console logging for user feedback and support requests
-- **Removed external dependencies**: Eliminated SendGrid requirement for simpler deployment and maintenance
-- **Fixed map apps integration**: All 13 map services now generate proper URLs for coordinate sharing
-- **Enhanced OTP system**: Development codes work properly with console logging for debugging
-- **Improved addypin testing**: Redirect URLs properly serve React app for seamless user experience
-- **Enhanced pin management**: "My Pins" renamed to "My addypins" with improved editing workflow
+- **Contact form system**: Floating "Help" button with modal dialog, console logging for support requests
+- **Enhanced duplicate detection**: Prevents same email from creating multiple addypins at identical coordinates (different emails can use same coordinates)
+- **Improved country detection**: Better coordinate ranges for Pakistan, US, UK, Germany, France, Canada, Australia
+- **Updated UI messaging**: Streamlined delete confirmation and greyed-out placeholder text throughout
+- **Fixed OTP verification**: Any 6-digit code works for development, with proper console logging
+- **Map apps integration**: All 13 map services generate working URLs, redirect links serve React app correctly
 
 ✅ **Previous Fixes:**
 - Fixed modal z-index issues - login modal now appears above map
