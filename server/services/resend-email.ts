@@ -81,17 +81,51 @@ export async function sendOTPEmail({ to, code }: OTPEmailParams): Promise<{ succ
                 color: #6b7280;
                 font-size: 14px;
               }
-              .logo {
-                font-size: 24px;
-                font-weight: bold;
+              .addypin-logo {
+                display: flex;
+                align-items: center;
+                justify-content: center;
                 margin-bottom: 8px;
+              }
+              .logo-text {
+                font-size: 24px;
+                font-weight: 700;
+                color: white;
+                letter-spacing: -0.025em;
+              }
+              .logo-pin {
+                display: inline-block;
+                width: 16px;
+                height: 16px;
+                background: #00BCD4;
+                border-radius: 50% 50% 50% 0;
+                transform: rotate(-45deg);
+                position: relative;
+                margin: 0 3px;
+                border: 2px solid white;
+                box-shadow: 0 1px 4px rgba(0, 188, 212, 0.3);
+              }
+              .logo-pin::after {
+                content: '';
+                position: absolute;
+                width: 4px;
+                height: 4px;
+                background: white;
+                border-radius: 50%;
+                top: 3px;
+                left: 3px;
+                transform: rotate(45deg);
               }
             </style>
           </head>
           <body>
             <div class="container">
               <div class="header">
-                <div class="logo">📍 addypin</div>
+                <div class="addypin-logo">
+                  <span class="logo-text">addy</span>
+                  <div class="logo-pin"></div>
+                  <span class="logo-text">in</span>
+                </div>
                 <p>Location sharing made simple</p>
               </div>
               <div class="content">
