@@ -487,11 +487,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Email webhook for receiving emails (when MX records are configured)
+  // Email webhook for receiving emails via SendGrid Inbound Parse
   app.post("/api/webhook/email-inbound", async (req, res) => {
     try {
+      // SendGrid sends multipart/form-data, not JSON
       const { to, from, subject, html, text } = req.body;
       
+      // Log the incoming email
+      console.log('📧 INCOMING EMAIL (SendGrid):');
+      console.log(`To: ${to}`);
+      console.log(`From: ${from}`);
+      console.log(`Subject: ${subject}`);
+      console.log('---');
+      
+      if (!to || !from) {
+        return res.status(400).json({ error: "Missing to or from address" });
+      }
+
       // Extract shortcode from recipient email (ak7n1z@addypin.com)
       const emailMatch = to.match(/^([A-Z0-9]{6})@addypin\.com$/i);
       if (!emailMatch) {
@@ -499,25 +511,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const shortcode = emailMatch[1].toUpperCase();
-      
-      // Log the incoming email
-      console.log('📧 INCOMING EMAIL:');
-      console.log(`To: ${to}`);
-      console.log(`From: ${from}`);
-      console.log(`Shortcode: ${shortcode}`);
-      console.log('---');
+      console.log(`Extracted shortcode: ${shortcode}`);
       
       // Send auto-response
       const result = await sendMapAutoResponse({ fromEmail: from, shortcode });
       
       if (result.success) {
-        res.json({ success: true, message: "Auto-response sent" });
+        console.log(`✅ Auto-response sent successfully`);
+        res.status(200).send('OK'); // SendGrid expects 200 response
       } else {
-        res.status(404).json({ error: result.message });
+        console.log(`❌ Auto-response failed: ${result.message}`);
+        res.status(200).send('OK'); // Still return 200 to prevent retries
       }
     } catch (error) {
       console.error("Email webhook error:", error);
-      res.status(500).json({ error: "Webhook processing failed" });
+      res.status(200).send('OK'); // Return 200 to prevent SendGrid retries
     }
   });
 
