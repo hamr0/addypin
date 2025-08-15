@@ -1,9 +1,10 @@
 # Maddy Installation for AlmaLinux OS 8
 
 ## Your Server Details:
+- Hostname: racknerd-47e65b8
 - OS: AlmaLinux OS 8 (RHEL-based)
+- Primary IP: 155.94.144.191
 - Location: Los Angeles DC03
-- IP: 107.174.51.158 (different from 155.94.144.191?)
 - Package Manager: `yum` or `dnf`
 
 ## Working Installation for AlmaLinux
@@ -69,12 +70,12 @@ sudo systemctl status maddy
 sudo journalctl -u maddy -f
 ```
 
-## Note about IP Address
+## DNS Records Ready
 
-You mentioned IP 107.174.51.158 but earlier had 155.94.144.191. 
+Your confirmed IP is **155.94.144.191**. The DNS records I provided earlier are correct:
 
-**Which IP should I use for DNS records?**
-- If 107.174.51.158 is your actual server IP
-- Update DNS records to use this IP instead
-
-Let me know which IP is correct so I can update the DNS configuration.
+```
+MX Record: addypin.com → 10 155.94.144.191
+TXT Record: addypin.com → "v=spf1 mx -all"
+TXT Record: _dmarc.addypin.com → "v=DMARC1; p=none; rua=mailto:admin@addypin.com"
+```
