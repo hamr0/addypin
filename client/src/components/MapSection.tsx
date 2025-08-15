@@ -259,7 +259,7 @@ export default function MapSection({ coordinates, onCoordinatesChange, generated
               placeholder="Search for an address, city, or landmark..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-10"
+              className="pl-10 pr-10 placeholder:text-gray-400"
               data-testid="input-location-search"
             />
             {searchQuery && (
