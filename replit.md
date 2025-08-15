@@ -16,7 +16,7 @@ Preferred communication style: Simple, everyday language.
 - **Email auto-responder tested**: Branded emails with 13 map apps, custom logo, and professional template operational
 - **Subdomain routing ready**: Middleware detects shortcode subdomains for when custom domain goes live
 - **Email webhook prepared**: Inbound email processing endpoint ready for open-source email receiving solutions
-- **Maddy installation debugging**: Binary download failed on CentOS/RHEL system, alternative installation methods provided for RackNerd VPS
+- **AlmaLinux OS identified**: Server running AlmaLinux OS 8 (not Ubuntu), tailored installation commands provided for RHEL-based system
 - **Security fix complete**: GitHub API key exposure resolved, new RESEND_API_KEY secured in environment
 - **GitHub integration complete**: Repository connected at `https://github.com/amrhas82/addypin` with active Git workflow
 - **Version control established**: Replit Git panel configured for ongoing development and updates
