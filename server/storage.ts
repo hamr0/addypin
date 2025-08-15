@@ -35,6 +35,8 @@ export interface IStorage {
   deletePin(shortcode: string): Promise<boolean>;
   updatePinCoordinates(shortcode: string, latitude: number, longitude: number): Promise<Pin | null>;
   getPinCountByEmail(email: string): Promise<number>;
+  
+  // Contact form handling removed - using simple console logging
 }
 
 export class DatabaseStorage implements IStorage {
@@ -290,6 +292,8 @@ export class DatabaseStorage implements IStorage {
     
     return Number(result[0]?.count) || 0;
   }
+
+  // Contact form methods removed - using simple console logging approach
 }
 
 export const storage = new DatabaseStorage();

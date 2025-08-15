@@ -387,20 +387,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid email address" });
       }
 
-      // Import the email service dynamically to avoid issues if SendGrid key is missing
-      const { sendContactEmail } = await import("./services/email.js");
+      // Log to console for review - simple approach without database complexity
+      const timestamp = new Date().toISOString();
+      console.log('📧 CONTACT FORM SUBMISSION:');
+      console.log(`From: ${email}`);
+      console.log(`Subject: ${subject}`);
+      console.log(`Message: ${message}`);
+      console.log(`Time: ${timestamp}`);
+      console.log('---');
       
-      const success = await sendContactEmail({
-        fromEmail: email,
-        subject,
-        message,
+      res.json({ 
+        success: true, 
+        message: "Message received and logged for review!" 
       });
-
-      if (success) {
-        res.json({ success: true, message: "Contact form submitted successfully" });
-      } else {
-        res.status(500).json({ error: "Failed to send email. Please try again later." });
-      }
     } catch (error) {
       console.error("Contact form error:", error);
       res.status(500).json({ error: "Internal server error" });

@@ -24,7 +24,7 @@ export function ContactForm() {
     onSuccess: () => {
       toast({
         title: "Message received!",
-        description: "Your message has been logged. Check the server console for details.",
+        description: "Your message has been logged for review. We'll get back to you soon.",
         duration: 5000,
       });
       // Reset form

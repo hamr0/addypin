@@ -46,6 +46,10 @@ export const dailyStats = pgTable("daily_stats", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+
+
+
+
 // Relations
 export const pinsRelations = relations(pins, ({ many }) => ({
   analytics: many(analytics),
@@ -74,6 +78,8 @@ export const insertAnalyticsSchema = createInsertSchema(analytics).omit({
   id: true,
   timestamp: true,
 });
+
+// Contact form handling removed - using simple console logging instead
 
 export const insertDailyStatsSchema = createInsertSchema(dailyStats).omit({
   id: true,
@@ -106,3 +112,4 @@ export type InsertDailyStats = z.infer<typeof insertDailyStatsSchema>;
 export type DailyStats = typeof dailyStats.$inferSelect;
 export type InsertOtpCode = z.infer<typeof insertOtpCodeSchema>;
 export type OtpCode = typeof otpCodes.$inferSelect;
+// Contact form types removed - using simple logging approach
