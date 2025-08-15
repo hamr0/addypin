@@ -1,0 +1,66 @@
+Aug 15 15:41:31 racknerd-47e65b8 systemd[1]: maddy.service: Main process exited>
+Aug 15 15:41:31 racknerd-47e65b8 systemd[1]: maddy.service: Failed with result >
+Aug 15 15:41:31 racknerd-47e65b8 systemd[1]: Failed to start Maddy Mail Server.
+
+[root@racknerd-47e65b8 maddy]# sudo tee /etc/maddy/maddy.conf << 'EOF'
+> state_dir /var/lib/maddy
+> runtime_dir /run/maddy
+> 
+> # TLS configuration (required directive)
+> tls off
+> 
+> smtp tcp://0.0.0.0:25 {
+>     hostname addypin.com
+>     source addypin.com {
+>         deliver_to webhook {
+>             target https://musical-walleye-79.replit.app/api/webhook/email-inbound
+>             timeout 30s
+>             max_tries 3
+>         }
+>     }
+>     default_source {
+>         reject 550 5.1.1 "Domain not served here"
+>     }
+> }
+> $(hostname) = addypin.com
+> $(primary_domain) = addypin.com
+> EOF
+state_dir /var/lib/maddy
+runtime_dir /run/maddy
+
+# TLS configuration (required directive)
+tls off
+
+smtp tcp://0.0.0.0:25 {
+    hostname addypin.com
+    source addypin.com {
+        deliver_to webhook {
+            target https://musical-walleye-79.replit.app/api/webhook/email-inbound
+            timeout 30s
+            max_tries 3
+        }
+    }
+    default_source {
+        reject 550 5.1.1 "Domain not served here"
+    }
+}
+$(hostname) = addypin.com
+$(primary_domain) = addypin.com
+[root@racknerd-47e65b8 maddy]# 
+[root@racknerd-47e65b8 maddy]# # Restart service
+[root@racknerd-47e65b8 maddy]# sudo systemctl restart maddy
+Job for maddy.service failed because the control process exited with error code.
+See "systemctl status maddy.service" and "journalctl -xe" for details.
+[root@racknerd-47e65b8 maddy]# sudo systemctl status maddy
+● maddy.service - Maddy Mail Server
+   Loaded: loaded (/etc/systemd/system/maddy.service; enabled; vendor preset: d>
+   Active: activating (auto-restart) (Result: exit-code) since Fri 2025-08-15 1>
+  Process: 19290 ExecStart=/usr/local/bin/maddy -config /etc/maddy/maddy.conf (>
+ Main PID: 19290 (code=exited, status=1/FAILURE)
+   Status: "unknown module: webhook (namespace: target)"
+
+Aug 15 15:42:33 racknerd-47e65b8 systemd[1]: maddy.service: Main process exited>
+Aug 15 15:42:33 racknerd-47e65b8 systemd[1]: maddy.service: Failed with result >
+Aug 15 15:42:33 racknerd-47e65b8 systemd[1]: Failed to start Maddy Mail Server.
+
+[root@racknerd-47e65b8 maddy]# 

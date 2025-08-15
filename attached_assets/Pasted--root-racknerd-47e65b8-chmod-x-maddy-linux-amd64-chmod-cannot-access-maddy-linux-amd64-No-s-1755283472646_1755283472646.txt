@@ -1,0 +1,37 @@
+[root@racknerd-47e65b8 ~]# chmod +x maddy-linux-amd64
+chmod: cannot access 'maddy-linux-amd64': No such file or directory
+[root@racknerd-47e65b8 ~]# sudo mv maddy-linux-amd64 /usr/local/bin/maddy
+mv: cannot stat 'maddy-linux-amd64': No such file or directory
+[root@racknerd-47e65b8 ~]# 
+[root@racknerd-47e65b8 ~]# # Test the binary
+[root@racknerd-47e65b8 ~]# /usr/local/bin/maddy --version
+-bash: /usr/local/bin/maddy: No such file or directory
+[root@racknerd-47e65b8 ~]# 
+[root@racknerd-47e65b8 ~]# # Restart service
+[root@racknerd-47e65b8 ~]# sudo systemctl restart maddy
+Job for maddy.service failed because the control process exited with error code.
+See "systemctl status maddy.service" and "journalctl -xe" for details.
+[root@racknerd-47e65b8 ~]# sudo systemctl status maddy
+● maddy.service - Maddy Mail Server
+   Loaded: loaded (/etc/systemd/system/maddy.service; enabled; vendor preset: d>
+   Active: activating (auto-restart) (Result: exit-code) since Fri 2025-08-15 1>
+  Process: 1229 ExecStart=/usr/local/bin/maddy -config /etc/maddy/maddy.conf (c>
+ Main PID: 1229 (code=exited, status=203/EXEC)
+
+Aug 15 14:43:57 racknerd-47e65b8 systemd[1]: maddy.service: Main process exited>
+Aug 15 14:43:57 racknerd-47e65b8 systemd[1]: maddy.service: Failed with result >
+Aug 15 14:43:57 racknerd-47e65b8 systemd[1]: Failed to start Maddy Mail Server.
+lines 1-9/9 (END)
+^C
+[root@racknerd-47e65b8 ~]# # Install via official repository (more reliable)
+[root@racknerd-47e65b8 ~]# curl -fsSL https://apt.maddy.email/gpg.key | sudo apt-key add -
+sudo: apt-key: command not found
+curl: (6) Could not resolve host: apt.maddy.email
+[root@racknerd-47e65b8 ~]# echo "deb https://apt.maddy.email/ maddy main" | sudo tee /etc/apt/sources.list.d/maddy.list
+tee: /etc/apt/sources.list.d/maddy.list: No such file or directory
+deb https://apt.maddy.email/ maddy main
+[root@racknerd-47e65b8 ~]# sudo apt update
+sudo: apt: command not found
+[root@racknerd-47e65b8 ~]# sudo apt install maddy
+sudo: apt: command not found
+[root@racknerd-47e65b8 ~]# 
