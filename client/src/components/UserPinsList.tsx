@@ -51,8 +51,8 @@ export function UserPinsList({ onPinSelect, onStartEditing }: UserPinsListProps)
     },
     onSuccess: (data, shortcode) => {
       toast({
-        title: "AddyPin Deleted! 🗑️", 
-        description: `AddyPin ${shortcode} has been permanently deleted`,
+        title: "addypin deleted! 🗑️", 
+        description: `addypin ${shortcode} has been permanently deleted`,
         duration: 5000,
       });
       refetchPins();
@@ -333,7 +333,7 @@ export function UserPinsList({ onPinSelect, onStartEditing }: UserPinsListProps)
         <AlertDialog open={!!showDeleteConfirm} onOpenChange={(open) => !open && setShowDeleteConfirm(null)}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Delete AddyPin</AlertDialogTitle>
+              <AlertDialogTitle>Delete addypin</AlertDialogTitle>
               <AlertDialogDescription>
                 Are you sure you want to delete addypin {showDeleteConfirm}? This action cannot be undone, but the shortcode can be reused for new addypins.
               </AlertDialogDescription>
@@ -344,7 +344,7 @@ export function UserPinsList({ onPinSelect, onStartEditing }: UserPinsListProps)
                 onClick={() => showDeleteConfirm && deletePinMutation.mutate(showDeleteConfirm)}
                 className="bg-red-600 hover:bg-red-700 text-white"
               >
-                Delete AddyPin
+                Delete addypin
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

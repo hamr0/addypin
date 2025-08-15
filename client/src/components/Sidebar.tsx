@@ -46,7 +46,7 @@ export default function Sidebar({ coordinates, generatedLink, onLinkGenerated, i
         emailLink: data.emailLink,
       });
       toast({
-        title: "AddyPin Generated!",
+        title: "addypin generated!",
         description: "Your short link is ready to share.",
       });
     },
@@ -54,7 +54,7 @@ export default function Sidebar({ coordinates, generatedLink, onLinkGenerated, i
       // Check if it's a PIN_LIMIT_EXCEEDED error
       if (error instanceof Error && error.message.includes("PIN_LIMIT_EXCEEDED")) {
         toast({
-          title: "AddyPin Limit Reached",
+          title: "addypin limit reached",
           description: "You have reached the 5 addypin limit for this email. Please delete some addypins to create new ones.",
           variant: "destructive",
 

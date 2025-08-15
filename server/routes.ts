@@ -51,7 +51,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const pinCount = await storage.getPinCountByEmail(validatedData.createdBy);
         if (pinCount >= 5) {
           return res.status(400).json({ 
-            message: "AddyPin limit reached. You can have a maximum of 5 registered addypins per email address.",
+            message: "addypin limit reached. You can have a maximum of 5 registered addypins per email address.",
             code: "PIN_LIMIT_EXCEEDED"
           });
         }
