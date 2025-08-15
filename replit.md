@@ -7,6 +7,7 @@ addypin is a modern location sharing service that generates short, memorable lin
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+Project organization: Keep main folder clean - documentation moved to `/docs` folder.
 
 ## Recent Changes (August 2025)
 
