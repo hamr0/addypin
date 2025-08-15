@@ -270,9 +270,9 @@ export default function Sidebar({ coordinates, generatedLink, onLinkGenerated }:
                 📍
               </div>
               <div>
-                <p className="text-xs font-medium text-addypin-medium">Created</p>
-                <p className="text-lg font-bold text-addypin-dark" data-testid="text-pins-today">
-                  {statsLoading ? "..." : (stats as any)?.pinsCreated || 0}
+                <p className="text-xs font-medium text-addypin-medium">Pinned</p>
+                <p className="text-lg font-bold text-addypin-dark" data-testid="text-pins-pinned">
+                  {statsLoading ? "..." : (stats as any)?.pinnedCount || 0}
                 </p>
               </div>
             </div>
@@ -286,7 +286,7 @@ export default function Sidebar({ coordinates, generatedLink, onLinkGenerated }:
               <div>
                 <p className="text-xs font-medium text-addypin-medium">Total</p>
                 <p className="text-lg font-bold text-addypin-dark" data-testid="text-total-pins">
-                  {statsLoading ? "..." : (stats as any)?.totalPins || 0}
+                  {statsLoading ? "..." : (stats as any)?.pinsCreated || 0}
                 </p>
               </div>
             </div>

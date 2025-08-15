@@ -18,7 +18,7 @@ export interface IStorage {
   getAnalyticsByPin(pinId: string): Promise<Analytics[]>;
   
   // Stats methods
-  getTodaysStats(): Promise<{ pinsCreated: number; linksClicked: number; emailsSent: number; activeCountries: number; totalPins: number; topMapApps: Array<{ name: string; clicks: number }> }>;
+  getTodaysStats(): Promise<{ pinsCreated: number; pinnedCount: number; linksClicked: number; emailsSent: number; activeCountries: number; totalPins: number; topMapApps: Array<{ name: string; clicks: number }> }>;
   updateDailyStats(date: string, stats: Partial<InsertDailyStats>): Promise<DailyStats>;
   getDailyStatsForPeriod(startDate: string, endDate: string): Promise<DailyStats[]>;
   
@@ -85,6 +85,7 @@ export class DatabaseStorage implements IStorage {
 
   async getTodaysStats(): Promise<{ 
     pinsCreated: number; 
+    pinnedCount: number;
     linksClicked: number; 
     emailsSent: number; 
     activeCountries: number;
@@ -104,6 +105,12 @@ export class DatabaseStorage implements IStorage {
     const [totalPinsResult] = await db
       .select({ count: sql<number>`count(*)` })
       .from(pins);
+
+    // Get pinned count (pins with email addresses - registered pins)
+    const [pinnedResult] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(pins)
+      .where(sql`created_by is not null and created_by != ''`);
 
     // Get total clicks count (cumulative since AddyPin started - includes both 'click' and 'map_app_click')
     const [clicksResult] = await db
@@ -148,6 +155,7 @@ export class DatabaseStorage implements IStorage {
 
     return {
       pinsCreated: Number(totalPinsResult.count) || 0,  // Use total pins, not today's pins
+      pinnedCount: Number(pinnedResult.count) || 0,     // Registered pins with email
       linksClicked: Number(clicksResult.count) || 0,
       emailsSent: Number(emailsResult.count) || 0,
       activeCountries: Number(countriesResult.count) || 0,

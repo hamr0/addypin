@@ -4,6 +4,7 @@ import MapSection from "@/components/MapSection";
 import Sidebar from "@/components/Sidebar";
 import Logo from "@/components/Logo";
 import { EditModal } from "@/components/EditModal";
+import { UserPinsList } from "@/components/UserPinsList";
 import type { Pin } from "@shared/schema";
 
 export default function Home() {
@@ -50,26 +51,43 @@ export default function Home() {
 
       {/* Main Content */}
       <main className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 ${showEditModal ? 'opacity-50 grayscale pointer-events-none' : ''}`}>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <MapSection 
-            coordinates={coordinates}
-            onCoordinatesChange={setCoordinates}
-            generatedLink={generatedLink}
-            editingPin={editingPin}
-            isEditing={isEditing}
-            onEditComplete={(newCoords) => {
-              if (editingPin && newCoords) {
-                // Save the new coordinates
-                setCoordinates(newCoords);
-                setIsEditing(false);
-              }
-            }}
-          />
-          <Sidebar 
-            coordinates={coordinates}
-            generatedLink={generatedLink}
-            onLinkGenerated={setGeneratedLink}
-          />
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          <div className="lg:col-span-2">
+            <MapSection 
+              coordinates={coordinates}
+              onCoordinatesChange={setCoordinates}
+              generatedLink={generatedLink}
+              editingPin={editingPin}
+              isEditing={isEditing}
+              onEditComplete={(newCoords) => {
+                if (editingPin && newCoords) {
+                  // Save the new coordinates
+                  setCoordinates(newCoords);
+                  setIsEditing(false);
+                  setEditingPin(undefined);
+                }
+              }}
+            />
+          </div>
+          <div className="space-y-8">
+            <Sidebar 
+              coordinates={coordinates}
+              generatedLink={generatedLink}
+              onLinkGenerated={setGeneratedLink}
+            />
+            <UserPinsList
+              onPinSelect={(pin) => {
+                setEditingPin(pin);
+                setCoordinates({
+                  lat: Number(pin.latitude),
+                  lng: Number(pin.longitude)
+                });
+              }}
+              onStartEditing={() => {
+                setIsEditing(true);
+              }}
+            />
+          </div>
         </div>
       </main>
 
