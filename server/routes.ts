@@ -219,28 +219,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Track map app clicks 
-  app.post("/api/map-app-click", async (req, res) => {
-    try {
-      const { pinId, appName } = z.object({
-        pinId: z.number(),
-        appName: z.string()
-      }).parse(req.body);
 
-      await analyticsService.trackEvent({
-        pinId: pinId.toString(),
-        eventType: "map_app_click",
-        userAgent: req.headers['user-agent'],
-        ipAddress: req.ip || req.connection.remoteAddress || '127.0.0.1',
-        metadata: { appName }
-      });
-
-      res.json({ success: true });
-    } catch (error) {
-      console.error("Map app click tracking error:", error);
-      res.status(400).json({ message: "Invalid request" });
-    }
-  });
 
   // Security stats endpoint (for monitoring)
   app.get("/api/security/stats", async (req, res) => {

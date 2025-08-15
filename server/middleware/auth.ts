@@ -21,6 +21,7 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
 
     const payload = await verifyToken(token, {
       secretKey: process.env.CLERK_SECRET_KEY!,
+      issuer: `https://clerk.${process.env.CLERK_PUBLISHABLE_KEY?.split('_')[1]}.lcl.dev`,
     });
 
     if (!payload) {
@@ -29,7 +30,7 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
 
     // Add user info to request
     req.userId = payload.sub;
-    req.userEmail = payload.email || undefined;
+    req.userEmail = payload.email as string || undefined;
 
     next();
   } catch (error) {
