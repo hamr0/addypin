@@ -293,8 +293,8 @@ export default function MapSection({ coordinates, onCoordinatesChange, generated
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-semibold text-addypin-dark">Drop your addypin</h1>
-            <p className="text-addypin-medium mt-1">Search above or click to set your location</p>
+            <h1 className="text-2xl font-semibold text-addypin-dark">Pick your addypin</h1>
+            <p className="text-addypin-medium mt-1">Click anywhere on the map or drag addypin to set coordinates</p>
           </div>
           <div className="flex items-center gap-4">
             <div className="flex items-center text-sm text-addypin-medium">
@@ -307,12 +307,12 @@ export default function MapSection({ coordinates, onCoordinatesChange, generated
         <div className="space-y-4">
           <div>
             <Label className="text-sm font-medium text-addypin-dark mb-2 block">
-              {isEditing && editingPin ? `Editing ${editingPin.shortcode} - ${getCountryFromCoords(Number(editingPin.latitude), Number(editingPin.longitude))}` : "Pick a location"}
+              {isEditing && editingPin ? `Editing ${editingPin.shortcode} - ${getCountryFromCoords(Number(editingPin.latitude), Number(editingPin.longitude))}` : ""}
             </Label>
             <p className="text-xs text-gray-500 mb-4">
               {isEditing && editingPin 
                 ? "Drag the addypin to update coordinates, then click Save Changes below the map" 
-                : "Click anywhere on the map or drag the addypin to set coordinates"
+                : ""
               }
             </p>
             <div 
