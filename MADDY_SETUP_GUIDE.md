@@ -20,7 +20,7 @@ Replace your existing MX record with:
 ```
 Record Type: MX
 Name: addypin.com (or @)
-Value: 10 YOUR-AWS-EC2-IP-ADDRESS
+Value: 10 155.94.144.191
 TTL: 300
 ```
 
@@ -42,10 +42,10 @@ TTL: 300
 
 ## Complete Maddy Installation
 
-### Step 1: Connect to AWS and Install
+### Step 1: Connect to RackNerd and Install
 ```bash
-# SSH into your AWS EC2 instance
-ssh -i your-key.pem ubuntu@YOUR-AWS-EC2-IP
+# SSH into your RackNerd VPS
+ssh root@155.94.144.191
 
 # Update system
 sudo apt update && sudo apt upgrade -y

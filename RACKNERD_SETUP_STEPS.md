@@ -33,9 +33,9 @@ Once you complete the purchase:
 4. Test SSH access: `ssh root@YOUR-SERVER-IP`
 
 ### **Step 2: DNS Records (Your Part)**
-Update your domain DNS with the server IP:
+Update your domain DNS with your server IP (155.94.144.191):
 ```
-MX Record: addypin.com → 10 YOUR-SERVER-IP
+MX Record: addypin.com → 10 155.94.144.191
 TXT Record: addypin.com → "v=spf1 mx -all"
 TXT Record: _dmarc.addypin.com → "v=DMARC1; p=none; rua=mailto:admin@addypin.com"
 ```
