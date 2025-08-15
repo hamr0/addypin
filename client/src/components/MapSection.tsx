@@ -62,7 +62,7 @@ export default function MapSection({ coordinates, onCoordinatesChange, generated
     onSuccess: (data) => {
       toast({
         title: "Changes Saved! ✅",
-        description: `Pin ${editingPin?.shortcode} coordinates updated successfully`,
+        description: `addypin ${editingPin?.shortcode} coordinates updated successfully`,
         variant: "default",
       });
       // Trigger pin list refresh
@@ -293,7 +293,7 @@ export default function MapSection({ coordinates, onCoordinatesChange, generated
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-semibold text-addypin-dark">Drop your pin</h1>
+            <h1 className="text-2xl font-semibold text-addypin-dark">Drop your addypin</h1>
             <p className="text-addypin-medium mt-1">Search above or click to set your location</p>
           </div>
           <div className="flex items-center gap-4">
@@ -311,8 +311,8 @@ export default function MapSection({ coordinates, onCoordinatesChange, generated
             </Label>
             <p className="text-xs text-gray-500 mb-4">
               {isEditing && editingPin 
-                ? "Drag the pin to update coordinates, then click Save Changes below the map" 
-                : "Click anywhere on the map or drag the pin to set coordinates"
+                ? "Drag the addypin to update coordinates, then click Save Changes below the map" 
+                : "Click anywhere on the map or drag the addypin to set coordinates"
               }
             </p>
             <div 

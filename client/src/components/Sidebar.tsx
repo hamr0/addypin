@@ -113,7 +113,7 @@ export default function Sidebar({ coordinates, generatedLink, onLinkGenerated, i
       setEditToken(data.editToken);
       toast({
         title: "Verified",
-        description: "You can now edit pin coordinates",
+        description: "You can now edit addypin coordinates",
       });
     },
     onError: (error) => {

@@ -109,8 +109,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         emailLink: `${shortcode}@addypin.com`,
       });
     } catch (error) {
-      console.error("Create pin error:", error);
-      res.status(400).json({ message: error instanceof Error ? error.message : "Invalid pin data" });
+      console.error("Create addypin error:", error);
+      res.status(400).json({ message: error instanceof Error ? error.message : "Invalid addypin data" });
     }
   });
 
@@ -133,12 +133,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const pin = await storage.getPinByShortcode(shortcode);
 
       if (!pin) {
-        return res.status(404).json({ message: "Wrong pin" });
+        return res.status(404).json({ message: "Wrong addypin" });
       }
 
       // Check if pin is inactive (returns wrong pin)
       if (!pin.isActive) {
-        return res.status(404).json({ message: "Wrong pin" });
+        return res.status(404).json({ message: "Wrong addypin" });
       }
 
       // Track click analytics

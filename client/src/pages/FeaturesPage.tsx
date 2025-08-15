@@ -144,7 +144,7 @@ export default function FeaturesPage() {
             href="/"
             className="inline-block bg-addypin-cyan hover:bg-cyan-600 text-white font-semibold px-8 py-3 rounded-lg transition-colors"
           >
-            Start Creating Pins
+            Start Creating addypins
           </Link>
         </div>
       </section>

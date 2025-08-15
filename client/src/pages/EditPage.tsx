@@ -55,7 +55,7 @@ export default function EditPage() {
       setLastOtpCode(otpCode);
       toast({
         title: "Verified! 🎉",
-        description: "You can now edit pin coordinates using the shortcode",
+        description: "You can now edit addypin coordinates using the shortcode",
       });
     },
     onError: (error) => {
@@ -170,7 +170,7 @@ export default function EditPage() {
                       <span className="font-semibold text-green-800">Verified!</span>
                     </div>
                     <p className="text-sm text-green-700">
-                      You can now edit pin coordinates for any shortcode associated with <strong>{email}</strong>
+                      You can now edit addypin coordinates for any shortcode associated with <strong>{email}</strong>
                     </p>
                     <div className="mt-3 p-2 bg-white rounded border text-xs">
                       <strong>Last used code:</strong> {lastOtpCode}

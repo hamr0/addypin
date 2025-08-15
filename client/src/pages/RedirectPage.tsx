@@ -278,13 +278,13 @@ export default function RedirectPage() {
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <h3 className="text-lg font-semibold text-addypin-dark mb-4 flex items-center">
                 <Edit className="w-5 h-5 mr-2 text-addypin-cyan" />
-                Edit Pin
+                Edit addypin
               </h3>
 
               {!editMode ? (
                 <div className="space-y-4">
                   <p className="text-sm text-gray-600">
-                    Verify your email to edit this pin's coordinates.
+                    Verify your email to edit this addypin's coordinates.
                   </p>
                   
                   <div>

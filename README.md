@@ -75,7 +75,7 @@ AddyPin works with all major mapping services:
 
 ## 📚 API Documentation
 
-### Create Pin
+### Create addypin
 ```javascript
 POST /api/pins
 {

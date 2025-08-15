@@ -17,7 +17,7 @@ Most endpoints are open access. Some administrative endpoints may require authen
 
 ## Endpoints
 
-### Create Pin
+### Create addypin
 **POST** `/api/pins`
 
 Create a new location pin with a generated shortcode.
