@@ -46,6 +46,22 @@
 - **Setup**: API key, well-established
 - **Cost**: Free tier, then $15/month
 
+## Postfix (Traditional SMTP Server)
+
+### **4. Postfix + Nodemailer**
+- **What**: Industry-standard SMTP server + Node.js integration
+- **Setup**: Install Postfix on VPS, use Nodemailer in your app
+- **Pros**: Battle-tested, maximum flexibility, widely documented
+- **Cons**: Requires server admin knowledge, deliverability challenges
+- **Best for**: Those comfortable with Linux server management
+
+### **Postfix Setup Overview:**
+1. Install Postfix on Ubuntu/Debian VPS
+2. Configure DNS records (SPF, DKIM, DMARC)
+3. Set up TLS certificates
+4. Use Nodemailer to send via your Postfix server
+5. Monitor logs and delivery rates
+
 ## Recommendation for addypin
 
 ### **For Immediate Launch: Resend**
@@ -53,10 +69,10 @@
 - **Setup**: 10-minute integration
 - **Growth**: Scales with your business
 
-### **For Long-term: Postal**
-- **Why**: Complete control, no ongoing email costs
-- **Investment**: One-time server setup
-- **Scaling**: Handle unlimited emails
+### **For Long-term Self-Hosting Options:**
+1. **Postfix** - Maximum control, traditional approach
+2. **Mailu** - Modern Docker-based with web UI
+3. **Postal** - Application-focused email delivery
 
 ## Current Usage Estimate
 Based on your analytics:
