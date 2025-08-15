@@ -60,6 +60,8 @@ export default function Home() {
                   setCoordinates(newCoords);
                   setIsEditing(false);
                   setEditingPin(undefined);
+                  // Clear the generated link to avoid confusion
+                  setGeneratedLink(null);
                 }
               }}
             />

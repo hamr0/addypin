@@ -47,7 +47,9 @@ export default function Sidebar({ coordinates, generatedLink, onLinkGenerated, i
       });
       // Trigger pin list refresh if user is authenticated and has matching email
       if (data.createdBy) {
-        window.dispatchEvent(new CustomEvent('pinCreated'));
+        window.dispatchEvent(new CustomEvent('pinCreated', { 
+          detail: { createdBy: data.createdBy } 
+        }));
       }
       toast({
         title: "addypin generated!",

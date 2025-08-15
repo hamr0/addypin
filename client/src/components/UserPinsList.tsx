@@ -39,17 +39,17 @@ export function UserPinsList({ onPinSelect, onStartEditing }: UserPinsListProps)
       }
     };
 
-    const handlePinCreated = () => {
-      if (isAuthenticated && email) {
+    const handlePinCreated = (event: any) => {
+      if (isAuthenticated && email && event.detail?.createdBy === email) {
         refetchPins();
       }
     };
 
     window.addEventListener('pinUpdated', handlePinUpdate);
-    window.addEventListener('pinCreated', handlePinCreated);
+    window.addEventListener('pinCreated', handlePinCreated as EventListener);
     return () => {
       window.removeEventListener('pinUpdated', handlePinUpdate);
-      window.removeEventListener('pinCreated', handlePinCreated);
+      window.removeEventListener('pinCreated', handlePinCreated as EventListener);
     };
   }, [isAuthenticated, email, refetchPins]);
 
@@ -122,7 +122,7 @@ export function UserPinsList({ onPinSelect, onStartEditing }: UserPinsListProps)
       refetchPins();
       toast({
         title: "Email Verified! ✅",
-        description: "Select a pin below to start editing its coordinates",
+        description: "Select an addypin below to start editing its coordinates",
         duration: 5000,
       });
     },
@@ -158,6 +158,7 @@ export function UserPinsList({ onPinSelect, onStartEditing }: UserPinsListProps)
     if (lat >= 45 && lat <= 55 && lng >= 2 && lng <= 8) return "France";
     if (lat >= 47 && lat <= 55 && lng >= 5 && lng <= 15) return "Germany";
     if (lat >= 50 && lat <= 60 && lng >= -8 && lng <= 2) return "United Kingdom";
+    if (lat >= 30 && lat <= 37 && lng >= 66 && lng <= 78) return "Pakistan";
     return "Unknown";
   };
 
@@ -172,7 +173,7 @@ export function UserPinsList({ onPinSelect, onStartEditing }: UserPinsListProps)
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-gray-600">
-            Login to view and edit your registered pins
+            Login to view and edit your registered addypins
           </p>
           
           <div>
@@ -213,7 +214,7 @@ export function UserPinsList({ onPinSelect, onStartEditing }: UserPinsListProps)
                   value={otpCode}
                   onChange={(e) => setOtpCode(e.target.value)}
                   maxLength={6}
-                  className="text-center tracking-widest text-lg border-gray-300 focus:border-addypin-cyan focus:ring-addypin-cyan"
+                  className="text-center tracking-widest text-lg border-gray-300 focus:border-addypin-cyan focus:ring-addypin-cyan placeholder:text-gray-400"
                   data-testid="input-user-otp"
                 />
               </div>
@@ -263,7 +264,7 @@ export function UserPinsList({ onPinSelect, onStartEditing }: UserPinsListProps)
       <CardContent>
         {!userPins || (userPins as Pin[]).length === 0 ? (
           <p className="text-sm text-gray-500 text-center py-4">
-            No pins found for this email address
+            No addypins found for this email address
           </p>
         ) : (
           <div className="space-y-3 max-h-80 overflow-y-auto">
