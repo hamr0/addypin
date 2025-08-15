@@ -45,7 +45,7 @@ export default function Home() {
 
       {/* Main Content */}
       <main className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 ${showEditModal ? 'opacity-50 grayscale pointer-events-none' : ''}`}>
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
             <MapSection 
               coordinates={coordinates}
@@ -64,11 +64,6 @@ export default function Home() {
             />
           </div>
           <div className="space-y-8">
-            <Sidebar 
-              coordinates={coordinates}
-              generatedLink={generatedLink}
-              onLinkGenerated={setGeneratedLink}
-            />
             <UserPinsList
               onPinSelect={(pin) => {
                 setEditingPin(pin);
@@ -80,6 +75,11 @@ export default function Home() {
               onStartEditing={() => {
                 setIsEditing(true);
               }}
+            />
+            <Sidebar 
+              coordinates={coordinates}
+              generatedLink={generatedLink}
+              onLinkGenerated={setGeneratedLink}
             />
           </div>
         </div>

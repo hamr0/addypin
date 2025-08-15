@@ -38,9 +38,16 @@ export function UserPinsList({ onPinSelect, onStartEditing }: UserPinsListProps)
       setShowOtpInput(true);
       toast({
         title: "Code Sent! 📧",
-        description: "Check browser console (F12) for your 6-digit code",
+        description: "🔍 Development Mode: Check browser console (F12) for the 6-digit code",
         duration: 8000,
       });
+      // Log prominent instructions to help user find the OTP
+      console.log(`\n🔍 ===============================`);
+      console.log(`🔍 DEVELOPMENT MODE - OTP INSTRUCTIONS`);
+      console.log(`🔍 Look at the Workflow Console (server logs)`);
+      console.log(`🔍 Find the box with "🔑 OTP CODE FOR ${email.toUpperCase()}"`);
+      console.log(`🔍 Copy the 6-digit number and paste it in the form`);
+      console.log(`🔍 ===============================\n`);
     },
     onError: (error) => {
       toast({
@@ -62,8 +69,9 @@ export function UserPinsList({ onPinSelect, onStartEditing }: UserPinsListProps)
       setShowOtpInput(false);
       refetchPins();
       toast({
-        title: "Verified! 🎉",
-        description: "Now you can view and edit your pins",
+        title: "Email Verified! ✅",
+        description: "Select a pin below to start editing its coordinates",
+        duration: 5000,
       });
     },
     onError: (error) => {
