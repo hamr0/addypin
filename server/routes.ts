@@ -486,6 +486,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Authentication removed - open access to avoid email limits
 
+  // Handle shortcode URL patterns - /shortcode directly (like /ak7n1z)
+  app.get("/:shortcode([A-Z0-9]{6})", async (req, res) => {
+    try {
+      const { shortcode } = req.params;
+      const pin = await storage.getPinByShortcode(shortcode);
+
+      if (!pin) {
+        // Serve the React app which will handle the 404 display
+        const indexPath = process.env.NODE_ENV === 'production' 
+          ? path.join(process.cwd(), 'dist', 'index.html')
+          : path.join(process.cwd(), 'client', 'index.html');
+        return res.sendFile(indexPath);
+      }
+
+      // Track click analytics for visiting the pin page
+      await analyticsService.trackEvent({
+        pinId: pin.id,
+        eventType: "click",
+        userAgent: req.headers['user-agent'] || '',
+        ipAddress: req.ip || req.connection.remoteAddress || '127.0.0.1',
+      });
+
+      // Serve the React app which will show the RedirectPage with all map options
+      const indexPath = process.env.NODE_ENV === 'production' 
+        ? path.join(process.cwd(), 'dist', 'index.html')
+        : path.join(process.cwd(), 'client', 'index.html');
+      res.sendFile(indexPath);
+    } catch (error) {
+      console.error("Shortcode redirect error:", error);
+      res.status(500).send("Server error");
+    }
+  });
+
   // Subdomain redirect handling - serve the React app page instead of auto-redirecting
   // This would typically be handled by nginx or similar in production
   app.get("/redirect/:shortcode", async (req, res) => {
