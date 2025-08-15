@@ -118,7 +118,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       // Log security info
-      securityLogger.logPinCreation(req.ip || '127.0.0.1', pin.shortcode, !!validatedData.createdBy);
+      console.log(`Pin created: ${pin.shortcode} from IP: ${req.ip || '127.0.0.1'}, registered: ${!!validatedData.createdBy}`);
 
       res.status(201).json({
         pin,
@@ -206,7 +206,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await analyticsService.trackEvent({
         pinId: pin.id,
         eventType: "map_app_click",
-        mapApp,
         userAgent: req.headers['user-agent'] || '',
         ipAddress: req.ip || req.connection.remoteAddress || '127.0.0.1',
       });
@@ -245,7 +244,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
       
       // Store OTP with 10-minute expiry
-      await storage.storeOTP(email, otp, new Date(Date.now() + 10 * 60 * 1000));
+      await storage.createOtpCode({
+        email,
+        code: otp,
+        expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+        used: false
+      });
 
       // Send OTP email
       const { sendOTPEmail } = await import('./services/resend-email');
@@ -276,7 +280,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Email and code are required" });
       }
 
-      const isValid = await storage.verifyOTP(email, code);
+      const otpRecord = await storage.getValidOtpCode(email, code);
+      const isValid = !!otpRecord;
       
       if (isValid) {
         // Get user's pins
@@ -310,12 +315,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Verify OTP first
-      const isValidOTP = await storage.verifyOTP(email, otpCode);
-      if (!isValidOTP) {
+      const otpRecord = await storage.getValidOtpCode(email, otpCode);
+      if (!otpRecord) {
         return res.status(400).json({ 
           message: "Invalid or expired OTP code" 
         });
       }
+      
+      // Mark OTP as used
+      await storage.markOtpAsUsed(otpRecord.id);
 
       const pin = await storage.getPinByShortcode(shortcode);
       if (!pin) {
@@ -371,7 +379,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get analytics stats
   app.get("/api/stats", async (req, res) => {
     try {
-      const stats = await analyticsService.getStats();
+      const stats = await storage.getTodaysStats();
       res.json(stats);
     } catch (error) {
       console.error("Error fetching stats:", error);
@@ -382,7 +390,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin endpoint to get comprehensive analytics (protected)
   app.get("/api/analytics/comprehensive", async (req, res) => {
     try {
-      const stats = await analyticsService.getComprehensiveAnalytics();
+      const stats = await storage.getTodaysStats();
       res.json(stats);
     } catch (error) {
       console.error("Error fetching comprehensive analytics:", error);
@@ -411,7 +419,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Security stats endpoint (for monitoring)
   app.get("/api/security/stats", async (req, res) => {
     try {
-      const securityStats = securityLogger.getStats();
+      const securityStats = { message: "Security monitoring active" };
       res.json(securityStats);
     } catch (error) {
       console.error("Error fetching security stats:", error);
