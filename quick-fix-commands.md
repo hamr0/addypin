@@ -1,23 +1,41 @@
-# Quick Fix Commands
+# Quick Fix: nginx Configuration for CentOS
 
-## Run these on VPS to diagnose service failure:
-
+## Check service status first:
 ```bash
-# Check service logs for specific errors
-journalctl -u addypin -n 20 --no-pager
-
-# Check service status
-systemctl status addypin --no-pager
-
-# Check if port 3000 is in use
-netstat -tlnp | grep :3000
-
-# Check production app structure
-ls -la /opt/addypin/app/
-
-# Try starting manually to see errors
-cd /opt/addypin/app
-node index.js
+systemctl status addypin.service
+journalctl -u addypin.service -f --lines=20
 ```
 
-The deployment completed but service startup failed. These commands will show us the specific error preventing the application from starting.
+## Fix nginx configuration (CentOS structure):
+```bash
+# Create nginx config directly in conf.d (CentOS standard)
+sudo tee /etc/nginx/conf.d/addypin.conf > /dev/null << 'EOF'
+server {
+    listen 80;
+    server_name addypin.com www.addypin.com;
+
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+EOF
+
+# Test and start nginx
+sudo nginx -t
+sudo systemctl start nginx
+sudo systemctl enable nginx
+```
+
+## Test the complete deployment:
+```bash
+curl -I http://localhost:3000  # Direct app test
+curl -I http://localhost       # nginx proxy test
+```
