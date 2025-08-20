@@ -60,16 +60,24 @@ export default function Sidebar({ coordinates, generatedLink, onLinkGenerated, i
       // Check if it's a PIN_LIMIT_EXCEEDED error
       if (error instanceof Error && error.message.includes("PIN_LIMIT_EXCEEDED")) {
         toast({
-          title: "addypin limit reached",
-          description: "You have reached the 5 addypin limit for this email. Please delete some addypins to create new ones.",
+          title: "🚫 addypin limit reached",
+          description: "You have reached the 5 addypin limit for this email address. To create new addypins, please delete some existing ones from your collection.",
           variant: "destructive",
-
+          duration: 8000,
+        });
+      } else if (error instanceof Error && error.message.includes("Too many pins created")) {
+        toast({
+          title: "⏰ Rate limit exceeded",
+          description: "You're creating addypins too quickly! Please wait a moment before creating another one.",
+          variant: "destructive",
+          duration: 6000,
         });
       } else {
         toast({
-          title: "Error", 
-          description: error instanceof Error ? error.message : "Failed to generate link",
+          title: "❌ Creation failed", 
+          description: error instanceof Error ? error.message : "Failed to generate addypin. Please try again.",
           variant: "destructive",
+          duration: 5000,
         });
       }
     },
