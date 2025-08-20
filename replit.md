@@ -7,6 +7,7 @@ addypin is a modern location sharing service that generates short, memorable lin
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+**Command clarity requirements**: Always specify WHO (you/me), WHERE (VPS/Replit), what to REPLACE (exact tokens/keys), and special instructions.
 Project organization: Keep main folder clean - documentation moved to `/docs` folder.
 Documentation strategy: Maintain detailed .md files as development journal and troubleshooting knowledge base for complex setups.
 
