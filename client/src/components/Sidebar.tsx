@@ -239,26 +239,22 @@ export default function Sidebar({ coordinates, generatedLink, onLinkGenerated, i
           <div className={`mt-3 space-y-2 p-3 rounded-lg ${email ? 'bg-green-50 border border-green-200' : 'bg-gray-50 border border-gray-200'}`}>
             <h3 className={`text-sm font-semibold mb-3 ${email ? 'text-green-800' : 'text-gray-600'}`}>
               <i className="fas fa-check-circle mr-2"></i>
-              {email ? 'Your addypin is ready!' : 'Sample addypin (expires in 72 hours)'}
+              {email ? 'Your addypin is ready!' : 'Temporary addypin (expires in 72 hours)'}
             </h3>
             
             <div>
               <Label className={`block text-xs font-medium mb-1 ${email ? 'text-green-700' : 'text-gray-500'}`}>
                 addypin link
               </Label>
-              <div className={`flex items-center bg-white rounded-lg p-3 ${email ? 'border border-green-200' : 'border border-gray-300'}`}>
-                <Input
-                  type="text"
-                  value={generatedLink.webLink}
-                  readOnly
-                  className={`flex-1 bg-transparent text-sm font-mono border-none p-0 focus-visible:ring-0 ${email ? 'text-addypin-dark' : 'text-gray-500'}`}
-                  data-testid="input-web-link"
-                />
+              <div className={`flex items-center rounded-lg ${email ? 'bg-white border border-green-200 p-3' : 'bg-gray-100 border border-gray-300 p-2'}`}>
+                <div className={`flex-1 text-sm font-mono ${email ? 'text-addypin-dark' : 'text-gray-400'} ${!email ? 'cursor-not-allowed' : ''}`}>
+                  {generatedLink.webLink}
+                </div>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => copyToClipboard(generatedLink.webLink)}
-                  className="ml-2 text-addypin-cyan hover:text-cyan-600 h-auto p-1"
+                  className={`ml-2 h-auto p-1 ${email ? 'text-addypin-cyan hover:text-cyan-600' : 'text-gray-400 hover:text-gray-500'}`}
                   data-testid="button-copy-web-link"
                 >
                   <i className="fas fa-copy"></i>
@@ -270,19 +266,15 @@ export default function Sidebar({ coordinates, generatedLink, onLinkGenerated, i
               <Label className={`block text-xs font-medium mb-1 ${email ? 'text-green-700' : 'text-gray-500'}`}>
                 addypin email
               </Label>
-              <div className={`flex items-center bg-white rounded-lg p-3 ${email ? 'border border-green-200' : 'border border-gray-300'}`}>
-                <Input
-                  type="text"
-                  value={generatedLink.emailLink}
-                  readOnly
-                  className={`flex-1 bg-transparent text-sm font-mono border-none p-0 focus-visible:ring-0 ${email ? 'text-addypin-dark' : 'text-gray-500'}`}
-                  data-testid="input-email-link"
-                />
+              <div className={`flex items-center rounded-lg ${email ? 'bg-white border border-green-200 p-3' : 'bg-gray-100 border border-gray-300 p-2'}`}>
+                <div className={`flex-1 text-sm font-mono ${email ? 'text-addypin-dark' : 'text-gray-400'} ${!email ? 'cursor-not-allowed' : ''}`}>
+                  {generatedLink.emailLink}
+                </div>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => copyToClipboard(generatedLink.emailLink)}
-                  className="ml-2 text-addypin-cyan hover:text-cyan-600 h-auto p-1"
+                  className={`ml-2 h-auto p-1 ${email ? 'text-addypin-cyan hover:text-cyan-600' : 'text-gray-400 hover:text-gray-500'}`}
                   data-testid="button-copy-email-link"
                 >
                   <i className="fas fa-copy"></i>
