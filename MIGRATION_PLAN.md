@@ -1,41 +1,52 @@
-# SYSTEMATIC REPLIT → VPS MIGRATION PLAN
+# Phase 3 Revised: Replicate Replit Environment
 
-## Pre-Migration Information Gathering
+## Current Stack Analysis (Keep)
+✅ **Infrastructure**: RackNerd VPS, DigitalOcean DNS
+✅ **Email**: Resend API (working in Replit)
+✅ **Mail Server**: Maddy (for email receiving)
+✅ **Secrets**: HashiCorp (if using Vault)
+✅ **Database**: PostgreSQL (local on VPS)
 
-Before proceeding with the phased approach, I need to collect these critical variables:
+## What Needs to Change: Deployment Strategy
 
-### 1. VPS Environment Details
-- **VPS Provider**: RackNerd (confirmed)
-- **OS Version**: Need to confirm (likely Ubuntu/CentOS)
-- **Current Node.js version**: Need to verify
-- **Current PostgreSQL status**: Confirmed installed with addypin database
-- **Domain configuration**: addypin.com (confirmed)
+### Current Problem
+- Trying to bundle complex app into single file
+- Fighting Node.js ecosystem patterns
+- ESBuild fails on native dependencies
 
-### 2. Application Configuration
-- **Current working port in Replit**: 5000 (confirmed from logs)
-- **Target production port**: 3000 (nginx expects this)
-- **Database credentials**: Need to confirm VPS PostgreSQL user/password
-- **Environment secrets**: RESEND_API_KEY confirmed, others?
+### Solution: Mirror Replit's Working Pattern
+```bash
+# Phase 3 Revised Execution:
 
-### 3. Current State Assessment
-- **Working backup location**: `/opt/addypin/production-backups/prod_addypin_working_20250820_142152/`
-- **Current broken state**: Service fails due to ESM/dynamic require issues
-- **Nginx configuration**: Exists but may need updates
+# 1. Deploy complete application structure
+cp -r server/ /opt/addypin/app/
+cp -r shared/ /opt/addypin/app/
+cp -r client/dist/ /opt/addypin/app/public/
+cp package.json /opt/addypin/app/
+cp drizzle.config.ts /opt/addypin/app/
+cp tsconfig.json /opt/addypin/app/
 
-### 4. Migration Scope
-- **Database migration**: Need to migrate from Neon to local PostgreSQL
-- **Build process**: Need to replace tsx with compiled artifacts
-- **Service management**: Replace Replit process with systemd
-- **Environment management**: Replace .env auto-loading with systemd environment
+# 2. Install production dependencies
+cd /opt/addypin/app
+npm install --production
 
-## Questions for You:
+# 3. Use tsx runtime (like Replit)
+npm install -g tsx
 
-1. **Should we start fresh or clean the current VPS?** Given the broken state, would you prefer a clean slate approach?
+# 4. Update systemd service to use tsx
+ExecStart=/usr/local/bin/tsx server/index.ts
 
-2. **Database migration strategy**: Do you want to export data from Neon and import to VPS PostgreSQL, or start with fresh schema?
+# 5. Create database schema
+npm run db:push
+```
 
-3. **Deployment approach**: Should we implement the full CI/CD pipeline from the guide, or focus on manual deployment first?
+## Alternative Runtime Options
+- **tsx**: TypeScript execution (mirrors Replit exactly)
+- **ts-node**: Another TypeScript runtime
+- **Bun**: Fast JS runtime with built-in TypeScript support
 
-4. **Risk tolerance**: Should we work on the current VPS or spin up a new one for testing?
-
-Once you confirm these details, I'll execute the phased plan systematically.
+## Benefits
+- Exact replication of working Replit environment
+- No bundling complexity
+- Native dependency support
+- Easy debugging and updates
