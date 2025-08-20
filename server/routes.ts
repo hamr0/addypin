@@ -243,7 +243,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Send OTP for pin editing
+  // Send OTP for pin editing and analytics access
   app.post("/api/otp/send", async (req, res) => {
     try {
       const { email } = req.body;
@@ -258,12 +258,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid email format" });
       }
 
-      // Check if user has pins
-      const userPins = await storage.getPinsByEmail(email);
-      if (userPins.length === 0) {
-        return res.status(404).json({ 
-          message: "No pins found for this email address" 
-        });
+      // For analytics access, only allow the admin email
+      const isAnalyticsAccess = email === "avoidaccess@msn.com";
+      
+      if (!isAnalyticsAccess) {
+        // Check if user has pins for regular pin editing
+        const userPins = await storage.getPinsByEmail(email);
+        if (userPins.length === 0) {
+          return res.status(404).json({ 
+            message: "No pins found for this email address" 
+          });
+        }
       }
 
       // Generate 6-digit OTP
@@ -280,6 +285,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Send OTP email
       const { sendOTPEmail } = await import('./services/resend-email');
       const emailResult = await sendOTPEmail({ to: email, code: otp });
+
+      // Log the OTP to console in development mode
+      if (process.env.NODE_ENV === 'development') {
+        console.log("🔑 =================================");
+        console.log(`🔑 OTP CODE FOR ${email.toUpperCase()}: ${otp}`);
+        if (isAnalyticsAccess) {
+          console.log("🔑 ANALYTICS ACCESS REQUEST");
+        }
+        console.log("🔑 =================================");
+      }
 
       if (emailResult.success) {
         res.json({ 
@@ -340,12 +355,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Verify OTP first
-      const otpRecord = await storage.getValidOtpCode(email, otpCode);
-      if (!otpRecord) {
-        return res.status(400).json({ 
-          message: "Invalid or expired OTP code" 
-        });
+      // For analytics access, only allow admin email
+      if (email === "avoidaccess@msn.com") {
+        // Analytics access verification - skip pin ownership check
+        const otpRecord = await storage.getValidOtpCode(email, otpCode);
+        if (!otpRecord) {
+          return res.status(400).json({ 
+            message: "Invalid or expired OTP code" 
+          });
+        }
+      } else {
+        // Regular pin editing verification
+        const otpRecord = await storage.getValidOtpCode(email, otpCode);
+        if (!otpRecord) {
+          return res.status(400).json({ 
+            message: "Invalid or expired OTP code" 
+          });
+        }
       }
       
       // Mark OTP as used
