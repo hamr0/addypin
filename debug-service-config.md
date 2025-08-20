@@ -1,31 +1,43 @@
-# Debug Service Configuration - 502 Bad Gateway
+# Debug Service Configuration Issue
 
-## Current Status:
-- ✅ Service is running (systemctl shows active)
-- ❌ nginx returns 502 Bad Gateway
-- 🔍 Application likely not listening on correct port
+## Root Cause Analysis: 203/EXEC Error
 
-## Debug Commands for VPS:
+The systemd service fails because `appuser` cannot access Node.js installed in `/root/.nvm/` (root's home directory).
 
+## Diagnosis Commands:
 ```bash
-# Check actual application logs
-journalctl -u addypin -f --no-pager
+# Test if appuser can access Node.js
+sudo -u appuser /root/.nvm/versions/node/v20.19.4/bin/node --version
 
-# Check what ports are actually listening
-netstat -tlnp | grep node
+# Check directory permissions
+ls -la /root/.nvm/versions/node/v20.19.4/bin/
 
-# Check nginx configuration
-cat /etc/nginx/sites-available/addypin
-
-# Test direct connection to app
-curl http://localhost:3000/api/stats
-
-# Check if app is actually starting properly
-ps aux | grep node
+# Test the exact command that systemd runs
+sudo -u appuser -s
+cd /opt/addypin/app
+/root/.nvm/versions/node/v20.19.4/bin/node index.js
 ```
 
-## Likely Issues:
-1. App not binding to port 3000
-2. App crashing after startup
-3. nginx pointing to wrong port
-4. Environment variables not loaded properly
+## Solution Options:
+
+### Option 1: Install Node.js system-wide
+```bash
+# Install Node.js globally for all users
+curl -fsSL https://rpm.nodesource.com/setup_20.x | sudo bash -
+sudo yum install -y nodejs
+which node  # Should show /usr/bin/node
+```
+
+### Option 2: Copy Node.js to accessible location
+```bash
+# Copy Node.js to system location
+sudo cp -r /root/.nvm/versions/node/v20.19.4/bin/* /usr/local/bin/
+sudo chmod +x /usr/local/bin/node
+```
+
+### Option 3: Run as root user (less secure)
+```bash
+# Modify service to run as root
+sudo sed -i 's/User=appuser/User=root/' /etc/systemd/system/addypin.service
+sudo sed -i 's/Group=appuser/Group=root/' /etc/systemd/system/addypin.service
+```
