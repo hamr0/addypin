@@ -248,7 +248,7 @@ export default function Sidebar({ coordinates, generatedLink, onLinkGenerated, i
               </Label>
               <div className={`flex items-center rounded-lg ${email ? 'bg-white border border-green-200 p-3' : 'bg-gray-100 border border-gray-300 p-2'}`}>
                 <div className={`flex-1 text-sm font-mono ${email ? 'text-addypin-dark' : 'text-gray-400'} ${!email ? 'cursor-not-allowed' : ''}`}>
-                  {generatedLink.webLink}
+                  {generatedLink.webLink || 'Loading...'}
                 </div>
                 <Button
                   variant="ghost"
@@ -268,7 +268,7 @@ export default function Sidebar({ coordinates, generatedLink, onLinkGenerated, i
               </Label>
               <div className={`flex items-center rounded-lg ${email ? 'bg-white border border-green-200 p-3' : 'bg-gray-100 border border-gray-300 p-2'}`}>
                 <div className={`flex-1 text-sm font-mono ${email ? 'text-addypin-dark' : 'text-gray-400'} ${!email ? 'cursor-not-allowed' : ''}`}>
-                  {generatedLink.emailLink}
+                  {generatedLink.emailLink || 'Loading...'}
                 </div>
                 <Button
                   variant="ghost"

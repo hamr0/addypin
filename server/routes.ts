@@ -144,6 +144,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.status(201).json({
         pin,
+        webLink: `${pin.shortcode}.addypin.com`,
+        emailLink: `${pin.shortcode}@addypin.com`,
         message: validatedData.createdBy 
           ? "addypin created successfully! It's saved permanently."
           : "addypin created successfully! It will be deleted in 72 hours unless you add an email."
