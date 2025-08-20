@@ -30,18 +30,26 @@ fi
 echo "Building application..."
 cd addypin-repo
 npm install
+
+# Build client
+echo "Building client..."
 npm run build
+
+# Build server with proper bundling (no external packages)
+echo "Building server with dependencies..."
+npx esbuild server/index.ts --platform=node --bundle --format=esm --outdir=dist --external:pg-native
 
 # Deploy built files
 echo "Deploying files..."
 rm -rf ../app/*
 cp -r dist/* ../app/
 cp package.json ../app/
-cp -r node_modules ../app/
 
-# Create production server.js if needed
-if [ ! -f "../app/server.js" ]; then
-    cat > ../app/server.js << 'EOF'
+# Install only necessary production dependencies
+echo "Installing production dependencies..."
+cd ../app
+npm install --only=production
+cd ..
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
