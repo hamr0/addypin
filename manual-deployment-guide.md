@@ -1,58 +1,38 @@
-# Manual Deployment Guide
+# Critical Discovery: Application Startup Failure
 
-Since GitHub Actions SSH authentication is having issues, let's deploy manually using the VPS scripts we created.
+## New Evidence Analysis:
+- **Service shows "running"** but **no port listening** = immediate crash after startup
+- **Configuration conflicts removed** ✅
+- **Build artifacts exist** ✅  
+- **Database exists** ✅
+- **Root cause**: Application crashes during initialization before binding to port
 
-## Method 1: Manual Deployment via VPS Scripts
+## NEW PLAN: Direct Application Debugging
 
-**Connect to your VPS and run the deployment script directly:**
+**Why this approach:** Stop relying on systemd status and debug the actual application startup failure.
 
+### Step 1: Direct Application Testing
 ```bash
-# Connect via PuTTY
-ssh root@155.94.144.191
+# Test application directly to see crash details
+cd /opt/addypin/app
+source .env
+node index.js
 
-# Run the manual deployment script
-cd /opt/addypin
-./scripts/deploy-production.sh
+# This will show the actual error instead of systemd masking it
 ```
 
-This will:
-- Create backups automatically
-- Pull latest code from GitHub 
-- Build and deploy safely
-- Run health checks
-- Rollback if anything fails
-
-## Method 2: Quick Manual Update
-
-If you prefer to update specific files manually:
-
-**1. Update database configuration:**
+### Step 2: Environment Variable Verification  
 ```bash
-# Connect to VPS
-ssh root@155.94.144.191
-
-# Navigate to repository 
-cd /opt/addypin/addypin-repo
-
-# Pull latest changes
-git fetch origin
-git reset --hard origin/main
-
-# Update the running application
-cp server/db.ts /opt/addypin/app/server/db.ts
-
-# Restart service to apply database fix
-systemctl restart addypin
-
-# Verify fix worked
-curl https://addypin.com/api/stats
+# Verify .env is properly formatted and accessible
+cat .env
+export $(cat .env | xargs)
+echo $DATABASE_URL
 ```
 
-## Expected Results
+### Step 3: Database Connection Test
+```bash
+# Test database connectivity independently
+psql postgresql://addypin_user:secure_password_123@localhost:5432/addypin -c "SELECT COUNT(*) FROM pins;"
+```
 
-After either method:
-- API stats endpoint should return data instead of 500 error
-- Service should be running normally
-- Database connectivity issue should be resolved
-
-The manual deployment will achieve the same result as the automated GitHub Actions workflow.
+**This approach targets the actual startup failure** instead of assuming systemd configuration issues.
