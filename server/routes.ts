@@ -14,12 +14,16 @@ import {
   pinCreationLimiter, 
   dailyPinLimiter, 
   generalLimiter, 
-  antibotMiddleware 
+  antibotMiddleware,
+  strictBotLimiter,
+  isEmailWhitelisted,
+  isIPWhitelisted
 } from "./middleware/rateLimiter";
 import { 
   honeypotMiddleware, 
   timingAnalysisMiddleware 
 } from "./middleware/security";
+import { ddosProtectionMiddleware, getDDoSStatus } from "./middleware/ddosProtection";
 import { securityLogger } from "./services/securityLogger";
 import { sendMapAutoResponse } from "./services/email-autoresponder";
 
@@ -36,7 +40,8 @@ function invalidateStatsCache() {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Apply general rate limiting to all routes
+  // Apply comprehensive protection to all routes
+  app.use('/api', ddosProtectionMiddleware);
   app.use('/api', generalLimiter);
 
   // Generate shortcode helper
@@ -60,13 +65,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertPinSchema.parse(req.body);
       
-      // Check email-based pin limit (5 pins max per email)
-      if (validatedData.createdBy) {
+      // Check email-based pin limit (5 pins max per email, unless whitelisted)
+      if (validatedData.createdBy && !isEmailWhitelisted(validatedData.createdBy)) {
         const pinCount = await storage.getPinCountByEmail(validatedData.createdBy);
         if (pinCount >= 5) {
           return res.status(400).json({ 
-            message: "addypin limit reached. You can have a maximum of 5 registered addypins per email address.",
-            code: "PIN_LIMIT_EXCEEDED"
+            message: "📧 You've reached your limit of 5 addypins per email address. This helps prevent spam and keeps addypin running smoothly for everyone!",
+            code: "PIN_LIMIT_EXCEEDED",
+            hint: "Consider using different coordinates or contact support if you need more pins."
           });
         }
       }
@@ -84,9 +90,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         if (duplicatePin.length > 0) {
           return res.status(400).json({
-            message: "You already have an addypin at these exact coordinates.",
+            message: "🎯 You already have an addypin at these exact coordinates! Use your existing one or choose a slightly different location.",
             code: "DUPLICATE_COORDINATES",
-            existingShortcode: duplicatePin[0].shortcode
+            existingShortcode: duplicatePin[0].shortcode,
+            hint: `Your existing addypin: ${duplicatePin[0].shortcode}.addypin.com`
           });
         }
       }
@@ -476,10 +483,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Security stats endpoint (for monitoring)
+  // Enhanced security monitoring endpoint
   app.get("/api/security/stats", async (req, res) => {
     try {
-      const securityStats = { message: "Security monitoring active" };
+      const ddosStatus = getDDoSStatus();
+      const securityStats = {
+        message: "🛡️ DDoS Protection & Security Monitoring Active",
+        ddosProtection: ddosStatus,
+        rateLimiting: {
+          status: "active",
+          whitelistedEmails: 1, // Don't expose actual emails
+          whitelistedIPs: process.env.NODE_ENV === 'development' ? "dev_mode_whitelist" : "production_whitelist"
+        },
+        botProtection: {
+          status: "active",
+          patterns: 10,
+          threatDetection: "enhanced"
+        },
+        timestamp: new Date().toISOString()
+      };
       res.json(securityStats);
     } catch (error) {
       console.error("Error fetching security stats:", error);
