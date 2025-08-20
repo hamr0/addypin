@@ -388,7 +388,7 @@ export default function MapSection({ coordinates, onCoordinatesChange, generated
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
         <h2 className="text-sm font-semibold text-addypin-dark mb-3 flex items-center">
           <i className="fas fa-external-link-alt text-addypin-cyan mr-2"></i>
-          Open in Map Apps
+          Open in
         </h2>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
           {mapApps.map((app) => (
