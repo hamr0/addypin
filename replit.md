@@ -11,6 +11,37 @@ Preferred communication style: Simple, everyday language.
 Project organization: Keep main folder clean - documentation moved to `/docs` folder.
 Documentation strategy: Maintain detailed .md files as development journal and troubleshooting knowledge base for complex setups.
 
+## Production Infrastructure Details (August 2025)
+
+✅ **PRODUCTION VPS CONFIGURATION:**
+- **VPS Provider:** RackNerd (155.94.144.191)
+- **SSH Access:** root@155.94.144.191 (password: 4R1ilBJM18jt9f2TAu)
+- **Application Directory:** /opt/addypin/app (current running app)
+- **Repository Location:** /opt/addypin/addypin-repo
+- **Service Management:** systemd (addypin.service)
+- **Process:** PID 73019 running /usr/bin/node index.js as 'addypin' user
+- **Domain:** https://addypin.com (SSL configured with Let's Encrypt)
+- **Node.js:** v20.19.4, NPM: 10.8.2
+
+✅ **DATABASE CONFIGURATION:**
+- **PostgreSQL:** localhost:5432 (active and running)
+- **Database Name:** addypin
+- **Database User:** addypin_user
+- **Connection:** postgresql://addypin_user:secure_p...@localhost:5432/addypin
+- **Backup Directory:** /opt/addypin/production-backups/
+
+✅ **GITHUB INTEGRATION:**
+- **Repository:** https://github.com/amrhas82/addypin
+- **Access Token:** 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
+- **Local Git:** /opt/addypin/addypin-repo/.git
+- **Git Version:** 2.43.7
+
+✅ **ENVIRONMENT VARIABLES:**
+- NODE_ENV=production
+- DATABASE_URL=postgresql://addypin_user:secure_p...@localhost:5432/addypin
+- RESEND_API_KEY (from Replit secrets)
+- Available from systemd environment configuration
+
 ## Recent Changes (August 2025)
 
 ✅ **COMPREHENSIVE DDOS PROTECTION IMPLEMENTED (August 20, 2025):**
