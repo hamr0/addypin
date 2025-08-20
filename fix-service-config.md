@@ -1,39 +1,29 @@
-# Service Configuration Fix
+# Fix Service Configuration
 
-## Issue Identified
-- Service trying to run from `/opt/addypin/` 
-- But application files are in `/opt/addypin/app/`
-- Need to update systemd service WorkingDirectory
+## Problem Identified:
+- **Service expects**: `/opt/addypin/app/index.js`
+- **Build creates**: `/opt/addypin/app/dist/index.js` 
+- **Package.json start script**: `node dist/index.js`
 
-## Fix Required
+## Solution: Update systemd service to use correct path
 
-Update the systemd service file to use correct working directory:
+Run these commands on VPS:
 
 ```bash
-# Check current service configuration
-cat /etc/systemd/system/addypin.service
+# Update the systemd service to use the correct file path
+sudo systemctl edit addypin --full
 
-# Should show WorkingDirectory=/opt/addypin/app
-# If it shows /opt/addypin, that's the problem
+# Replace the ExecStart line with:
+ExecStart=/usr/bin/node dist/index.js
+
+# Or alternatively, copy the built file to the expected location:
+cd /opt/addypin/app
+cp dist/index.js index.js
+
+# Then restart the service
+systemctl daemon-reload
+systemctl restart addypin
+systemctl status addypin
 ```
 
-## Service Configuration Should Be:
-```ini
-[Unit]
-Description=AddyPin Location Sharing Service
-After=network.target
-
-[Service]
-Type=simple
-User=addypin
-WorkingDirectory=/opt/addypin/app
-ExecStart=/usr/bin/node index.js
-Restart=always
-RestartSec=10
-Environment=NODE_ENV=production
-Environment=DATABASE_URL=postgresql://addypin_user:secure_password@localhost:5432/addypin
-Environment=RESEND_API_KEY=your_key_here
-
-[Install]
-WantedBy=multi-user.target
-```
+This aligns the service configuration with our build output location.
