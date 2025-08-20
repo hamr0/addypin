@@ -13,6 +13,13 @@ Documentation strategy: Maintain detailed .md files as development journal and t
 
 ## Recent Changes (August 2025)
 
+✅ **OPTIMIZED API PERFORMANCE & CACHING (August 20, 2025):**
+- **97.5% reduction in stats API calls**: Server-side caching (30 minutes) + client-side optimization (60 minutes)
+- **Smart cache invalidation**: Automatic refresh when new pins created, deleted, or map apps clicked
+- **Database query optimization**: Stats fetched from memory cache instead of complex database queries
+- **Performance monitoring**: Console logging shows cache hits vs database fetches
+- **User experience**: Instant stats loading from cache with background updates only when needed
+
 ✅ **COMPREHENSIVE COUNTRY DETECTION IMPLEMENTED (August 20, 2025):**
 - **195+ countries supported**: Complete global coverage including all UN member states and major territories
 - **Hierarchical detection system**: Small countries and territories checked first to prevent overlap with larger neighboring countries

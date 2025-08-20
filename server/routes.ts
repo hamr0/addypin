@@ -23,6 +23,18 @@ import {
 import { securityLogger } from "./services/securityLogger";
 import { sendMapAutoResponse } from "./services/email-autoresponder";
 
+// Server-side stats cache
+let statsCache: any = null;
+let statsCacheTimestamp: number = 0;
+const STATS_CACHE_DURATION = 30 * 60 * 1000; // 30 minutes in milliseconds
+
+// Helper function to invalidate stats cache
+function invalidateStatsCache() {
+  statsCache = null;
+  statsCacheTimestamp = 0;
+  console.log("🗑️ Stats cache invalidated");
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Apply general rate limiting to all routes
   app.use('/api', generalLimiter);
@@ -108,6 +120,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       const pin = await storage.createPin(pinData);
+      
+      // Invalidate stats cache since we created a new pin
+      invalidateStatsCache();
       
       // Track creation analytics
       await analyticsService.trackEvent({
@@ -208,7 +223,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         eventType: "map_app_click",
         userAgent: req.headers['user-agent'] || '',
         ipAddress: req.ip || req.connection.remoteAddress || '127.0.0.1',
+        metadata: { appName: mapApp }
       });
+
+      // Invalidate stats cache since click counts affect stats
+      invalidateStatsCache();
 
       res.json({ success: true });
     } catch (error) {
@@ -402,7 +421,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get analytics stats
   app.get("/api/stats", async (req, res) => {
     try {
+      const now = Date.now();
+      
+      // Check if we have valid cached data
+      if (statsCache && (now - statsCacheTimestamp) < STATS_CACHE_DURATION) {
+        console.log("📊 Serving cached stats data");
+        return res.json(statsCache);
+      }
+      
+      // Fetch fresh data from database
+      console.log("🔄 Fetching fresh stats from database");
       const stats = await storage.getTodaysStats();
+      
+      // Update cache
+      statsCache = stats;
+      statsCacheTimestamp = now;
+      
       res.json(stats);
     } catch (error) {
       console.error("Error fetching stats:", error);
@@ -431,6 +465,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!deleted) {
         return res.status(404).json({ message: "Pin not found" });
       }
+
+      // Invalidate stats cache since pin count changed
+      invalidateStatsCache();
 
       res.json({ success: true, message: "Pin deleted successfully" });
     } catch (error) {
