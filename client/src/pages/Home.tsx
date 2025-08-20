@@ -102,8 +102,8 @@ export default function Home() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-white border-t border-gray-200 mt-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <footer className="bg-white border-t border-gray-200 mt-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="col-span-1 md:col-span-2">
               <div className="mb-2">
@@ -132,9 +132,9 @@ export default function Home() {
               </ul>
             </div>
           </div>
-          <div className="border-t border-gray-200 mt-4 pt-3 flex flex-col md:flex-row justify-between items-center">
+          <div className="border-t border-gray-200 mt-2 pt-2 flex flex-col md:flex-row justify-between items-center">
             <p className="text-xs text-addypin-medium">© 2025 addypin</p>
-            <div className="flex space-x-4 mt-4 md:mt-0">
+            <div className="flex space-x-4 mt-2 md:mt-0">
               <a 
                 href="https://www.linkedin.com/company/10224951/admin/products/cairenes-solutions-addypin/"
                 target="_blank"
