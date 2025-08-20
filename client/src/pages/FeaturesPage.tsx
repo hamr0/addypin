@@ -31,29 +31,29 @@ export default function FeaturesPage() {
       </header>
 
       {/* Hero Section */}
-      <section className="bg-white py-16">
+      <section className="bg-white py-8">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-4xl font-bold text-addypin-dark mb-6">
+          <h1 className="text-3xl font-bold text-addypin-dark mb-4">
             Features that make location sharing simple
           </h1>
-          <p className="text-xl text-addypin-medium mb-8">
+          <p className="text-lg text-addypin-medium mb-6">
             addypin transforms complex GPS coordinates into memorable, shareable links that work everywhere.
           </p>
         </div>
       </section>
 
       {/* Core Features */}
-      <section className="py-16">
+      <section className="py-8">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             
             {/* Interactive Map */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-              <div className="w-12 h-12 bg-addypin-cyan bg-opacity-10 rounded-xl flex items-center justify-center mb-6">
-                <MapPin className="w-6 h-6 text-addypin-cyan" />
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+              <div className="w-10 h-10 bg-addypin-cyan bg-opacity-10 rounded-lg flex items-center justify-center mb-3">
+                <MapPin className="w-5 h-5 text-addypin-cyan" />
               </div>
-              <h3 className="text-xl font-semibold text-addypin-dark mb-4">Interactive Map</h3>
-              <ul className="space-y-2 text-addypin-medium">
+              <h3 className="text-lg font-semibold text-addypin-dark mb-2">Interactive Map</h3>
+              <ul className="space-y-1 text-sm text-addypin-medium">
                 <li>• Click anywhere to create instant pins</li>
                 <li>• Drag pins to adjust coordinates precisely</li>
                 <li>• Works on mobile, tablet, and desktop</li>
@@ -61,12 +61,12 @@ export default function FeaturesPage() {
             </div>
 
             {/* Short Memorable Links */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mb-6">
-                <Share className="w-6 h-6 text-green-600" />
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+              <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mb-3">
+                <Share className="w-5 h-5 text-green-600" />
               </div>
-              <h3 className="text-xl font-semibold text-addypin-dark mb-4">Short Memorable Links</h3>
-              <ul className="space-y-2 text-addypin-medium">
+              <h3 className="text-lg font-semibold text-addypin-dark mb-2">Short Memorable Links</h3>
+              <ul className="space-y-1 text-sm text-addypin-medium">
                 <li>• 6-character codes like ABC123</li>
                 <li>• Two formats: ABC123.addypin.com</li>
                 <li>• Easy to remember and share</li>
@@ -74,12 +74,12 @@ export default function FeaturesPage() {
             </div>
 
             {/* Universal Map Apps */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-6">
-                <Globe className="w-6 h-6 text-blue-600" />
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mb-3">
+                <Globe className="w-5 h-5 text-blue-600" />
               </div>
-              <h3 className="text-xl font-semibold text-addypin-dark mb-4">Universal Map Apps</h3>
-              <ul className="space-y-2 text-addypin-medium">
+              <h3 className="text-lg font-semibold text-addypin-dark mb-2">Universal Map Apps</h3>
+              <ul className="space-y-1 text-sm text-addypin-medium">
                 <li>• Works with Google Maps, Apple Maps</li>
                 <li>• Supports Waze, HERE WeGo, MapQuest</li>
                 <li>• One-click access to any map app</li>
@@ -87,12 +87,12 @@ export default function FeaturesPage() {
             </div>
 
             {/* Smart Storage */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-              <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center mb-6">
-                <Clock className="w-6 h-6 text-amber-600" />
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+              <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center mb-3">
+                <Clock className="w-5 h-5 text-amber-600" />
               </div>
-              <h3 className="text-xl font-semibold text-addypin-dark mb-4">Smart Storage</h3>
-              <ul className="space-y-2 text-addypin-medium">
+              <h3 className="text-lg font-semibold text-addypin-dark mb-2">Smart Storage</h3>
+              <ul className="space-y-1 text-sm text-addypin-medium">
                 <li>• Save pins with email for permanent storage</li>
                 <li>• Temporary pins auto-delete after 72 hours</li>
                 <li>• Perfect for both quick sharing and long-term use</li>
@@ -100,12 +100,12 @@ export default function FeaturesPage() {
             </div>
 
             {/* Email Verification */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-              <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mb-6">
-                <Shield className="w-6 h-6 text-purple-600" />
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+              <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mb-3">
+                <Shield className="w-5 h-5 text-purple-600" />
               </div>
-              <h3 className="text-xl font-semibold text-addypin-dark mb-4">Email Verification</h3>
-              <ul className="space-y-2 text-addypin-medium">
+              <h3 className="text-lg font-semibold text-addypin-dark mb-2">Email Verification</h3>
+              <ul className="space-y-1 text-sm text-addypin-medium">
                 <li>• Edit coordinates with email verification</li>
                 <li>• Simple 6-digit verification codes</li>
                 <li>• Full control over your pins</li>
@@ -113,12 +113,12 @@ export default function FeaturesPage() {
             </div>
 
             {/* Mobile Friendly */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
-              <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center mb-6">
-                <Smartphone className="w-6 h-6 text-red-600" />
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+              <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center mb-3">
+                <Smartphone className="w-5 h-5 text-red-600" />
               </div>
-              <h3 className="text-xl font-semibold text-addypin-dark mb-4">Mobile Friendly</h3>
-              <ul className="space-y-2 text-addypin-medium">
+              <h3 className="text-lg font-semibold text-addypin-dark mb-2">Mobile Friendly</h3>
+              <ul className="space-y-1 text-sm text-addypin-medium">
                 <li>• Touch-friendly map interface</li>
                 <li>• Responsive design for all screens</li>
                 <li>• GPS location detection</li>

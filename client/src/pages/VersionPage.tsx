@@ -61,57 +61,57 @@ export default function VersionPage() {
 
   return (
     <div className="min-h-screen bg-addypin-light">
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <div className="container mx-auto px-4 py-6 max-w-4xl">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-6">
           <Link href="/">
-            <Button variant="ghost" className="mb-4" data-testid="button-back-home">
+            <Button variant="ghost" className="mb-3" data-testid="button-back-home">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Home
             </Button>
           </Link>
           
-          <h1 className="text-3xl font-bold text-addypin-dark mb-2">Version History</h1>
-          <p className="text-addypin-medium">
+          <h1 className="text-2xl font-bold text-addypin-dark mb-2">Version History</h1>
+          <p className="text-sm text-addypin-medium">
             Track the evolution of AddyPin with detailed release notes and feature updates.
           </p>
         </div>
 
         {/* Version Timeline */}
-        <div className="space-y-6">
+        <div className="space-y-4">
           {versions.map((version, index) => (
             <Card key={version.version} className="border-l-4 border-l-addypin-cyan" data-testid={`version-${version.version}`}>
-              <CardHeader>
+              <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <Badge className={`${getTypeColor(version.type)} flex items-center space-x-1`}>
+                  <div className="flex items-center space-x-2">
+                    <Badge className={`${getTypeColor(version.type)} flex items-center space-x-1 text-xs`}>
                       {getTypeIcon(version.type)}
                       <span>{version.type}</span>
                     </Badge>
-                    <CardTitle className="text-addypin-dark">
+                    <CardTitle className="text-addypin-dark text-lg">
                       v{version.version} - {version.title}
                     </CardTitle>
                   </div>
-                  <div className="flex items-center text-addypin-medium text-sm">
-                    <Calendar className="w-4 h-4 mr-1" />
+                  <div className="flex items-center text-addypin-medium text-xs">
+                    <Calendar className="w-3 h-3 mr-1" />
                     {version.date}
                   </div>
                 </div>
-                <CardDescription>{version.description}</CardDescription>
+                <CardDescription className="text-sm">{version.description}</CardDescription>
               </CardHeader>
               
-              <CardContent>
-                <div className="space-y-4">
+              <CardContent className="pt-0">
+                <div className="space-y-3">
                   {/* Features */}
                   {version.features.length > 0 && (
                     <div>
-                      <h4 className="font-semibold text-addypin-dark mb-2 flex items-center">
+                      <h4 className="font-medium text-addypin-dark mb-1 flex items-center text-sm">
                         <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
                         New Features
                       </h4>
-                      <ul className="space-y-1 ml-4">
+                      <ul className="space-y-0.5 ml-4">
                         {version.features.map((feature, idx) => (
-                          <li key={idx} className="text-addypin-medium text-sm flex items-start">
+                          <li key={idx} className="text-addypin-medium text-xs flex items-start">
                             <span className="text-green-500 mr-2">+</span>
                             {feature}
                           </li>
@@ -123,13 +123,13 @@ export default function VersionPage() {
                   {/* Improvements */}
                   {version.improvements.length > 0 && (
                     <div>
-                      <h4 className="font-semibold text-addypin-dark mb-2 flex items-center">
+                      <h4 className="font-medium text-addypin-dark mb-1 flex items-center text-sm">
                         <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
                         Improvements
                       </h4>
-                      <ul className="space-y-1 ml-4">
+                      <ul className="space-y-0.5 ml-4">
                         {version.improvements.map((improvement, idx) => (
-                          <li key={idx} className="text-addypin-medium text-sm flex items-start">
+                          <li key={idx} className="text-addypin-medium text-xs flex items-start">
                             <span className="text-blue-500 mr-2">↗</span>
                             {improvement}
                           </li>
