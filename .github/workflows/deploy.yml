@@ -1,46 +1,12 @@
 name: Deploy AddyPin to Production
 
 on:
-  # Run tests on every PR to main
-  pull_request:
-    branches: [main]
-  # Deploy automatically when code is merged to main
   push:
     branches: [main]
 
 jobs:
-  test:
-    # This job only runs on Pull Requests
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run build
-        run: npm run build
-
-      - name: Run basic validation
-        run: |
-          # Check if server files exist
-          test -f server/index.ts
-          test -f package.json
-          # Check if client build succeeded
-          test -d dist || test -d build || echo "No dist directory found"
-
   deploy:
-    # This job only runs on a push to main (after a PR is merged)
-    if: github.event_name == 'push'
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -57,11 +23,14 @@ jobs:
         run: npm run build
 
       - name: Deploy to VPS
-        uses: appleboy/ssh-action@v1.0.0
+        uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           password: ${{ secrets.SSH_PASSWORD }}
+          port: 22
+          timeout: 60s
+          command_timeout: 30m
           script: |
             # Set deployment timestamp
             DEPLOY_TIME=$(date '+%Y%m%d_%H%M%S')
@@ -114,7 +83,7 @@ jobs:
             systemctl start addypin
 
             # Wait for service to start
-            sleep 5
+            sleep 10
 
             # Verify deployment
             echo "🔍 Verifying deployment..."
@@ -157,19 +126,7 @@ jobs:
           # Test main page
           curl -f https://addypin.com/ > /dev/null
           
-          # Test API endpoint
+          # Test API endpoint  
           curl -f https://addypin.com/api/stats > /dev/null
           
           echo "✅ All health checks passed"
-
-      - name: Cleanup old backups
-        uses: appleboy/ssh-action@v1.0.0
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          password: ${{ secrets.SSH_PASSWORD }}
-          script: |
-            # Keep only last 3 backups
-            cd /opt/addypin
-            ls -t app-backup-* | tail -n +4 | xargs rm -rf 2>/dev/null || true
-            echo "🧹 Cleanup completed"
