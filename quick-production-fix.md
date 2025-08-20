@@ -1,27 +1,31 @@
-# Quick Production Database Fix
+# VPS Environment Fix Commands
 
-## Commands for VPS:
+Run these commands on your VPS to complete the environment configuration:
 
 ```bash
-# Check current production structure
-ls -la /opt/addypin/app/
+# 1. Create proper .env file in production app directory
+cd /opt/addypin/app
+cat > .env << 'EOF'
+DATABASE_URL=postgresql://addypin_user:secure_password_123@localhost:5432/addypin
+NODE_ENV=production
+PORT=3000
+RESEND_API_KEY=re_d3XFqzL8_CRZ8F8NxQNq8gJ2j7mH4CpLw4uP8
+EOF
 
-# Check if we can override database configuration via environment
-cat /etc/systemd/system/addypin.service
+# 2. Update systemd service to load .env file
+sudo systemctl edit addypin --full
 
-# Update the service to use local PostgreSQL without SSL
-sudo systemctl edit addypin
+# 3. In the nano editor, modify the [Service] section to include:
+# EnvironmentFile=/opt/addypin/app/.env
+# (Keep all existing Environment= lines as fallbacks)
 
-# Add this content:
-[Service]
-Environment="DATABASE_URL=postgresql://addypin_user:secure_password_123@localhost:5432/addypin?sslmode=disable"
-
-# Reload and restart
+# 4. After saving, reload and restart
 systemctl daemon-reload
 systemctl restart addypin
+systemctl status addypin
 
-# Test the fix
+# 5. Test the API
 curl https://addypin.com/api/stats
 ```
 
-This overrides the database connection at the environment level without touching the compiled code.
+This creates the missing environment bridge between Replit and VPS architectures.
