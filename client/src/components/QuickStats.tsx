@@ -14,8 +14,8 @@ export function QuickStats() {
       <div className="grid grid-cols-2 gap-2">
         <div className="stats-card rounded-lg p-2">
           <div className="flex items-center">
-            <div className="w-6 h-6 bg-addypin-cyan bg-opacity-10 rounded-md flex items-center justify-center mr-2">
-              <MapPin className="w-3 h-3 text-addypin-cyan" />
+            <div className="w-6 h-6 bg-addypin-cyan rounded-md flex items-center justify-center mr-2">
+              <MapPin className="w-3 h-3 text-white" />
             </div>
             <div>
               <p className="text-xs font-medium text-addypin-medium">Pinned</p>
