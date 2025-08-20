@@ -1,37 +1,37 @@
-# Trigger CI/CD Deployment
+# Deploy Database Fix - Option 1 (VPS Pull)
 
-## Step 1: Go to GitHub Repository
-https://github.com/amrhas82/addypin
+## Status: Ready to Deploy ✅
 
-## Step 2: Edit server/db.ts
-1. Click on `server/db.ts` file
-2. Click the pencil icon (Edit)
-3. Replace the entire content with:
+The database fix has been committed to GitHub. Run this on your VPS:
 
-```typescript
-import { drizzle } from 'drizzle-orm/node-postgres';
-import { Pool } from 'pg';
-import * as schema from "@shared/schema";
+```bash
+# Navigate to deployment directory
+cd /opt/addypin
 
-if (!process.env.DATABASE_URL) {
-  throw new Error(
-    "DATABASE_URL must be set. Did you forget to provision a database?",
-  );
-}
+# Run the tested deployment script
+./deploy.sh
 
-// Configure connection pool for local PostgreSQL
-const connectionConfig = {
-  connectionString: process.env.DATABASE_URL,
-  ssl: false // Disable SSL for local PostgreSQL in production
-};
-
-export const pool = new Pool(connectionConfig);
-export const db = drizzle(pool, { schema });
+# Or manual steps if script not available:
+cd addypin-repo
+git pull origin main
+npm ci --omit=dev
+systemctl restart addypin
+sleep 5
+curl https://addypin.com/api/stats
 ```
 
-## Step 3: Commit
-1. Scroll down
-2. Add commit message: "Fix production database connectivity"
-3. Click "Commit changes"
+## Expected Result:
+API should return actual stats like:
+```json
+{"pinsCreated":20,"pinnedCount":9,"linksClicked":4...}
+```
 
-This will trigger the GitHub Actions deployment to apply the database fix.
+Instead of:
+```json
+{"message":"Failed to fetch stats"}
+```
+
+## What This Fix Does:
+- Disables SSL for local PostgreSQL connection in production
+- Resolves database connectivity issues causing API failures
+- Uses proven VPS → GitHub pull method (working connection)
