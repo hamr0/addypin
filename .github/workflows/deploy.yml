@@ -57,11 +57,14 @@ jobs:
         run: npm run build
 
       - name: Deploy to VPS
-        uses: appleboy/ssh-action@v1.0.0
+        uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           password: ${{ secrets.SSH_PASSWORD }}
+          port: 22
+          timeout: 60s
+          command_timeout: 30m
           script: |
             # Set deployment timestamp
             DEPLOY_TIME=$(date '+%Y%m%d_%H%M%S')
@@ -163,11 +166,13 @@ jobs:
           echo "✅ All health checks passed"
 
       - name: Cleanup old backups
-        uses: appleboy/ssh-action@v1.0.0
+        uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           password: ${{ secrets.SSH_PASSWORD }}
+          port: 22
+          timeout: 60s
           script: |
             # Keep only last 3 backups
             cd /opt/addypin
