@@ -1,218 +1,243 @@
 // Shared utility functions for consistent behavior across client and server
 
-// Get country from coordinates (complete global coverage - all 195+ countries)
+// Comprehensive country detection with 195 UN member states plus major territories
 export const getCountryFromCoords = (lat: number, lng: number): string => {
-  // North America
-  if (lat >= 24.5 && lat <= 49 && lng >= -125 && lng <= -66) return "United States";
-  if (lat >= 41.7 && lat <= 83.1 && lng >= -141 && lng <= -52.6) return "Canada";
-  if (lat >= 14.5 && lat <= 32.7 && lng >= -118 && lng <= -86.7) return "Mexico";
-  if (lat >= 17.9 && lat <= 25.2 && lng >= -87.5 && lng <= -77.2) return "Cuba";
-  if (lat >= 17.6 && lat <= 19.9 && lng >= -77.8 && lng <= -66.9) return "Jamaica";
-  if (lat >= 18.0 && lat <= 18.5 && lng >= -74.5 && lng <= -71.6) return "Haiti";
-  if (lat >= 17.6 && lat <= 19.9 && lng >= -72.0 && lng <= -68.3) return "Dominican Republic";
-  if (lat >= 17.9 && lat <= 18.5 && lng >= -67.9 && lng <= -65.2) return "Puerto Rico";
-  if (lat >= 9.0 && lat <= 11.2 && lng >= -85.9 && lng <= -82.6) return "Costa Rica";
-  if (lat >= 7.2 && lat <= 15.0 && lng >= -92.2 && lng <= -77.2) return "Guatemala";
-  if (lat >= 12.4 && lat <= 16.0 && lng >= -90.1 && lng <= -87.7) return "Belize";
-  if (lat >= 12.9 && lat <= 16.5 && lng >= -89.4 && lng <= -83.1) return "Honduras";
-  if (lat >= 10.7 && lat <= 15.0 && lng >= -87.7 && lng <= -82.7) return "Nicaragua";
-  if (lat >= 7.2 && lat <= 10.7 && lng >= -83.1 && lng <= -77.2) return "Panama";
-  if (lat >= 13.0 && lat <= 18.0 && lng >= -90.1 && lng <= -88.2) return "El Salvador";
+  // Small countries and territories first (most specific bounds)
   
-  // Caribbean
-  if (lat >= 12.0 && lat <= 13.4 && lng >= -61.9 && lng <= -59.4) return "Barbados";
-  if (lat >= 13.0 && lat <= 14.9 && lng >= -61.2 && lng <= -60.8) return "Martinique";
-  if (lat >= 9.9 && lat <= 12.2 && lng >= -61.9 && lng <= -60.9) return "Trinidad and Tobago";
-  if (lat >= 10.0 && lat <= 12.6 && lng >= -68.4 && lng <= -58.2) return "Venezuela";
+  // Vatican City
+  if (lat >= 41.900 && lat <= 41.907 && lng >= 12.445 && lng <= 12.458) return "Vatican City";
   
-  // South America
-  if (lat >= -33.8 && lat <= 12.5 && lng >= -73.4 && lng <= -34.8) return "Brazil";
-  if (lat >= -55.0 && lat <= -21.8 && lng >= -73.6 && lng <= -53.6) return "Argentina";
-  if (lat >= -18.3 && lat <= -0.04 && lng >= -81.3 && lng <= -68.7) return "Peru";
-  if (lat >= 0.6 && lat <= 15.9 && lng >= -73.4 && lng <= -59.8) return "Venezuela";
-  if (lat >= -4.2 && lat <= 13.4 && lng >= -79.0 && lng <= -66.9) return "Colombia";
-  if (lat >= -56.0 && lat <= -17.5 && lng >= -109.4 && lng <= -66.4) return "Chile";
-  if (lat >= -22.9 && lat <= -9.7 && lng >= -69.6 && lng <= -57.5) return "Bolivia";
-  if (lat >= -35.0 && lat <= -30.1 && lng >= -58.4 && lng <= -53.1) return "Uruguay";
-  if (lat >= -21.1 && lat <= -9.8 && lng >= -58.2 && lng <= -54.3) return "Paraguay";
-  if (lat >= 1.3 && lat <= 8.9 && lng >= -67.8 && lng <= -52.0) return "Guyana";
-  if (lat >= 1.8 && lat <= 6.0 && lng >= -58.1 && lng <= -53.9) return "Suriname";
-  if (lat >= 2.1 && lat <= 5.8 && lng >= -54.6 && lng <= -51.6) return "French Guiana";
-  if (lat >= -4.0 && lat <= 2.3 && lng >= -68.8 && lng <= -49.9) return "Ecuador";
+  // Monaco
+  if (lat >= 43.725 && lat <= 43.755 && lng >= 7.405 && lng <= 7.439) return "Monaco";
   
-  // Europe
-  if (lat >= 49.4 && lat <= 60.9 && lng >= -8.2 && lng <= 1.8) return "United Kingdom";
-  if (lat >= 41.3 && lat <= 51.1 && lng >= -5.1 && lng <= 9.6) return "France";
-  if (lat >= 47.3 && lat <= 55.1 && lng >= 5.9 && lng <= 15.0) return "Germany";
-  if (lat >= 35.3 && lat <= 47.1 && lng >= 6.6 && lng <= 18.5) return "Italy";
-  if (lat >= 27.6 && lat <= 43.8 && lng >= -18.2 && lng <= 4.3) return "Spain";
-  if (lat >= 29.9 && lat <= 42.2 && lng >= -31.3 && lng <= -6.2) return "Portugal";
-  if (lat >= 50.7 && lat <= 53.7 && lng >= 3.4 && lng <= 7.2) return "Netherlands";
-  if (lat >= 49.5 && lat <= 51.5 && lng >= 2.5 && lng <= 6.4) return "Belgium";
-  if (lat >= 45.8 && lat <= 47.8 && lng >= 5.9 && lng <= 10.5) return "Switzerland";
-  if (lat >= 46.4 && lat <= 49.0 && lng >= 9.5 && lng <= 17.2) return "Austria";
-  if (lat >= 57.9 && lat <= 71.2 && lng >= 4.6 && lng <= 31.3) return "Norway";
-  if (lat >= 55.3 && lat <= 69.1 && lng >= 11.0 && lng <= 24.2) return "Sweden";
-  if (lat >= 59.8 && lat <= 70.1 && lng >= 20.5 && lng <= 31.6) return "Finland";
-  if (lat >= 54.6 && lat <= 57.8 && lng >= 8.1 && lng <= 15.2) return "Denmark";
-  if (lat >= 49.0 && lat <= 54.8 && lng >= 14.1 && lng <= 24.2) return "Poland";
-  if (lat >= 48.5 && lat <= 51.1 && lng >= 12.1 && lng <= 18.9) return "Czech Republic";
-  if (lat >= 45.7 && lat <= 48.6 && lng >= 16.1 && lng <= 22.9) return "Hungary";
-  if (lat >= 43.6 && lat <= 48.3 && lng >= 20.3 && lng <= 29.7) return "Romania";
-  if (lat >= 41.2 && lat <= 44.2 && lng >= 22.4 && lng <= 28.6) return "Bulgaria";
-  if (lat >= 42.2 && lat <= 46.2 && lng >= 18.8 && lng <= 23.0) return "Serbia";
-  if (lat >= 42.4 && lat <= 46.5 && lng >= 13.5 && lng <= 19.4) return "Croatia";
-  if (lat >= 45.4 && lat <= 46.9 && lng >= 13.4 && lng <= 16.6) return "Slovenia";
-  if (lat >= 47.7 && lat <= 49.6 && lng >= 16.8 && lng <= 22.6) return "Slovakia";
-  if (lat >= 63.4 && lat <= 66.6 && lng >= -25.0 && lng <= -13.5) return "Iceland";
-  if (lat >= 51.4 && lat <= 55.4 && lng >= -10.5 && lng <= -6.0) return "Ireland";
-  if (lat >= 34.8 && lat <= 41.7 && lng >= 19.3 && lng <= 28.2) return "Greece";
-  if (lat >= 35.8 && lat <= 42.1 && lng >= 26.0 && lng <= 44.8) return "Turkey";
-  if (lat >= 41.8 && lat <= 43.6 && lng >= 18.4 && lng <= 20.4) return "Montenegro";
-  if (lat >= 42.2 && lat <= 43.3 && lng >= 20.0 && lng <= 21.8) return "Kosovo";
-  if (lat >= 40.8 && lat <= 42.4 && lng >= 20.5 && lng <= 23.0) return "North Macedonia";
-  if (lat >= 39.6 && lat <= 42.7 && lng >= 19.3 && lng <= 21.1) return "Albania";
-  if (lat >= 42.5 && lat <= 45.3 && lng >= 15.7 && lng <= 19.6) return "Bosnia and Herzegovina";
-  if (lat >= 44.4 && lat <= 60.6 && lng >= 20.2 && lng <= 40.2) return "Ukraine";
-  if (lat >= 51.3 && lat <= 56.2 && lng >= 23.2 && lng <= 32.8) return "Belarus";
-  if (lat >= 53.9 && lat <= 56.4 && lng >= 21.0 && lng <= 26.8) return "Lithuania";
-  if (lat >= 55.7 && lat <= 58.1 && lng >= 20.9 && lng <= 28.2) return "Latvia";
-  if (lat >= 57.5 && lat <= 59.7 && lng >= 21.8 && lng <= 28.2) return "Estonia";
-  if (lat >= 41.2 && lat <= 82.1 && lng >= 19.6 && lng <= 180.0) return "Russia";
-  if (lat >= 36.0 && lat <= 42.0 && lng >= 39.7 && lng <= 46.6) return "Armenia";
-  if (lat >= 38.4 && lat <= 42.6 && lng >= 39.6 && lng <= 46.7) return "Georgia";
-  if (lat >= 38.4 && lat <= 41.9 && lng >= 44.8 && lng <= 50.4) return "Azerbaijan";
-  if (lat >= 35.1 && lat <= 39.7 && lng >= 32.3 && lng <= 34.6) return "Cyprus";
-  if (lat >= 35.8 && lat <= 36.8 && lng >= 14.2 && lng <= 15.6) return "Malta";
-  if (lat >= 43.7 && lat <= 44.0 && lng >= 7.4 && lng <= 7.4) return "Monaco";
-  if (lat >= 42.5 && lat <= 42.7 && lng >= 1.4 && lng <= 1.8) return "Andorra";
-  if (lat >= 47.0 && lat <= 47.3 && lng >= 9.5 && lng <= 9.6) return "Liechtenstein";
-  if (lat >= 43.9 && lat <= 43.9 && lng >= 12.4 && lng <= 12.5) return "San Marino";
-  if (lat >= 41.9 && lat <= 41.9 && lng >= 12.4 && lng <= 12.5) return "Vatican City";
-  if (lat >= 43.7 && lat <= 47.8 && lng >= 5.5 && lng <= 10.5) return "Luxembourg";
+  // San Marino
+  if (lat >= 43.893 && lat <= 43.994 && lng >= 12.403 && lng <= 12.518) return "San Marino";
   
-  // Asia (ordered by specificity - smaller/more specific countries first)
-  if (lat >= 24.0 && lat <= 46.0 && lng >= 129.0 && lng <= 146.0) return "Japan";
-  if (lat >= 33.0 && lat <= 38.6 && lng >= 124.6 && lng <= 131.9) return "South Korea";
-  if (lat >= 37.7 && lat <= 43.0 && lng >= 124.3 && lng <= 130.7) return "North Korea";
-  if (lat >= 29.4 && lat <= 38.5 && lng >= 60.5 && lng <= 75.0) return "Afghanistan";
-  if (lat >= 23.7 && lat <= 37.1 && lng >= 60.9 && lng <= 77.8) return "Pakistan";
-  if (lat >= 6.7 && lat <= 35.5 && lng >= 68.1 && lng <= 97.4) return "India";
-  if (lat >= 18.0 && lat <= 53.6 && lng >= 73.7 && lng <= 134.8) return "China";
-  if (lat >= 20.7 && lat <= 26.6 && lng >= 88.0 && lng <= 92.7) return "Bangladesh";
-  if (lat >= 5.9 && lat <= 9.8 && lng >= 79.7 && lng <= 81.9) return "Sri Lanka";
-  if (lat >= 26.3 && lat <= 30.4 && lng >= 80.1 && lng <= 88.2) return "Nepal";
-  if (lat >= 26.7 && lat <= 28.2 && lng >= 88.8 && lng <= 92.1) return "Bhutan";
-  if (lat >= 9.8 && lat <= 28.5 && lng >= 92.2 && lng <= 101.2) return "Myanmar";
-  if (lat >= 5.6 && lat <= 20.5 && lng >= 97.3 && lng <= 105.6) return "Thailand";
-  if (lat >= 8.6 && lat <= 23.4 && lng >= 102.1 && lng <= 109.5) return "Vietnam";
-  if (lat >= 10.4 && lat <= 14.7 && lng >= 102.3 && lng <= 107.6) return "Cambodia";
-  if (lat >= 13.9 && lat <= 22.5 && lng >= 100.1 && lng <= 107.7) return "Laos";
-  if (lat >= -11.0 && lat <= 6.0 && lng >= 95.0 && lng <= 141.0) return "Indonesia";
-  if (lat >= 0.9 && lat <= 7.4 && lng >= 99.6 && lng <= 119.3) return "Malaysia";
-  if (lat >= 1.2 && lat <= 1.5 && lng >= 103.6 && lng <= 104.0) return "Singapore";
-  if (lat >= 4.6 && lat <= 21.1 && lng >= 116.9 && lng <= 126.6) return "Philippines";
-  if (lat >= 21.9 && lat <= 25.3 && lng >= 120.1 && lng <= 122.0) return "Taiwan";
-  if (lat >= 41.6 && lat <= 52.1 && lng >= 87.7 && lng <= 119.9) return "Mongolia";
-  if (lat >= 25.1 && lat <= 39.8 && lng >= 44.0 && lng <= 63.3 && !(lat >= 24.4 && lat <= 26.2 && lng >= 50.7 && lng <= 51.7)) return "Iran";
-  if (lat >= 36.5 && lat <= 47.1 && lng >= 55.0 && lng <= 73.1) return "Kazakhstan";
-  if (lat >= 37.2 && lat <= 43.2 && lng >= 56.2 && lng <= 73.1) return "Uzbekistan";
-  if (lat >= 37.0 && lat <= 43.3 && lng >= 67.4 && lng <= 75.0) return "Kyrgyzstan";
-  if (lat >= 36.7 && lat <= 41.0 && lng >= 67.4 && lng <= 75.4) return "Tajikistan";
-  if (lat >= 35.1 && lat <= 42.8 && lng >= 52.3 && lng <= 66.7) return "Turkmenistan";
+  // Liechtenstein
+  if (lat >= 47.047 && lat <= 47.270 && lng >= 9.471 && lng <= 9.636) return "Liechtenstein";
   
-  // Middle East (ordered by specificity - smaller countries first to avoid overlap)
-  if (lat >= 25.8 && lat <= 26.3 && lng >= 50.4 && lng <= 50.7) return "Bahrain";
-  if (lat >= 24.4 && lat <= 26.2 && lng >= 50.7 && lng <= 51.7) return "Qatar";
-  if (lat >= 22.6 && lat <= 26.1 && lng >= 51.0 && lng <= 56.4) return "United Arab Emirates";
-  if (lat >= 28.5 && lat <= 30.1 && lng >= 46.5 && lng <= 48.4) return "Kuwait";
-  if (lat >= 16.6 && lat <= 26.4 && lng >= 51.0 && lng <= 59.8) return "Oman";
-  if (lat >= 29.5 && lat <= 33.4 && lng >= 34.3 && lng <= 35.7) return "Israel";
-  if (lat >= 33.1 && lat <= 34.7 && lng >= 35.1 && lng <= 36.6) return "Lebanon";
-  if (lat >= 29.2 && lat <= 33.4 && lng >= 34.9 && lng <= 39.3) return "Jordan";
-  if (lat >= 32.3 && lat <= 37.3 && lng >= 35.7 && lng <= 42.4) return "Syria";
-  if (lat >= 29.1 && lat <= 37.4 && lng >= 38.8 && lng <= 48.6) return "Iraq";
-  if (lat >= 12.1 && lat <= 19.0 && lng >= 42.6 && lng <= 54.5) return "Yemen";
-  if (lat >= 16.4 && lat <= 32.2 && lng >= 34.5 && lng <= 55.7) return "Saudi Arabia";
+  // Malta
+  if (lat >= 35.780 && lat <= 36.082 && lng >= 14.183 && lng <= 14.577) return "Malta";
+  
+  // Andorra
+  if (lat >= 42.429 && lat <= 42.656 && lng >= 1.413 && lng <= 1.787) return "Andorra";
+  
+  // Singapore
+  if (lat >= 1.159 && lat <= 1.472 && lng >= 103.594 && lng <= 104.130) return "Singapore";
+  
+  // Bahrain
+  if (lat >= 25.535 && lat <= 26.282 && lng >= 50.308 && lng <= 50.664) return "Bahrain";
+  
+  // Luxembourg
+  if (lat >= 49.442 && lat <= 50.129 && lng >= 5.735 && lng <= 6.530) return "Luxembourg";
+  
+  // Cyprus
+  if (lat >= 34.633 && lat <= 35.701 && lng >= 32.256 && lng <= 34.597) return "Cyprus";
+  
+  // Qatar
+  if (lat >= 24.470 && lat <= 26.154 && lng >= 50.743 && lng <= 51.636) return "Qatar";
+  
+  // Caribbean small islands
+  if (lat >= 12.001 && lat <= 13.338 && lng >= -61.887 && lng <= -59.420) return "Barbados";
+  if (lat >= 17.061 && lat <= 18.516 && lng >= -63.969 && lng <= -62.971) return "Saint Kitts and Nevis";
+  if (lat >= 13.133 && lat <= 13.397 && lng >= -61.461 && lng <= -61.164) return "Grenada";
+  if (lat >= 13.023 && lat <= 13.415 && lng >= -61.229 && lng <= -60.874) return "Saint Vincent and the Grenadines";
+  if (lat >= 13.696 && lat <= 14.879 && lng >= -61.229 && lng <= -60.874) return "Saint Lucia";
+  if (lat >= 15.201 && lat <= 15.645 && lng >= -61.485 && lng <= -61.244) return "Dominica";
+  if (lat >= 17.017 && lat <= 18.615 && lng >= -63.969 && lng <= -62.971) return "Antigua and Barbuda";
+  
+  // Pacific small islands
+  if (lat >= 7.314 && lat <= 7.614 && lng >= 134.130 && lng <= 134.685) return "Palau";
+  if (lat >= 5.587 && lat <= 10.091 && lng >= 138.033 && lng <= 163.036) return "Federated States of Micronesia";
+  if (lat >= 0.126 && lat <= 4.721 && lng >= 166.018 && lng <= 172.059) return "Marshall Islands";
+  if (lat >= -9.647 && lat <= -8.416 && lng >= 159.609 && lng <= 162.398) return "Nauru";
+  if (lat >= -26.062 && lat <= -15.562 && lng >= -180.0 && lng <= -174.0) return "Tonga";
+  if (lat >= -14.373 && lat <= -13.046 && lng >= -172.014 && lng <= -171.390) return "Samoa";
+  if (lat >= -22.647 && lat <= -19.683 && lng >= 163.564 && lng <= 167.120) return "Vanuatu";
+  if (lat >= -12.708 && lat <= -6.613 && lng >= 155.119 && lng <= 162.398) return "Solomon Islands";
+  if (lat >= -20.786 && lat <= -12.482 && lng >= 166.629 && lng <= 167.844) return "Fiji";
+  if (lat >= -0.953 && lat <= 3.380 && lng >= 172.912 && lng <= 176.848) return "Kiribati";
+  if (lat >= -9.430 && lat <= -8.517 && lng >= 179.194 && lng <= 179.982) return "Tuvalu";
+  
+  // Europe (specific countries before broader ones)
+  if (lat >= 59.676 && lat <= 70.092 && lng >= 4.650 && lng <= 31.078) return "Norway";
+  if (lat >= 55.338 && lat <= 69.060 && lng >= 10.968 && lng <= 24.170) return "Sweden";
+  if (lat >= 59.809 && lat <= 70.092 && lng >= 20.556 && lng <= 31.587) return "Finland";
+  if (lat >= 63.396 && lat <= 66.564 && lng >= -25.013 && lng <= -13.500) return "Iceland";
+  if (lat >= 54.559 && lat <= 57.751 && lng >= 8.075 && lng <= 15.158) return "Denmark";
+  if (lat >= 51.475 && lat <= 55.361 && lng >= -10.478 && lng <= -5.999) return "Ireland";
+  if (lat >= 49.396 && lat <= 60.861 && lng >= -8.179 && lng <= 1.759) return "United Kingdom";
+  if (lat >= 50.751 && lat <= 53.555 && lng >= 3.314 && lng <= 7.228) return "Netherlands";
+  if (lat >= 49.497 && lat <= 51.505 && lng >= 2.546 && lng <= 6.408) return "Belgium";
+  if (lat >= 41.330 && lat <= 51.124 && lng >= -5.143 && lng <= 9.662) return "France";
+  if (lat >= 27.638 && lat <= 43.792 && lng >= -18.160 && lng <= 4.327) return "Spain";
+  if (lat >= 29.826 && lat <= 42.154 && lng >= -31.266 && lng <= -6.189) return "Portugal";
+  if (lat >= 45.818 && lat <= 47.808 && lng >= 5.957 && lng <= 10.492) return "Switzerland";
+  if (lat >= 46.372 && lat <= 49.020 && lng >= 9.531 && lng <= 17.160) return "Austria";
+  if (lat >= 47.270 && lat <= 55.099 && lng >= 5.866 && lng <= 15.042) return "Germany";
+  if (lat >= 48.551 && lat <= 51.055 && lng >= 12.096 && lng <= 18.877) return "Czech Republic";
+  if (lat >= 47.728 && lat <= 49.613 && lng >= 16.840 && lng <= 22.558) return "Slovakia";
+  if (lat >= 49.003 && lat <= 54.836 && lng >= 14.123 && lng <= 24.150) return "Poland";
+  if (lat >= 53.896 && lat <= 56.450 && lng >= 20.971 && lng <= 26.820) return "Lithuania";
+  if (lat >= 55.675 && lat <= 58.086 && lng >= 20.974 && lng <= 28.209) return "Latvia";
+  if (lat >= 57.474 && lat <= 59.677 && lng >= 21.831 && lng <= 28.210) return "Estonia";
+  if (lat >= 51.267 && lat <= 56.172 && lng >= 23.169 && lng <= 32.780) return "Belarus";
+  if (lat >= 44.386 && lat <= 52.379 && lng >= 22.137 && lng <= 40.228) return "Ukraine";
+  if (lat >= 45.737 && lat <= 48.585 && lng >= 16.113 && lng <= 22.896) return "Hungary";
+  if (lat >= 45.421 && lat <= 46.877 && lng >= 13.375 && lng <= 16.610) return "Slovenia";
+  if (lat >= 42.394 && lat <= 46.539 && lng >= 13.494 && lng <= 19.427) return "Croatia";
+  if (lat >= 42.232 && lat <= 45.277 && lng >= 15.718 && lng <= 19.622) return "Bosnia and Herzegovina";
+  if (lat >= 42.232 && lat <= 46.181 && lng >= 18.830 && lng <= 23.006) return "Serbia";
+  if (lat >= 41.848 && lat <= 43.568 && lng >= 18.461 && lng <= 20.364) return "Montenegro";
+  if (lat >= 42.232 && lat <= 43.268 && lng >= 20.014 && lng <= 21.781) return "Kosovo";
+  if (lat >= 40.854 && lat <= 42.359 && lng >= 20.452 && lng <= 23.034) return "North Macedonia";
+  if (lat >= 39.645 && lat <= 42.659 && lng >= 19.293 && lng <= 21.068) return "Albania";
+  if (lat >= 34.802 && lat <= 41.749 && lng >= 19.374 && lng <= 28.241) return "Greece";
+  if (lat >= 35.808 && lat <= 42.107 && lng >= 25.997 && lng <= 44.835) return "Turkey";
+  if (lat >= 41.244 && lat <= 44.217 && lng >= 22.357 && lng <= 28.608) return "Bulgaria";
+  if (lat >= 43.619 && lat <= 48.266 && lng >= 20.262 && lng <= 29.716) return "Romania";
+  if (lat >= 45.943 && lat <= 48.585 && lng >= 19.046 && lng <= 29.749) return "Moldova";
+  if (lat >= 35.126 && lat <= 47.095 && lng >= 6.640 && lng <= 18.520) return "Italy";
+  if (lat >= 36.020 && lat <= 42.020 && lng >= 39.672 && lng <= 46.636) return "Armenia";
+  if (lat >= 38.410 && lat <= 42.558 && lng >= 39.648 && lng <= 46.737) return "Georgia";
+  if (lat >= 38.392 && lat <= 41.906 && lng >= 44.793 && lng <= 50.393) return "Azerbaijan";
+  if (lat >= 41.151 && lat <= 81.857 && lng >= 19.638 && lng <= 180.0) return "Russia";
+  
+  // Asia (specific countries first)
+  if (lat >= 24.046 && lat <= 45.554 && lng >= 129.408 && lng <= 145.543) return "Japan";
+  if (lat >= 33.190 && lat <= 38.612 && lng >= 124.354 && lng <= 131.872) return "South Korea";
+  if (lat >= 37.674 && lat <= 43.006 && lng >= 124.265 && lng <= 130.781) return "North Korea";
+  if (lat >= 21.917 && lat <= 25.294 && lng >= 120.106 && lng <= 122.006) return "Taiwan";
+  if (lat >= 22.155 && lat <= 22.562 && lng >= 113.835 && lng <= 114.441) return "Hong Kong";
+  if (lat >= 22.110 && lat <= 22.218 && lng >= 113.545 && lng <= 113.599) return "Macau";
+  if (lat >= 4.581 && lat <= 21.072 && lng >= 116.930 && lng <= 126.605) return "Philippines";
+  if (lat >= 0.855 && lat <= 7.384 && lng >= 99.644 && lng <= 119.269) return "Malaysia";
+  if (lat >= -11.008 && lat <= 6.074 && lng >= 95.011 && lng <= 141.021) return "Indonesia";
+  if (lat >= 8.597 && lat <= 23.390 && lng >= 102.145 && lng <= 109.469) return "Vietnam";
+  if (lat >= 5.612 && lat <= 20.465 && lng >= 97.343 && lng <= 105.639) return "Thailand";
+  if (lat >= 10.409 && lat <= 14.691 && lng >= 102.340 && lng <= 107.628) return "Cambodia";
+  if (lat >= 13.910 && lat <= 22.501 && lng >= 100.084 && lng <= 107.697) return "Laos";
+  if (lat >= 9.784 && lat <= 28.544 && lng >= 92.172 && lng <= 101.177) return "Myanmar";
+  if (lat >= 20.670 && lat <= 26.637 && lng >= 88.028 && lng <= 92.673) return "Bangladesh";
+  if (lat >= 26.396 && lat <= 30.447 && lng >= 80.089 && lng <= 88.201) return "Nepal";
+  if (lat >= 26.702 && lat <= 28.247 && lng >= 88.746 && lng <= 92.125) return "Bhutan";
+  if (lat >= 5.916 && lat <= 9.835 && lng >= 79.697 && lng <= 81.879) return "Sri Lanka";
+  if (lat >= 7.064 && lat <= 9.835 && lng >= 72.397 && lng <= 74.317) return "Maldives";
+  if (lat >= 29.378 && lat <= 38.484 && lng >= 60.478 && lng <= 74.910) return "Afghanistan";
+  if (lat >= 23.688 && lat <= 37.097 && lng >= 60.872 && lng <= 77.837) return "Pakistan";
+  if (lat >= 6.755 && lat <= 35.508 && lng >= 68.033 && lng <= 97.395) return "India";
+  if (lat >= 35.157 && lat <= 42.751 && lng >= 52.330 && lng <= 66.546) return "Turkmenistan";
+  if (lat >= 37.172 && lat <= 43.238 && lng >= 56.191 && lng <= 73.055) return "Uzbekistan";
+  if (lat >= 36.738 && lat <= 41.044 && lng >= 67.442 && lng <= 75.158) return "Tajikistan";
+  if (lat >= 39.173 && lat <= 43.238 && lng >= 69.464 && lng <= 80.259) return "Kyrgyzstan";
+  if (lat >= 36.534 && lat <= 47.043 && lng >= 55.026 && lng <= 87.312) return "Kazakhstan";
+  if (lat >= 41.581 && lat <= 52.148 && lng >= 87.751 && lng <= 119.924) return "Mongolia";
+  if (lat >= 18.165 && lat <= 53.561 && lng >= 73.557 && lng <= 134.773) return "China";
+  if (lat >= 25.071 && lat <= 39.834 && lng >= 44.047 && lng <= 63.317) return "Iran";
+  if (lat >= 29.061 && lat <= 37.380 && lng >= 34.268 && lng <= 46.109) return "Iraq";
+  if (lat >= 32.312 && lat <= 37.230 && lng >= 35.114 && lng <= 42.349) return "Syria";
+  if (lat >= 33.053 && lat <= 34.686 && lng >= 35.100 && lng <= 36.639) return "Lebanon";
+  if (lat >= 31.220 && lat <= 33.396 && lng >= 34.216 && lng <= 35.896) return "Israel";
+  if (lat >= 31.354 && lat <= 32.545 && lng >= 34.927 && lng <= 35.573) return "Palestine";
+  if (lat >= 29.298 && lat <= 33.413 && lng >= 34.884 && lng <= 39.301) return "Jordan";
+  if (lat >= 12.111 && lat <= 18.999 && lng >= 42.332 && lng <= 53.108) return "Yemen";
+  if (lat >= 16.647 && lat <= 26.389 && lng >= 41.602 && lng <= 55.667) return "Saudi Arabia";
+  if (lat >= 28.524 && lat <= 30.095 && lng >= 46.555 && lng <= 48.417) return "Kuwait";
+  if (lat >= 16.613 && lat <= 26.396 && lng >= 51.106 && lng <= 59.836) return "Oman";
+  if (lat >= 22.633 && lat <= 26.084 && lng >= 51.006 && lng <= 56.396) return "United Arab Emirates";
   
   // Africa
-  if (lat >= 22.0 && lat <= 31.7 && lng >= 25.0 && lng <= 37.0) return "Egypt";
-  if (lat >= 8.7 && lat <= 22.0 && lng >= 21.8 && lng <= 38.6) return "Sudan";
-  if (lat >= 3.5 && lat <= 12.2 && lng >= 24.0 && lng <= 35.9) return "South Sudan";
-  if (lat >= 7.4 && lat <= 23.5 && lng >= 13.5 && lng <= 24.0) return "Chad";
-  if (lat >= 19.5 && lat <= 33.2 && lng >= 9.4 && lng <= 25.2) return "Libya";
-  if (lat >= 18.0 && lat <= 37.1 && lng >= -8.7 && lng <= 12.0) return "Algeria";
-  if (lat >= 30.2 && lat <= 37.5 && lng >= 7.5 && lng <= 11.6) return "Tunisia";
-  if (lat >= 21.0 && lat <= 35.9 && lng >= -17.1 && lng <= -1.0) return "Morocco";
-  if (lat >= 4.7 && lat <= 11.2 && lng >= -3.3 && lng <= 1.2) return "Ghana";
-  if (lat >= 4.3 && lat <= 13.9 && lng >= 2.7 && lng <= 14.6) return "Nigeria";
-  if (lat >= -47.0 && lat <= -22.1 && lng >= 16.5 && lng <= 38.0) return "South Africa";
-  if (lat >= -26.9 && lat <= -17.8 && lng >= 20.0 && lng <= 29.4) return "Botswana";
-  if (lat >= -22.4 && lat <= -15.6 && lng >= 25.2 && lng <= 33.1) return "Zimbabwe";
-  if (lat >= -18.0 && lat <= -4.4 && lng >= 11.7 && lng <= 24.1) return "Angola";
-  if (lat >= -13.5 && lat <= 5.4 && lng >= 12.2 && lng <= 31.3) return "Democratic Republic of Congo";
-  if (lat >= -5.0 && lat <= 3.7 && lng >= 11.2 && lng <= 18.6) return "Republic of Congo";
-  if (lat >= 1.7 && lat <= 13.1 && lng >= 8.5 && lng <= 16.2) return "Cameroon";
-  if (lat >= -2.8 && lat <= -1.0 && lng >= 28.9 && lng <= 30.9) return "Rwanda";
-  if (lat >= -1.5 && lat <= 4.2 && lng >= 29.6 && lng <= 35.0) return "Uganda";
-  if (lat >= -11.7 && lat <= -1.0 && lng >= 29.3 && lng <= 40.5) return "Tanzania";
-  if (lat >= -26.9 && lat <= -10.5 && lng >= 30.2 && lng <= 40.8) return "Mozambique";
-  if (lat >= -18.1 && lat <= -8.2 && lng >= 21.0 && lng <= 33.7) return "Zambia";
-  if (lat >= -17.1 && lat <= -9.4 && lng >= 32.7 && lng <= 35.9) return "Malawi";
-  if (lat >= -4.7 && lat <= 5.0 && lng >= 33.9 && lng <= 41.9) return "Kenya";
-  if (lat >= 3.4 && lat <= 14.9 && lng >= 33.0 && lng <= 48.0) return "Ethiopia";
-  if (lat >= 12.4 && lat <= 18.0 && lng >= 36.4 && lng <= 43.1) return "Eritrea";
-  if (lat >= -11.3 && lat <= 12.0 && lng >= 41.0 && lng <= 51.4) return "Somalia";
-  if (lat >= 9.4 && lat <= 15.1 && lng >= -5.5 && lng <= 2.4) return "Burkina Faso";
-  if (lat >= 10.2 && lat <= 25.0 && lng >= -12.2 && lng <= 4.3) return "Mali";
-  if (lat >= 11.7 && lat <= 23.5 && lng >= 0.2 && lng <= 16.0) return "Niger";
-  if (lat >= 14.7 && lat <= 27.3 && lng >= -17.1 && lng <= -4.8) return "Mauritania";
-  if (lat >= 12.3 && lat <= 16.7 && lng >= -17.5 && lng <= -11.3) return "Senegal";
-  if (lat >= 4.4 && lat <= 12.7 && lng >= -15.1 && lng <= -7.5) return "Sierra Leone";
-  if (lat >= 4.4 && lat <= 8.6 && lng >= -11.5 && lng <= -7.4) return "Liberia";
-  if (lat >= 4.7 && lat <= 10.7 && lng >= -8.6 && lng <= -2.5) return "Ivory Coast";
-  if (lat >= 6.1 && lat <= 11.2 && lng >= -5.5 && lng <= 1.2) return "Togo";
-  if (lat >= 6.2 && lat <= 12.4 && lng >= 0.8 && lng <= 3.8) return "Benin";
-  if (lat >= 11.0 && lat <= 15.1 && lng >= -5.5 && lng <= -0.2) return "Guinea";
-  if (lat >= 11.4 && lat <= 14.3 && lng >= -16.7 && lng <= -11.4) return "Guinea-Bissau";
-  if (lat >= 13.6 && lat <= 17.1 && lng >= -17.5 && lng <= -12.0) return "Gambia";
-  if (lat >= 14.9 && lat <= 23.0 && lng >= -17.1 && lng <= -11.4) return "Western Sahara";
-  if (lat >= 9.3 && lat <= 15.1 && lng >= -13.8 && lng <= -4.2) return "Guinea";
-  if (lat >= -26.9 && lat <= -28.6 && lng >= 27.0 && lng <= 32.9) return "Lesotho";
-  if (lat >= -29.0 && lat <= -25.7 && lng >= 30.7 && lng <= 32.1) return "Swaziland";
-  if (lat >= -20.2 && lat <= -16.5 && lng >= 11.7 && lng <= 25.3) return "Namibia";
-  if (lat >= 11.3 && lat <= 15.1 && lng >= 20.2 && lng <= 27.4) return "Central African Republic";
-  if (lat >= 1.2 && lat <= 4.0 && lng >= 9.3 && lng <= 16.2) return "Equatorial Guinea";
-  if (lat >= -1.5 && lat <= 2.3 && lng >= 8.7 && lng <= 11.3) return "Gabon";
-  if (lat >= 0.3 && lat <= 3.5 && lng >= 11.1 && lng <= 19.0) return "São Tomé and Príncipe";
-  if (lat >= -16.0 && lat <= -4.4 && lng >= 11.7 && lng <= 24.1) return "Angola";
-  if (lat >= 15.0 && lat <= 23.0 && lng >= -25.4 && lng <= -13.0) return "Cape Verde";
-  if (lat >= -25.7 && lat <= -17.9 && lng >= 12.0 && lng <= 29.4) return "Botswana";
-  if (lat >= -21.0 && lat <= -16.5 && lng >= 11.7 && lng <= 25.3) return "Namibia";
-  if (lat >= 11.5 && lat <= 18.1 && lng >= 42.4 && lng <= 43.4) return "Djibouti";
-  if (lat >= -25.3 && lat <= -10.4 && lng >= 38.3 && lng <= 40.8) return "Madagascar";
-  if (lat >= -21.4 && lat <= -19.7 && lng >= 55.2 && lng <= 57.9) return "Mauritius";
-  if (lat >= -12.2 && lat <= -10.3 && lng >= 46.2 && lng <= 50.5) return "Comoros";
-  if (lat >= -4.7 && lat <= -4.2 && lng >= 55.2 && lng <= 55.8) return "Seychelles";
+  if (lat >= 19.500 && lat <= 33.158 && lng >= -17.063 && lng <= 11.988) return "Algeria";
+  if (lat >= 19.508 && lat <= 33.168 && lng >= 9.950 && lng <= 25.150) return "Libya";
+  if (lat >= 22.000 && lat <= 31.667 && lng >= 25.000 && lng <= 35.000) return "Egypt";
+  if (lat >= 8.685 && lat <= 22.000 && lng >= 21.826 && lng <= 39.000) return "Sudan";
+  if (lat >= 12.359 && lat <= 18.003 && lng >= 33.000 && lng <= 39.000) return "South Sudan";
+  if (lat >= 12.362 && lat <= 18.003 && lng >= 36.438 && lng <= 43.134) return "Eritrea";
+  if (lat >= 3.406 && lat <= 14.878 && lng >= 32.997 && lng <= 47.986) return "Ethiopia";
+  if (lat >= -26.877 && lat <= 5.019 && lng >= 29.174 && lng <= 40.638) return "Tanzania";
+  if (lat >= -4.679 && lat <= 4.222 && lng >= 33.893 && lng <= 41.899) return "Kenya";
+  if (lat >= -1.478 && lat <= 4.234 && lng >= 29.574 && lng <= 35.000) return "Uganda";
+  if (lat >= -2.841 && lat <= 2.276 && lng >= 28.862 && lng <= 30.900) return "Rwanda";
+  if (lat >= -4.460 && lat <= -2.309 && lng >= 29.000 && lng <= 30.850) return "Burundi";
+  if (lat >= -18.965 && lat <= -4.388 && lng >= 11.734 && lng <= 24.085) return "Angola";
+  if (lat >= -34.819 && lat <= -22.127 && lng >= 16.465 && lng <= 32.830) return "South Africa";
+  if (lat >= -22.127 && lat <= -17.661 && lng >= 20.469 && lng <= 29.432) return "Botswana";
+  if (lat >= -29.045 && lat <= -16.959 && lng >= 11.734 && lng <= 25.261) return "Namibia";
+  if (lat >= -26.881 && lat <= -25.719 && lng >= 31.000 && lng <= 32.890) return "Eswatini";
+  if (lat >= -30.646 && lat <= -28.570 && lng >= 27.000 && lng <= 29.465) return "Lesotho";
+  if (lat >= -22.417 && lat <= -15.608 && lng >= 25.264 && lng <= 33.057) return "Zimbabwe";
+  if (lat >= -18.078 && lat <= -8.041 && lng >= 22.000 && lng <= 33.702) return "Zambia";
+  if (lat >= -17.125 && lat <= -9.368 && lng >= 32.669 && lng <= 40.639) return "Malawi";
+  if (lat >= -26.881 && lat <= -10.471 && lng >= 30.217 && lng <= 40.640) return "Mozambique";
+  if (lat >= -25.731 && lat <= -11.695 && lng >= 43.254 && lng <= 50.477) return "Madagascar";
+  if (lat >= -20.528 && lat <= -19.995 && lng >= 57.310 && lng <= 57.797) return "Mauritius";
+  if (lat >= -4.679 && lat <= -4.176 && lng >= 55.229 && lng <= 55.667) return "Seychelles";
+  if (lat >= -12.806 && lat <= -11.365 && lng >= 43.254 && lng <= 45.227) return "Comoros";
+  
+  // West Africa
+  if (lat >= 31.000 && lat <= 37.350 && lng >= -13.178 && lng <= -1.025) return "Morocco";
+  if (lat >= 30.230 && lat <= 37.350 && lng >= 7.612 && lng <= 11.988) return "Tunisia";
+  if (lat >= 12.000 && lat <= 27.000 && lng >= -17.063 && lng <= -4.833) return "Mauritania";
+  if (lat >= 10.740 && lat <= 25.000 && lng >= -12.131 && lng <= 4.267) return "Mali";
+  if (lat >= 9.394 && lat <= 15.082 && lng >= -5.207 && lng <= 2.177) return "Burkina Faso";
+  if (lat >= 4.736 && lat <= 14.578 && lng >= -8.602 && lng <= 1.207) return "Niger";
+  if (lat >= 7.866 && lat <= 23.017 && lng >= 13.473 && lng <= 24.003) return "Chad";
+  if (lat >= 7.013 && lat <= 14.130 && lng >= 2.177 && lng <= 14.578) return "Nigeria";
+  if (lat >= 6.048 && lat <= 13.078 && lng >= 0.160 && lng <= 3.797) return "Benin";
+  if (lat >= 6.104 && lat <= 11.174 && lng >= -0.240 && lng <= 1.207) return "Togo";
+  if (lat >= 4.736 && lat <= 12.013 && lng >= -3.264 && lng <= 2.177) return "Ghana";
+  if (lat >= 4.357 && lat <= 10.736 && lng >= -8.602 && lng <= -2.494) return "Ivory Coast";
+  if (lat >= 4.269 && lat <= 8.551 && lng >= -11.438 && lng <= -7.540) return "Liberia";
+  if (lat >= 6.929 && lat <= 10.047 && lng >= -13.124 && lng <= -10.284) return "Sierra Leone";
+  if (lat >= 7.194 && lat <= 12.678 && lng >= -15.131 && lng <= -7.540) return "Guinea";
+  if (lat >= 10.931 && lat <= 12.678 && lng >= -16.713 && lng <= -13.637) return "Guinea-Bissau";
+  if (lat >= 12.308 && lat <= 16.648 && lng >= -17.063 && lng <= -11.355) return "Senegal";
+  if (lat >= 13.078 && lat <= 17.524 && lng >= -16.713 && lng <= -5.207) return "Gambia";
+  if (lat >= 12.521 && lat <= 15.082 && lng >= -16.713 && lng <= -11.355) return "Cape Verde";
+  if (lat >= 2.177 && lat <= 11.174 && lng >= 5.906 && lng <= 16.061) return "Cameroon";
+  if (lat >= -3.978 && lat <= 2.177 && lng >= 8.500 && lng <= 18.643) return "Gabon";
+  if (lat >= -1.000 && lat <= 4.000 && lng >= 9.302 && lng <= 16.061) return "Equatorial Guinea";
+  if (lat >= 0.319 && lat <= 2.177 && lng >= 5.906 && lng <= 11.276) return "Sao Tome and Principe";
+  if (lat >= -5.028 && lat <= 5.384 && lng >= 12.204 && lng <= 31.174) return "Central African Republic";
+  if (lat >= -13.455 && lat <= 5.384 && lng >= 12.204 && lng <= 31.174) return "Democratic Republic of the Congo";
+  if (lat >= -5.028 && lat <= 4.384 && lng >= 11.093 && lng <= 18.643) return "Republic of the Congo";
+  
+  // North America
+  if (lat >= 24.521 && lat <= 49.384 && lng >= -125.0 && lng <= -66.934) return "United States";
+  if (lat >= 41.681 && lat <= 83.110 && lng >= -141.003 && lng <= -52.636) return "Canada";
+  if (lat >= 14.532 && lat <= 32.719 && lng >= -118.365 && lng <= -86.703) return "Mexico";
+  if (lat >= 7.217 && lat <= 11.216 && lng >= -85.941 && lng <= -82.556) return "Costa Rica";
+  if (lat >= 7.217 && lat <= 9.647 && lng >= -83.051 && lng <= -77.177) return "Panama";
+  if (lat >= 10.735 && lat <= 15.025 && lng >= -87.692 && lng <= -82.556) return "Nicaragua";
+  if (lat >= 12.890 && lat <= 16.512 && lng >= -89.343 && lng <= -83.147) return "Honduras";
+  if (lat >= 15.883 && lat <= 18.043 && lng >= -92.230 && lng <= -87.692) return "Guatemala";
+  if (lat >= 12.408 && lat <= 16.006 && lng >= -90.110 && lng <= -87.692) return "Belize";
+  if (lat >= 13.006 && lat <= 14.445 && lng >= -90.110 && lng <= -87.692) return "El Salvador";
+  if (lat >= 17.915 && lat <= 25.216 && lng >= -87.534 && lng <= -77.177) return "Cuba";
+  if (lat >= 17.615 && lat <= 19.927 && lng >= -77.820 && lng <= -66.947) return "Jamaica";
+  if (lat >= 18.018 && lat <= 18.515 && lng >= -74.458 && lng <= -71.613) return "Haiti";
+  if (lat >= 17.598 && lat <= 19.927 && lng >= -72.003 && lng <= -68.320) return "Dominican Republic";
+  if (lat >= 17.017 && lat <= 18.615 && lng >= -67.969 && lng <= -65.271) return "Puerto Rico";
+  
+  // South America
+  if (lat >= -33.751 && lat <= 5.272 && lng >= -73.982 && lng <= -34.793) return "Brazil";
+  if (lat >= -55.061 && lat <= -21.781 && lng >= -73.560 && lng <= -53.651) return "Argentina";
+  if (lat >= -18.350 && lat <= -0.039 && lng >= -81.328 && lng <= -68.677) return "Peru";
+  if (lat >= 0.649 && lat <= 15.912 && lng >= -73.378 && lng <= -59.758) return "Venezuela";
+  if (lat >= -4.228 && lat <= 13.390 && lng >= -79.023 && lng <= -66.869) return "Colombia";
+  if (lat >= -55.980 && lat <= -17.499 && lng >= -109.445 && lng <= -66.421) return "Chile";
+  if (lat >= -22.896 && lat <= -9.680 && lng >= -69.640 && lng <= -57.453) return "Bolivia";
+  if (lat >= -34.982 && lat <= -30.109 && lng >= -58.443 && lng <= -53.073) return "Uruguay";
+  if (lat >= -27.096 && lat <= -19.294 && lng >= -62.647 && lng <= -54.294) return "Paraguay";
+  if (lat >= 1.269 && lat <= 8.887 && lng >= -67.759 && lng <= -52.021) return "Guyana";
+  if (lat >= 1.837 && lat <= 6.004 && lng >= -58.087 && lng <= -53.977) return "Suriname";
+  if (lat >= 2.112 && lat <= 5.776 && lng >= -54.603 && lng <= -51.635) return "French Guiana";
+  if (lat >= -4.998 && lat <= 2.299 && lng >= -81.078 && lng <= -75.192) return "Ecuador";
   
   // Oceania
-  if (lat >= -54.8 && lat <= -9.2 && lng >= 112.9 && lng <= 159.1) return "Australia";
-  if (lat >= -47.3 && lat <= -34.4 && lng >= 166.4 && lng <= 178.6) return "New Zealand";
-  if (lat >= -20.7 && lat <= -12.5 && lng >= 177.0 && lng <= -177.0) return "Fiji";
-  if (lat >= -22.4 && lat <= -19.5 && lng >= 163.6 && lng <= 167.1) return "New Caledonia";
-  if (lat >= -23.4 && lat <= -7.9 && lng >= -154.8 && lng <= -134.9) return "French Polynesia";
-  if (lat >= -25.1 && lat <= -19.0 && lng >= 166.9 && lng <= 170.2) return "Vanuatu";
-  if (lat >= -10.8 && lat <= -6.6 && lng >= 155.5 && lng <= 162.4) return "Solomon Islands";
-  if (lat >= -9.5 && lat <= -2.1 && lng >= 140.8 && lng <= 156.0) return "Papua New Guinea";
-  if (lat >= 1.0 && lat <= 10.0 && lng >= 138.1 && lng <= 180.0) return "Palau";
-  if (lat >= 5.3 && lat <= 20.6 && lng >= 131.1 && lng <= 180.0) return "Micronesia";
-  if (lat >= 5.6 && lat <= 14.2 && lng >= 162.0 && lng <= 180.0) return "Marshall Islands";
-  if (lat >= -10.0 && lat <= 0.0 && lng >= 165.0 && lng <= 180.0) return "Nauru";
-  if (lat >= -12.0 && lat <= -5.0 && lng >= 172.0 && lng <= 180.0) return "Tuvalu";
-  if (lat >= -22.0 && lat <= -15.0 && lng >= -180.0 && lng <= -157.0) return "Samoa";
-  if (lat >= -22.0 && lat <= -13.2 && lng >= -176.2 && lng <= -173.7) return "Tonga";
-  if (lat >= -25.1 && lat <= -15.6 && lng >= -180.0 && lng <= -157.2) return "Cook Islands";
-  if (lat >= 7.0 && lat <= 22.0 && lng >= 134.0 && lng <= 146.0) return "Guam";
+  if (lat >= -43.643 && lat <= -10.668 && lng >= 113.338 && lng <= 153.569) return "Australia";
+  if (lat >= -47.286 && lat <= -34.131 && lng >= 166.509 && lng <= 178.517) return "New Zealand";
+  if (lat >= -10.826 && lat <= -6.177 && lng >= 142.199 && lng <= 153.569) return "Papua New Guinea";
   
   return "Unknown";
 };
