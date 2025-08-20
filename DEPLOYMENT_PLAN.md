@@ -81,7 +81,7 @@ ls -la production-backups/
 SSH_HOST = 155.94.144.191
 SSH_USERNAME = root
 SSH_PASSWORD = 4R1ilBJM18jt9f2TAu
-GITHUB_TOKEN = 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
+DEPLOY_TOKEN = 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
 ```
 
 ### Phase 3: GitHub Actions Workflow Setup (2-3 minutes)

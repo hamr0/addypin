@@ -62,6 +62,8 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           password: ${{ secrets.SSH_PASSWORD }}
+        env:
+          DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
           script: |
             # Set deployment timestamp
             DEPLOY_TIME=$(date '+%Y%m%d_%H%M%S')
