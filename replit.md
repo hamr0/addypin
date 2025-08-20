@@ -8,6 +8,7 @@ Preferred communication style: Simple, everyday language.
 **Command clarity requirements**: Always specify WHO (you/me), WHERE (VPS/Replit), what to REPLACE (exact tokens/keys), and special instructions.
 Project organization: Keep main folder clean - documentation moved to `/docs` folder.
 Documentation strategy: Maintain detailed .md files as development journal and troubleshooting knowledge base for complex setups.
+**Critical Requirement**: Stop reactive troubleshooting and whack-a-mole fixes. Use systematic E2E architectural analysis for infrastructure issues. No more repetitive log checking without holistic problem understanding.
 
 ## System Architecture
 
