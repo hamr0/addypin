@@ -1,40 +1,39 @@
-# Test Deployment for CI/CD System
+# Deployment Troubleshooting Guide
 
-This file triggers a deployment test when committed to main branch.
+## Current Situation
+- Manual deployment script executed successfully
+- Service failed to start with new code
+- Automatic rollback maintained service availability
+- Need to fix startup issue before next deployment
 
-## Changes in this deployment:
-- Added comprehensive CI/CD deployment infrastructure
-- Created production deployment script with rollback capabilities
-- Added health check and monitoring scripts
-- Configured GitHub Actions workflow
-- **FIXED: API stats endpoint database connectivity issue**
-- Switched from Neon serverless driver to standard PostgreSQL driver
-- Disabled SSL for local PostgreSQL connections in production
+## Diagnostic Commands for VPS
 
-## Root Cause Identified:
-The production environment was using Neon Database serverless driver with SSL validation, but connecting to local PostgreSQL. The error "Host: localhost. is not in the cert's altnames: DNS:addypin.com" indicated SSL certificate mismatch.
+Run these on your VPS to identify the startup issue:
 
-## Solution Applied:
-- Changed imports from '@neondatabase/serverless' to 'drizzle-orm/node-postgres'
-- Used standard 'pg' Pool instead of Neon Pool
-- Disabled SSL for local PostgreSQL connections
-- Added proper pg and @types/pg dependencies
+```bash
+# Check service logs for error details
+journalctl -u addypin -n 50 --no-pager
 
-## Expected outcome:
-- API stats endpoint should work properly ✅
-- Automated deployment to production VPS ✅
-- Health checks should pass all tests ✅
-- Rollback capability available if needed ✅
+# Check if the main index.js file exists
+ls -la /opt/addypin/app-backup-*/
 
-🚀 INITIATING PHASE 4: FIRST AUTOMATED DEPLOYMENT
+# Test the new deployment manually
+cd /opt/addypin/app-backup-20250820_150902
+ls -la
+node index.js
 
-All systems verified and ready:
-- Database connectivity fixed
-- GitHub secrets configured
-- Deployment scripts uploaded to VPS
-- Health monitoring ready
-- Rollback capability tested
+# Check current working directory structure
+cd /opt/addypin/app
+ls -la
+```
 
-Deployment will be triggered when this commit reaches main branch.
+## Expected Issues
+1. Missing main entry file (index.js vs server/index.js)
+2. Environment variables not loaded properly
+3. Database connection string format issue
+4. Node.js module resolution problems
 
-Timestamp: 2025-08-20 18:40:00
+## Next Steps
+1. Identify the exact startup error
+2. Fix the configuration issue
+3. Test deployment again
