@@ -1,33 +1,27 @@
-# Root Cause Analysis
+# Root Cause Analysis - Repeated Pattern
 
-## Why Scripts Keep Failing
+## The Core Issue: 
+**Error: Cannot find module '/opt/addypin/app/index.js'**
 
-**Core Issue:** Production app structure doesn't match our assumptions
+## Historical Pattern Analysis:
+1. We pull latest code from GitHub ✅
+2. Build process completes successfully ✅  
+3. Dependencies install correctly ✅
+4. Service tries to start with `node index.js` ❌
+5. **FAILS**: `/opt/addypin/app/index.js` doesn't exist
 
-**Evidence:**
-- `/opt/addypin/app/server/db.ts` does not exist
-- Service is running but using old/different code structure
-- SSL errors suggest it's using Neon serverless driver (not our local PostgreSQL fix)
+## Root Cause:
+The deployment script copies source files but **production expects compiled JavaScript files**.
 
-**What's Actually Running in Production:**
-- Service: `node index.js` in `/opt/addypin/app/`
-- Structure: Compiled JavaScript files, not TypeScript source
-- Database: Still using old Neon configuration with SSL
+## Production Structure Mismatch:
+- **Service expects**: `/opt/addypin/app/index.js` (compiled)
+- **We provide**: TypeScript source files that need compilation
+- **Build process**: Creates files in `dist/` but they're not copied to correct location
 
-**Why Fixes Aren't Working:**
-1. We're trying to copy TypeScript files to a compiled JavaScript environment
-2. The production `index.js` was compiled from old source code
-3. Database configuration is embedded in compiled code
+## Solution Required:
+Fix the deployment script to:
+1. Build the application properly
+2. Copy compiled files to correct production location
+3. Ensure `index.js` exists where systemd expects it
 
-## Simple Solution
-
-**Check what production actually contains:**
-```bash
-ls -la /opt/addypin/app/
-head -20 /opt/addypin/app/index.js | grep -A 5 -B 5 DATABASE
-```
-
-**Then either:**
-1. Rebuild the entire app with correct configuration
-2. Find and replace the database URL in the compiled code
-3. Use environment variables to override the connection settings
+This is a **build/deployment pipeline issue**, not a database connectivity issue.
