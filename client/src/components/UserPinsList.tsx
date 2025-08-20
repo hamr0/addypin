@@ -243,7 +243,7 @@ export function UserPinsList({ onPinSelect, onStartEditing, onAuthChange }: User
         <CardTitle className="flex items-center justify-between text-sm">
           <div className="flex items-center">
             <MapPin className="w-4 h-4 text-addypin-cyan mr-2" />
-            My addypins ({(userPins as Pin[])?.length || 0})
+            Edit addypins ({(userPins as Pin[])?.length || 0})
           </div>
           <Button
             onClick={() => {

@@ -290,7 +290,7 @@ export default function Sidebar({ coordinates, generatedLink, onLinkGenerated, i
 
 
       {/* Coordinate Editing Section */}
-      {generatedLink && (
+      {generatedLink && email && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6" data-testid="edit-coordinates-section">
           <h3 className="text-lg font-semibold text-addypin-dark mb-4 flex items-center">
             <Unlock className="w-5 h-5 text-addypin-cyan mr-3" />
