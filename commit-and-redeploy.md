@@ -1,25 +1,22 @@
-# Commit Latest Changes and Redeploy
+# Critical Pattern Analysis
 
-## Current Status
-- Deployment script working but build script not found in repository
-- Need to commit latest changes (deployment fixes) to Git
-- Then run deployment again
+## The Destructive Cycle:
+1. **API returns "Failed to fetch stats"** (original issue)
+2. **We assume database connection problem** 
+3. **We modify working database config** 
+4. **Application crashes on startup**
+5. **502 errors, service failures, backup disasters**
+6. **Repeat with new "fixes" that break more things**
 
-## Commands for VPS
+## Root Cause Discovery:
+- DATABASE_URL environment variable **IS NOT SET** in production (`env | grep DATABASE` returned nothing)
+- The systemd service has DATABASE_URL in the service file, but it's not reaching the application
+- Original code was likely working with a different database or the env var isn't being loaded
 
-```bash
-# Clean up any conflicting backup directories
-rm -rf /opt/addypin/app-backup-*
+## The Real Fix:
+**Stop modifying the database configuration**. The issue is environment variable loading, not the connection code.
 
-# Go to repository directory and commit our fixes
-cd /opt/addypin/addypin-repo
-git add .
-git commit -m "Fix deployment script build process and backup handling"
-git push origin main
-
-# Now run deployment again
-cd /opt/addypin
-./scripts/deploy-production.sh
-```
-
-This will ensure the latest deployment fixes are available when the script pulls from GitHub.
+## Next Steps:
+1. Revert all database changes to original working state
+2. Fix environment variable loading in systemd
+3. Test without code modifications
