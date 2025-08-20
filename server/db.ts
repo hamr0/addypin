@@ -1,6 +1,6 @@
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
-import * as schema from "@shared/schema";
+import * as schema from "../shared/schema";
 
 if (!process.env.DATABASE_URL) {
   throw new Error(
@@ -8,10 +8,10 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-// Configure connection pool for local PostgreSQL
+// VPS PostgreSQL configuration - no SSL for local database
 const connectionConfig = {
   connectionString: process.env.DATABASE_URL,
-  ssl: false // Disable SSL for local PostgreSQL in production
+  ssl: false
 };
 
 export const pool = new Pool(connectionConfig);
