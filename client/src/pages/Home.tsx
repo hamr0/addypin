@@ -132,19 +132,19 @@ export default function Home() {
               </ul>
             </div>
           </div>
-          <div className="border-t border-gray-200 mt-2 pt-2 flex flex-col md:flex-row justify-between items-center">
-            <p className="text-xs text-addypin-medium">© 2025 addypin</p>
-            <div className="flex space-x-4 mt-2 md:mt-0">
+          <div className="border-t border-gray-200 mt-2 pt-2 flex justify-between items-center">
+            <p className="text-xs text-addypin-medium flex items-center">
+              © 2025 addypin
               <a 
                 href="https://www.linkedin.com/company/10224951/admin/products/cairenes-solutions-addypin/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-addypin-medium hover:text-addypin-cyan transition-colors"
+                className="ml-3 text-addypin-medium hover:text-addypin-cyan transition-colors"
                 data-testid="link-linkedin-home"
               >
-                <i className="fab fa-linkedin text-lg"></i>
+                <i className="fab fa-linkedin text-sm"></i>
               </a>
-            </div>
+            </p>
           </div>
         </div>
       </footer>
