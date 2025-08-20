@@ -158,7 +158,10 @@ switch_version() {
     # Stop service
     systemctl stop addypin || handle_error "Failed to stop service"
     
-    # Atomic switch
+    # Atomic switch - handle existing backup directory
+    if [ -d "/opt/addypin/app-backup-$DEPLOY_TIME" ]; then
+        rm -rf "/opt/addypin/app-backup-$DEPLOY_TIME"
+    fi
     mv /opt/addypin/app "/opt/addypin/app-backup-$DEPLOY_TIME"
     mv "/opt/addypin/app-new-$DEPLOY_TIME" /opt/addypin/app
     
