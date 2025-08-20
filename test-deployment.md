@@ -1,39 +1,25 @@
-# Deployment Troubleshooting Guide
+# Test Production Deployment
 
-## Current Situation
-- Manual deployment script executed successfully
-- Service failed to start with new code
-- Automatic rollback maintained service availability
-- Need to fix startup issue before next deployment
+## Service Status: ✅ RUNNING
+The systemd service is now active and running.
 
-## Diagnostic Commands for VPS
-
-Run these on your VPS to identify the startup issue:
+## Next Step: Test API
+Run this on VPS to test if database connectivity is working:
 
 ```bash
-# Check service logs for error details
-journalctl -u addypin -n 50 --no-pager
+# Test the API endpoint
+curl https://addypin.com/api/stats
 
-# Check if the main index.js file exists
-ls -la /opt/addypin/app-backup-*/
-
-# Test the new deployment manually
-cd /opt/addypin/app-backup-20250820_150902
-ls -la
-node index.js
-
-# Check current working directory structure
-cd /opt/addypin/app
-ls -la
+# If it works, also test the website
+curl -I https://addypin.com/
 ```
 
-## Expected Issues
-1. Missing main entry file (index.js vs server/index.js)
-2. Environment variables not loaded properly
-3. Database connection string format issue
-4. Node.js module resolution problems
+## Expected Results:
+- **API**: Should return actual stats data instead of "Failed to fetch stats"
+- **Website**: Should return HTTP 200 OK
 
-## Next Steps
-1. Identify the exact startup error
-2. Fix the configuration issue
-3. Test deployment again
+## What We Fixed:
+1. ✅ Service startup issue (copied dist/index.js to index.js)
+2. 🔍 Testing database connectivity (SSL disabled fix)
+
+The deployment process now needs this copy step added permanently.
