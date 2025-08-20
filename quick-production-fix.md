@@ -1,31 +1,33 @@
-# VPS Environment Fix Commands
+# Quick Production Status Check
 
-Run these commands on your VPS to complete the environment configuration:
+## Run these commands to check current status:
 
 ```bash
-# 1. Create proper .env file in production app directory
-cd /opt/addypin/app
-cat > .env << 'EOF'
-DATABASE_URL=postgresql://addypin_user:secure_password_123@localhost:5432/addypin
-NODE_ENV=production
-PORT=3000
-RESEND_API_KEY=re_d3XFqzL8_CRZ8F8NxQNq8gJ2j7mH4CpLw4uP8
-EOF
+# Check if AddyPin service is running
+systemctl status addypin.service
 
-# 2. Update systemd service to load .env file
-sudo systemctl edit addypin --full
+# Check service logs for startup issues
+journalctl -u addypin.service --lines=20 --no-pager
 
-# 3. In the nano editor, modify the [Service] section to include:
-# EnvironmentFile=/opt/addypin/app/.env
-# (Keep all existing Environment= lines as fallbacks)
+# Check if port 3000 is listening
+netstat -tlnp | grep :3000
 
-# 4. After saving, reload and restart
-systemctl daemon-reload
-systemctl restart addypin
-systemctl status addypin
-
-# 5. Test the API
-curl https://addypin.com/api/stats
+# Test direct connection to app
+curl -v http://localhost:3000 || echo "App not responding yet"
 ```
 
-This creates the missing environment bridge between Replit and VPS architectures.
+## Expected behavior:
+- Service may take 30-60 seconds to initialize database schema
+- First startup creates tables and connects to PostgreSQL
+- After initialization, port 3000 should be listening
+
+## If service fails:
+Check logs for specific error (database connection, missing dependencies, etc.)
+
+## If service runs but no response:
+May need to run database migration to create tables:
+```bash
+# Switch to repo directory and run migration
+cd /opt/addypin/addypin-repo
+npm run db:push
+```
