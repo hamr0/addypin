@@ -1,132 +1,41 @@
-name: Deploy AddyPin to Production
+# Alternative Fix: Use ESM-Compatible Node.js Flags
 
-on:
-  push:
-    branches: [main]
+## Issue Analysis:
+- **Build uses modern ESM features** (import.meta, top-level await)
+- **Cannot convert to CommonJS** without breaking the code
+- **Need to run ESM bundle with dynamic require support**
 
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+## Solution: Update systemd service to use ESM-compatible flags
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
+Run on VPS:
+```bash
+# Revert to original ESM build
+cd /opt/addypin/addypin-repo
+sed -i 's/--format=cjs/--format=esm/' package.json
+npm run build
+cp dist/index.js /opt/addypin/app/index.js
 
-      - name: Install dependencies
-        run: npm ci
+# Update systemd service to use ESM loader
+sudo tee /etc/systemd/system/addypin.service > /dev/null << 'EOF'
+[Unit]
+Description=AddyPin Location Sharing Service
+After=network.target postgresql.service
 
-      - name: Build the application
-        run: npm run build
+[Service]
+Type=simple
+User=addypin
+WorkingDirectory=/opt/addypin/app
+ExecStart=/usr/bin/node --experimental-loader @babel/register --es-module-specifier-resolution=node index.js
+EnvironmentFile=/opt/addypin/app/.env
+Restart=always
+RestartSec=10
 
-      - name: Deploy to VPS
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          password: ${{ secrets.SSH_PASSWORD }}
-          port: 22
-          timeout: 60s
-          command_timeout: 30m
-          script: |
-            # Set deployment timestamp
-            DEPLOY_TIME=$(date '+%Y%m%d_%H%M%S')
-            echo "🚀 Starting AddyPin deployment at $DEPLOY_TIME"
+[Install]
+WantedBy=multi-user.target
+EOF
 
-            # Navigate to deployment directory
-            cd /opt/addypin
+systemctl daemon-reload
+systemctl restart addypin
+```
 
-            # Create comprehensive backup
-            echo "📦 Creating production backup..."
-            ./create-production-backup.sh
-
-            # Update repository
-            echo "📥 Pulling latest code..."
-            cd addypin-repo
-            git fetch origin
-            git reset --hard origin/main
-            
-            # Install production dependencies
-            echo "📦 Installing dependencies..."
-            npm ci --omit=dev
-
-            # Build application if needed
-            echo "🔨 Building application..."
-            npm run build 2>/dev/null || echo "No build script found, using existing files"
-
-            # Create new deployment directory
-            echo "📁 Preparing new deployment..."
-            cd /opt/addypin
-            cp -r addypin-repo app-new-$DEPLOY_TIME
-
-            # Stop current service
-            echo "⏹️ Stopping current service..."
-            systemctl stop addypin
-
-            # Backup current app and switch to new version
-            echo "🔄 Switching to new version..."
-            if [ -d app ]; then
-              mv app app-backup-$DEPLOY_TIME
-            fi
-            mv app-new-$DEPLOY_TIME app
-
-            # Update environment variables and permissions
-            echo "🔧 Setting up environment..."
-            chown -R addypin:addypin app/
-            chmod +x app/server/index.js 2>/dev/null || chmod +x app/index.js
-
-            # Start service
-            echo "▶️ Starting service..."
-            systemctl start addypin
-
-            # Wait for service to start
-            sleep 10
-
-            # Verify deployment
-            echo "🔍 Verifying deployment..."
-            if systemctl is-active --quiet addypin; then
-              echo "✅ Service is running"
-            else
-              echo "❌ Service failed to start - Rolling back..."
-              systemctl stop addypin
-              if [ -d app-backup-$DEPLOY_TIME ]; then
-                rm -rf app
-                mv app-backup-$DEPLOY_TIME app
-                systemctl start addypin
-              fi
-              exit 1
-            fi
-
-            # Health check
-            echo "🏥 Running health checks..."
-            sleep 10
-            curl -f https://addypin.com/ > /dev/null || {
-              echo "❌ Health check failed - Rolling back..."
-              systemctl stop addypin
-              if [ -d app-backup-$DEPLOY_TIME ]; then
-                rm -rf app
-                mv app-backup-$DEPLOY_TIME app
-                systemctl start addypin
-              fi
-              exit 1
-            }
-
-            echo "🎉 Deployment completed successfully at $(date)"
-            echo "📊 Service status:"
-            systemctl status addypin --no-pager -l
-
-      - name: Verify Deployment Health
-        run: |
-          echo "🔍 Final health verification..."
-          sleep 15
-          
-          # Test main page
-          curl -f https://addypin.com/ > /dev/null
-          
-          # Test API endpoint  
-          curl -f https://addypin.com/api/stats > /dev/null
-          
-          echo "✅ All health checks passed"
+This approach maintains ESM format but adds Node.js flags to handle dynamic imports.
