@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +28,13 @@ export default function Sidebar({ coordinates, generatedLink, onLinkGenerated, i
   const [hasGeneratedWithoutEmail, setHasGeneratedWithoutEmail] = useState(false);
   const { toast } = useToast();
   const { data: stats, isLoading: statsLoading } = useStats();
+
+  // Reset disabled state when coordinates change (pin moves)
+  useEffect(() => {
+    if (coordinates && hasGeneratedWithoutEmail) {
+      setHasGeneratedWithoutEmail(false);
+    }
+  }, [coordinates, hasGeneratedWithoutEmail]);
 
   const generatePinMutation = useMutation({
     mutationFn: async () => {
