@@ -179,15 +179,15 @@ export default function Sidebar({ coordinates, generatedLink, onLinkGenerated, i
   };
 
   return (
-    <div className="lg:col-span-1 space-y-6">
+    <div className="lg:col-span-1 space-y-4">
       {/* Short Link Generator */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-addypin-dark mb-4 flex items-center">
-          <AddyPinIcon className="text-addypin-cyan mr-3" size={20} />
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <h2 className="text-sm font-semibold text-addypin-dark mb-3 flex items-center">
+          <AddyPinIcon className="text-addypin-cyan mr-2" size={16} />
           Generate addypin!
         </h2>
 
-        <div className="space-y-4">
+        <div className="space-y-3">
           {/* Honeypot field - hidden from users */}
           <input
             type="text"
@@ -199,7 +199,7 @@ export default function Sidebar({ coordinates, generatedLink, onLinkGenerated, i
           />
           
           <div>
-            <Label htmlFor="creator-email" className="block text-sm font-medium text-addypin-dark mb-2">
+            <Label htmlFor="creator-email" className="block text-xs font-medium text-addypin-dark mb-1">
               Associate with email (optional)
             </Label>
             <Input
@@ -208,7 +208,7 @@ export default function Sidebar({ coordinates, generatedLink, onLinkGenerated, i
               placeholder="your@email.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="border-gray-300 focus:border-addypin-cyan focus:ring-addypin-cyan placeholder:text-gray-400"
+              className="border-gray-300 focus:border-addypin-cyan focus:ring-addypin-cyan placeholder:text-gray-400 h-8"
               data-testid="input-creator-email"
             />
             <p className="text-xs text-gray-500 mt-1">
@@ -219,16 +219,16 @@ export default function Sidebar({ coordinates, generatedLink, onLinkGenerated, i
           <Button
             onClick={() => generatePinMutation.mutate()}
             disabled={!coordinates || generatePinMutation.isPending}
-            className="w-full bg-addypin-cyan hover:bg-cyan-600 text-white font-semibold py-4 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl"
+            className="w-full bg-addypin-cyan hover:bg-cyan-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl h-8"
             data-testid="button-generate"
           >
-            <AddyPinIcon className="mr-2" size={18} />
+            <AddyPinIcon className="mr-2" size={14} />
             {generatePinMutation.isPending ? "Generating..." : "Generate!"}
           </Button>
         </div>
 
         {generatedLink && (
-          <div className={`mt-4 space-y-3 p-4 rounded-lg ${email ? 'bg-green-50 border border-green-200' : 'bg-gray-50 border border-gray-200'}`}>
+          <div className={`mt-3 space-y-2 p-3 rounded-lg ${email ? 'bg-green-50 border border-green-200' : 'bg-gray-50 border border-gray-200'}`}>
             <h3 className={`text-sm font-semibold mb-3 ${email ? 'text-green-800' : 'text-gray-600'}`}>
               <i className="fas fa-check-circle mr-2"></i>
               {email ? 'Your addypin is ready!' : 'Sample addypin (expires in 72 hours)'}

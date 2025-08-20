@@ -224,10 +224,10 @@ export function UserPinsList({ onPinSelect, onStartEditing }: UserPinsListProps)
 
   return (
     <Card className="w-full">
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center justify-between text-sm">
           <div className="flex items-center">
-            <MapPin className="w-5 h-5 text-addypin-cyan mr-2" />
+            <MapPin className="w-4 h-4 text-addypin-cyan mr-2" />
             My addypins ({(userPins as Pin[])?.length || 0})
           </div>
           <Button
@@ -241,24 +241,24 @@ export function UserPinsList({ onPinSelect, onStartEditing }: UserPinsListProps)
             }}
             variant="outline"
             size="sm"
-            className="text-xs"
+            className="text-xs h-6 px-2"
           >
             <LogOut className="w-3 h-3 mr-1" />
             Log out
           </Button>
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-0">
         {!userPins || (userPins as Pin[]).length === 0 ? (
-          <p className="text-sm text-gray-500 text-center py-4">
+          <p className="text-xs text-gray-500 text-center py-3">
             No addypins found for this email address
           </p>
         ) : (
-          <div className="space-y-3 max-h-80 overflow-y-auto">
+          <div className="space-y-2 max-h-64 overflow-y-auto">
             {(userPins as Pin[]).map((pin) => (
               <div
                 key={pin.id}
-                className={`p-3 border rounded-lg cursor-pointer transition-all ${
+                className={`p-2 border rounded-lg cursor-pointer transition-all ${
                   selectedPin?.id === pin.id
                     ? 'border-addypin-cyan bg-cyan-50'
                     : 'border-gray-200 hover:border-gray-300'

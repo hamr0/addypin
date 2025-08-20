@@ -46,8 +46,8 @@ export default function Home() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div className="lg:col-span-2">
             <MapSection 
               coordinates={coordinates}
@@ -67,7 +67,7 @@ export default function Home() {
               }}
             />
           </div>
-          <div className="space-y-8">
+          <div className="space-y-4">
             <QuickStats />
             <Sidebar 
               coordinates={coordinates}
