@@ -102,21 +102,21 @@ export default function Home() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-white border-t border-gray-200 mt-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+      <footer className="bg-white border-t border-gray-200 mt-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="col-span-1 md:col-span-2">
-              <div className="mb-4">
+              <div className="mb-2">
                 <Logo />
               </div>
-              <p className="text-addypin-medium text-sm">
+              <p className="text-addypin-medium text-xs">
                 The simplest way to share locations across all map apps. 
                 Open source and privacy-focused.
               </p>
             </div>
             <div>
-              <h3 className="font-semibold text-addypin-dark mb-3">Resources</h3>
-              <ul className="space-y-2 text-sm text-addypin-medium">
+              <h3 className="font-semibold text-addypin-dark mb-2 text-sm">Resources</h3>
+              <ul className="space-y-1 text-xs text-addypin-medium">
                 <li><Link href="/features" className="hover:text-addypin-cyan transition-colors">Features</Link></li>
                 <li><a href="#" className="hover:text-addypin-cyan transition-colors">API Documentation</a></li>
                 <li><Link href="/versions" className="hover:text-addypin-cyan transition-colors" data-testid="link-version-history-footer">Version History</Link></li>
@@ -124,16 +124,16 @@ export default function Home() {
               </ul>
             </div>
             <div>
-              <h3 className="font-semibold text-addypin-dark mb-3">Legal</h3>
-              <ul className="space-y-2 text-sm text-addypin-medium">
+              <h3 className="font-semibold text-addypin-dark mb-2 text-sm">Legal</h3>
+              <ul className="space-y-1 text-xs text-addypin-medium">
                 <li><a href="#" className="hover:text-addypin-cyan transition-colors">Privacy Policy</a></li>
                 <li><a href="#" className="hover:text-addypin-cyan transition-colors">Terms of Service</a></li>
                 <li><a href="#" className="hover:text-addypin-cyan transition-colors">Cookie Policy</a></li>
               </ul>
             </div>
           </div>
-          <div className="border-t border-gray-200 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
-            <p className="text-sm text-addypin-medium">© 2025 addypin</p>
+          <div className="border-t border-gray-200 mt-4 pt-3 flex flex-col md:flex-row justify-between items-center">
+            <p className="text-xs text-addypin-medium">© 2025 addypin</p>
             <div className="flex space-x-4 mt-4 md:mt-0">
               <a 
                 href="https://www.linkedin.com/company/10224951/admin/products/cairenes-solutions-addypin/"

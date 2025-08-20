@@ -237,11 +237,11 @@ export default function MapSection({ coordinates, onCoordinatesChange, generated
   ];
 
   return (
-    <div className="lg:col-span-2 space-y-6">
+    <div className="lg:col-span-2 space-y-3">
       {/* Search Bar */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-        <h3 className="text-lg font-semibold text-addypin-dark mb-3 flex items-center">
-          <Search className="w-5 h-5 text-addypin-cyan mr-2" />
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3">
+        <h3 className="text-sm font-semibold text-addypin-dark mb-2 flex items-center">
+          <Search className="w-4 h-4 text-addypin-cyan mr-2" />
           Search Location
         </h3>
         <form onSubmit={handleSearch} className="flex gap-2">
@@ -290,15 +290,15 @@ export default function MapSection({ coordinates, onCoordinatesChange, generated
         </form>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center justify-between mb-6">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <div className="flex items-center justify-between mb-3">
           <div>
-            <h1 className="text-2xl font-semibold text-addypin-dark">Pick your addypin</h1>
-            <p className="text-addypin-medium mt-1">Click anywhere on the map or drag addypin to set coordinates</p>
+            <h1 className="text-lg font-semibold text-addypin-dark">Pick your addypin</h1>
+            <p className="text-addypin-medium text-sm">Click anywhere on the map or drag addypin to set coordinates</p>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center text-sm text-addypin-medium">
-              <i className="fas fa-map-marker-alt text-addypin-cyan mr-2"></i>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center text-xs text-addypin-medium">
+              <i className="fas fa-map-marker-alt text-addypin-cyan mr-1"></i>
               <span>Location set</span>
             </div>
           </div>
@@ -351,9 +351,9 @@ export default function MapSection({ coordinates, onCoordinatesChange, generated
             )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
           <div>
-            <Label htmlFor="latitude" className="block text-sm font-medium text-addypin-dark mb-2">
+            <Label htmlFor="latitude" className="block text-xs font-medium text-addypin-dark mb-1">
               Latitude
             </Label>
             <Input
@@ -361,13 +361,13 @@ export default function MapSection({ coordinates, onCoordinatesChange, generated
               type="text"
               value={coordinates ? coordinates.lat.toFixed(6) : ""}
               readOnly
-              className="bg-addypin-light border border-gray-300 font-mono text-sm"
+              className="bg-addypin-light border border-gray-300 font-mono text-xs h-8"
               placeholder="52.247904"
               data-testid="input-latitude"
             />
           </div>
           <div>
-            <Label htmlFor="longitude" className="block text-sm font-medium text-addypin-dark mb-2">
+            <Label htmlFor="longitude" className="block text-xs font-medium text-addypin-dark mb-1">
               Longitude
             </Label>
             <Input
@@ -375,7 +375,7 @@ export default function MapSection({ coordinates, onCoordinatesChange, generated
               type="text"
               value={coordinates ? coordinates.lng.toFixed(6) : ""}
               readOnly
-              className="bg-addypin-light border border-gray-300 font-mono text-sm"
+              className="bg-addypin-light border border-gray-300 font-mono text-xs h-8"
               placeholder="4.761194"
               data-testid="input-longitude"
             />
@@ -385,12 +385,12 @@ export default function MapSection({ coordinates, onCoordinatesChange, generated
       </div>
 
       {/* Map Apps Grid */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-addypin-dark mb-4 flex items-center">
-          <i className="fas fa-external-link-alt text-addypin-cyan mr-3"></i>
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <h2 className="text-sm font-semibold text-addypin-dark mb-3 flex items-center">
+          <i className="fas fa-external-link-alt text-addypin-cyan mr-2"></i>
           Open in Map Apps
         </h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
           {mapApps.map((app) => (
             <a
               key={app.name}
@@ -412,10 +412,10 @@ export default function MapSection({ coordinates, onCoordinatesChange, generated
                   }
                 }
               }}
-              className="flex items-center justify-center p-3 bg-addypin-light hover:bg-addypin-cyan hover:text-white transition-all duration-200 rounded-lg text-sm font-medium text-addypin-dark group"
+              className="flex items-center justify-center p-2 bg-addypin-light hover:bg-addypin-cyan hover:text-white transition-all duration-200 rounded-lg text-xs font-medium text-addypin-dark group"
               data-testid={`link-${app.name.toLowerCase().replace(/\s+/g, '-')}`}
             >
-              <i className={`${app.icon} mr-2 group-hover:scale-110 transition-transform`}></i>
+              <i className={`${app.icon} mr-1 group-hover:scale-110 transition-transform text-xs`}></i>
               <span>{app.name}</span>
             </a>
           ))}
