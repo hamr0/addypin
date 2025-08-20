@@ -1,17 +1,21 @@
 import { useStats } from "@/hooks/useStats";
+import { MapPin, Map, MousePointer, Globe, Trophy } from "lucide-react";
 
 export function QuickStats() {
   const { data: stats, isLoading: statsLoading } = useStats();
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-      <h2 className="text-sm font-semibold text-addypin-dark mb-3">📊 Quick Stats</h2>
+      <h2 className="text-sm font-semibold text-addypin-dark mb-3 flex items-center">
+        <Trophy className="w-4 h-4 text-addypin-cyan mr-2" />
+        Quick Stats
+      </h2>
 
       <div className="grid grid-cols-2 gap-2">
         <div className="stats-card rounded-lg p-2">
           <div className="flex items-center">
-            <div className="w-6 h-6 bg-addypin-cyan bg-opacity-10 rounded-md flex items-center justify-center mr-2 text-xs">
-              📍
+            <div className="w-6 h-6 bg-addypin-cyan bg-opacity-10 rounded-md flex items-center justify-center mr-2">
+              <MapPin className="w-3 h-3 text-addypin-cyan" />
             </div>
             <div>
               <p className="text-xs font-medium text-addypin-medium">Pinned</p>
@@ -24,8 +28,8 @@ export function QuickStats() {
 
         <div className="stats-card rounded-lg p-2">
           <div className="flex items-center">
-            <div className="w-6 h-6 bg-gray-100 rounded-md flex items-center justify-center mr-2 text-xs">
-              🗺️
+            <div className="w-6 h-6 bg-gray-100 rounded-md flex items-center justify-center mr-2">
+              <Map className="w-3 h-3 text-gray-600" />
             </div>
             <div>
               <p className="text-xs font-medium text-addypin-medium">Total</p>
@@ -38,8 +42,8 @@ export function QuickStats() {
 
         <div className="stats-card rounded-lg p-2">
           <div className="flex items-center">
-            <div className="w-6 h-6 bg-green-100 rounded-md flex items-center justify-center mr-2 text-xs">
-              👆
+            <div className="w-6 h-6 bg-green-100 rounded-md flex items-center justify-center mr-2">
+              <MousePointer className="w-3 h-3 text-green-600" />
             </div>
             <div>
               <p className="text-xs font-medium text-addypin-medium">Clicks</p>
@@ -52,8 +56,8 @@ export function QuickStats() {
 
         <div className="stats-card rounded-lg p-2">
           <div className="flex items-center">
-            <div className="w-6 h-6 bg-blue-100 rounded-md flex items-center justify-center mr-2 text-xs">
-              🌍
+            <div className="w-6 h-6 bg-blue-100 rounded-md flex items-center justify-center mr-2">
+              <Globe className="w-3 h-3 text-blue-600" />
             </div>
             <div>
               <p className="text-xs font-medium text-addypin-medium">Countries</p>
@@ -67,7 +71,10 @@ export function QuickStats() {
 
       {/* Top Map Apps */}
       <div className="mt-3 pt-3 border-t border-gray-200">
-        <p className="text-xs font-medium text-addypin-dark mb-2">🏆 Top Map Apps</p>
+        <p className="text-xs font-medium text-addypin-dark mb-2 flex items-center">
+          <Trophy className="w-3 h-3 text-yellow-600 mr-1" />
+          Top Map Apps
+        </p>
         <div className="space-y-1">
           {(statsLoading ? [] : (stats as any)?.topMapApps || []).slice(0, 3).map((app: any, index: number) => (
             <div key={app.name} className="flex items-center justify-between">
