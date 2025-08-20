@@ -38,6 +38,8 @@ setInterval(() => {
 const WHITELISTED_IPS = [
   '127.0.0.1',
   'localhost',
+  '::1',
+  '::ffff:127.0.0.1',
   '172.31.76.98', // Your current IP for testing
   '172.31.93.34', // User's current IP
 ];
@@ -58,6 +60,13 @@ export function createRateLimiter(options: {
 
     // Skip rate limiting for whitelisted IPs (development only)
     if (process.env.NODE_ENV === 'development' && WHITELISTED_IPS.includes(ip)) {
+      console.log(`🔓 Skipping rate limit for whitelisted IP: ${ip}`);
+      return next();
+    }
+
+    // Also skip if IP starts with development patterns
+    if (process.env.NODE_ENV === 'development' && (ip.startsWith('127.') || ip.startsWith('::') || ip.startsWith('172.'))) {
+      console.log(`🔓 Skipping rate limit for development IP: ${ip}`);
       return next();
     }
 
@@ -180,13 +189,13 @@ export function antibotMiddleware(req: Request, res: Response, next: NextFunctio
 // Specific rate limiters - balanced for security and usability
 export const pinCreationLimiter = createRateLimiter({
   windowMs: 60 * 60 * 1000, // 1 hour
-  maxRequests: 5, // 5 pins per hour per IP
-  message: 'Too many pins created from this location. Please try again in an hour.'
+  maxRequests: process.env.NODE_ENV === 'development' ? 50 : 5, // 50 pins per hour in dev, 5 in prod
+  message: 'You\'re creating addypins too quickly! Please wait a moment before creating another one.'
 });
 
 export const dailyPinLimiter = createRateLimiter({
   windowMs: 24 * 60 * 60 * 1000, // 24 hours
-  maxRequests: 15, // 15 pins per day per IP
+  maxRequests: process.env.NODE_ENV === 'development' ? 200 : 15, // 200 pins per day in dev, 15 in prod
   message: 'Daily pin creation limit reached from this location. Please try again tomorrow.'
 });
 

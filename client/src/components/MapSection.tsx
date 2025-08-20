@@ -46,6 +46,9 @@ export default function MapSection({ coordinates, onCoordinatesChange, generated
   const [mapLinks, setMapLinks] = useState<Record<string, string>>({});
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
+  const [isLoadingMapLinks, setIsLoadingMapLinks] = useState(false);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const mapLinksCache = useRef<Map<string, Record<string, string>>>(new Map());
   
   const { location: geoLocation, error: geoError } = useGeolocation();
   const auth = useAuth();
@@ -86,17 +89,49 @@ export default function MapSection({ coordinates, onCoordinatesChange, generated
     },
   });
 
-  // Fetch map links when coordinates change
-  const { data: fetchedMapLinks } = useQuery({
-    queryKey: ["/api/map-links", coordinates?.lat, coordinates?.lng],
-    enabled: !!coordinates,
-  });
+  // Debounced map links fetching
+  const fetchMapLinksDebounced = (coords: { lat: number; lng: number }) => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    const cacheKey = `${coords.lat.toFixed(4)},${coords.lng.toFixed(4)}`;
+    const cached = mapLinksCache.current.get(cacheKey);
+    if (cached) {
+      setMapLinks(cached);
+      setIsLoadingMapLinks(false);
+      return;
+    }
+
+    setIsLoadingMapLinks(true);
+    
+    debounceTimerRef.current = setTimeout(async () => {
+      try {
+        const response = await fetch(`/api/map-links/${coords.lat}/${coords.lng}`);
+        if (response.ok) {
+          const newMapLinks = await response.json();
+          setMapLinks(newMapLinks);
+          mapLinksCache.current.set(cacheKey, newMapLinks);
+        }
+      } catch (error) {
+        console.error("Error fetching map links:", error);
+      } finally {
+        setIsLoadingMapLinks(false);
+      }
+    }, 500);
+  };
 
   useEffect(() => {
-    if (fetchedMapLinks && typeof fetchedMapLinks === 'object') {
-      setMapLinks(fetchedMapLinks as Record<string, string>);
+    if (coordinates) {
+      fetchMapLinksDebounced(coordinates);
     }
-  }, [fetchedMapLinks]);
+    
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, [coordinates]);
 
   // Initialize map
   useEffect(() => {
