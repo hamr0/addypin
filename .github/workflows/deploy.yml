@@ -87,9 +87,13 @@ jobs:
             echo "📦 Installing dependencies..."
             npm ci --omit=dev
 
-            # Build application if needed
+            # Build application
             echo "🔨 Building application..."
-            npm run build 2>/dev/null || echo "No build script found, using existing files"
+            npm run build
+            
+            # Copy built files to root for production
+            echo "📁 Setting up production files..."
+            cp dist/index.js ./index.js
 
             # Create new deployment directory
             echo "📁 Preparing new deployment..."

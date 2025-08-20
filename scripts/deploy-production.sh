@@ -130,11 +130,16 @@ deploy_new_version() {
     # Install dependencies
     npm ci --omit=dev || handle_error "Failed to install dependencies"
     
-    # Build application (if build script exists)
-    if npm run build > /dev/null 2>&1; then
-        log "✅ Application built successfully"
+    # Build application
+    npm run build || handle_error "Failed to build application"
+    log "✅ Application built successfully"
+    
+    # Copy built files to root for production
+    if [ -f "dist/index.js" ]; then
+        cp dist/index.js ./index.js
+        log "✅ Production files prepared"
     else
-        log "ℹ️ No build script found, using existing files"
+        handle_error "Built index.js not found in dist/ directory"
     fi
     
     # Create new app directory
