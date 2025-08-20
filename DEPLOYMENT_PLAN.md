@@ -1,27 +1,41 @@
-# Strategic Deployment Options
+# Systematic Deployment Plan: Fix Build Process
 
-## Option 1: VPS Pull-Based Deployment ✅ WORKING
-- **Status**: VPS can successfully pull from GitHub
-- **Process**: Commit fixes → VPS pulls → Apply to production
-- **Advantage**: Uses proven working connection
-- **Implementation**: Ready to use immediately
+## Root Cause: ESBuild External Dependencies
+- Current build: `esbuild --packages=external` expects npm modules in production
+- Missing: node_modules directory and database schema
 
-## Option 2: File Upload Approach
-- **Process**: Download problematic files from VPS → Upload to GitHub → VPS pulls
-- **Use case**: When we need to preserve VPS fixes
-- **Implementation**: Manual file transfer workflow
+## Option A: Bundle Everything (Recommended)
+Fix the build process to bundle all dependencies:
 
-## Option 3: Fix GitHub SSH Issue
-- **Root cause**: GitHub Actions IP ranges blocked by VPS/provider
-- **Complexity**: Requires VPS network configuration changes
-- **Time investment**: Potentially hours of network troubleshooting
+```bash
+# 1. Stop the failing service
+sudo systemctl stop addypin.service
 
-## Recommendation: Option 1 (VPS Pull)
-Since VPS → GitHub pull works reliably, let's use this proven method:
+# 2. Go back to source and fix build process
+cd /opt/addypin/addypin-repo
 
-1. Make database fix in Replit
-2. Commit to GitHub
-3. VPS pulls changes
-4. Apply to production
+# 3. Update build to bundle dependencies
+npm run build  # This creates current broken version
 
-This avoids the SSH connectivity issue entirely and uses the working connection path.
+# 4. Create proper bundled version
+esbuild server/index.ts --platform=node --bundle --format=esm --outdir=dist --packages=bundle
+
+# 5. Deploy fixed version
+cp dist/index.js /opt/addypin/app/
+
+# 6. Create database schema
+npm run db:push
+
+# 7. Restart service
+sudo systemctl start addypin.service
+```
+
+## Option B: Install node_modules in Production
+```bash
+# Copy package.json and install in production
+cp package.json /opt/addypin/app/
+cd /opt/addypin/app
+npm install --production
+```
+
+**Option A is cleaner** - single file deployment without dependency management.
