@@ -14,9 +14,10 @@ import { getCountryFromCoords } from "@shared/utils";
 interface UserPinsListProps {
   onPinSelect?: (pin: Pin) => void;
   onStartEditing?: () => void;
+  onAuthChange?: (email: string, otpCode: string, isAuthenticated: boolean) => void;
 }
 
-export function UserPinsList({ onPinSelect, onStartEditing }: UserPinsListProps) {
+export function UserPinsList({ onPinSelect, onStartEditing, onAuthChange }: UserPinsListProps) {
   const [email, setEmail] = useState("");
   const [otpCode, setOtpCode] = useState("");
   const [showOtpInput, setShowOtpInput] = useState(false);
@@ -124,6 +125,11 @@ export function UserPinsList({ onPinSelect, onStartEditing }: UserPinsListProps)
       setEditToken(data.editToken);
       setIsAuthenticated(true);
       setShowOtpInput(false);
+      
+      // Notify parent component about authentication change
+      if (onAuthChange) {
+        onAuthChange(email, otpCode, true);
+      }
       
       // Force refetch after a small delay to ensure the query is enabled
       setTimeout(() => {

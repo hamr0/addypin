@@ -35,9 +35,11 @@ interface MapSectionProps {
   editingPin?: Pin;
   isEditing?: boolean;
   onEditComplete?: (newCoords: { lat: number; lng: number }) => void;
+  userEmail?: string;
+  otpCode?: string;
 }
 
-export default function MapSection({ coordinates, onCoordinatesChange, generatedLink, editingPin, isEditing, onEditComplete }: MapSectionProps) {
+export default function MapSection({ coordinates, onCoordinatesChange, generatedLink, editingPin, isEditing, onEditComplete, userEmail, otpCode }: MapSectionProps) {
   const mapRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -53,9 +55,13 @@ export default function MapSection({ coordinates, onCoordinatesChange, generated
   const saveCoordinatesMutation = useMutation({
     mutationFn: async (coords: { lat: number; lng: number }) => {
       if (!editingPin?.shortcode) throw new Error("No pin selected for editing");
+      if (!userEmail || !otpCode) throw new Error("Email and OTP code required for editing");
+      
       const response = await apiRequest("PATCH", `/api/pins/${editingPin.shortcode}`, {
-        latitude: coords.lat,
-        longitude: coords.lng
+        latitude: coords.lat.toString(),
+        longitude: coords.lng.toString(),
+        email: userEmail,
+        otpCode: otpCode
       });
       return response.json();
     },

@@ -91,14 +91,14 @@ export const getCountryFromCoords = (lat: number, lng: number): string => {
   if (lat >= 41.9 && lat <= 41.9 && lng >= 12.4 && lng <= 12.5) return "Vatican City";
   if (lat >= 43.7 && lat <= 47.8 && lng >= 5.5 && lng <= 10.5) return "Luxembourg";
   
-  // Asia
-  if (lat >= 18.0 && lat <= 53.6 && lng >= 73.7 && lng <= 134.8) return "China";
+  // Asia (ordered by specificity - smaller/more specific countries first)
   if (lat >= 24.0 && lat <= 46.0 && lng >= 129.0 && lng <= 146.0) return "Japan";
   if (lat >= 33.0 && lat <= 38.6 && lng >= 124.6 && lng <= 131.9) return "South Korea";
   if (lat >= 37.7 && lat <= 43.0 && lng >= 124.3 && lng <= 130.7) return "North Korea";
-  if (lat >= 6.7 && lat <= 35.5 && lng >= 68.1 && lng <= 97.4) return "India";
   if (lat >= 29.4 && lat <= 38.5 && lng >= 60.5 && lng <= 75.0) return "Afghanistan";
   if (lat >= 23.7 && lat <= 37.1 && lng >= 60.9 && lng <= 77.8) return "Pakistan";
+  if (lat >= 6.7 && lat <= 35.5 && lng >= 68.1 && lng <= 97.4) return "India";
+  if (lat >= 18.0 && lat <= 53.6 && lng >= 73.7 && lng <= 134.8) return "China";
   if (lat >= 20.7 && lat <= 26.6 && lng >= 88.0 && lng <= 92.7) return "Bangladesh";
   if (lat >= 5.9 && lat <= 9.8 && lng >= 79.7 && lng <= 81.9) return "Sri Lanka";
   if (lat >= 26.3 && lat <= 30.4 && lng >= 80.1 && lng <= 88.2) return "Nepal";

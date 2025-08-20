@@ -16,6 +16,8 @@ export default function Home() {
   const [editingPin, setEditingPin] = useState<Pin | undefined>();
   const [isEditing, setIsEditing] = useState(false);
   const [originalCoordinates, setOriginalCoordinates] = useState<{ lat: number; lng: number } | null>(null);
+  const [userEmail, setUserEmail] = useState<string>("");
+  const [otpCode, setOtpCode] = useState<string>("");
 
   return (
     <div className="min-h-screen bg-gray-50 font-inter">
@@ -55,6 +57,8 @@ export default function Home() {
               generatedLink={generatedLink}
               editingPin={editingPin}
               isEditing={isEditing}
+              userEmail={userEmail}
+              otpCode={otpCode}
               onEditComplete={(newCoords) => {
                 if (editingPin && newCoords) {
                   // Save the new coordinates
@@ -95,6 +99,10 @@ export default function Home() {
                 setIsEditing(true);
                 // Force immediate UI update
                 setCoordinates(prevCoords => prevCoords ? {...prevCoords} : prevCoords);
+              }}
+              onAuthChange={(email, otp, isAuth) => {
+                setUserEmail(email);
+                setOtpCode(otp);
               }}
             />
           </div>
