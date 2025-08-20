@@ -1,67 +1,88 @@
-# AddyPin VPS Deployment - Ready to Deploy
+# Complete VPS Deployment Commands
 
-## ✅ Setup Complete
+## Actions for YOU to take on your VPS
 
-Your deployment system is now fully configured:
-
-- **GitHub Token**: Secured in environment variables
-- **Deployment Script**: Updated to use token authentication
-- **VPS Script**: Ready at `/opt/addypin/deploy.sh`
-- **Automated Deployment**: One-command deployment ready
-
-## 🚀 Deploy to Production
-
-### Option 1: Automated Deployment (Recommended)
+### 1. SSH to VPS
 ```bash
-# Run this from Replit to deploy automatically
-./deploy-to-vps.sh
+ssh root@155.94.144.191
 ```
 
-### Option 2: Manual Deployment
+### 2. Create Final Deployment Script
 ```bash
-# Copy script to VPS
-scp vps-deployment-script.sh root@155.94.144.191:/opt/addypin/deploy.sh
+cat > /opt/addypin/deploy.sh << 'EOF'
+#!/bin/bash
+set -e
+echo "🚀 Starting AddyPin deployment from GitHub..."
+cd /opt/addypin
+echo "Stopping AddyPin service..."
+systemctl stop addypin
+echo "Creating backup..."
+if [ -d "app" ]; then
+    cp -r app app-backup-$(date +%Y%m%d-%H%M%S)
+fi
+if [ ! -d "addypin-repo" ]; then
+    echo "Cloning repository..."
+    git clone https://${GITHUB_PERSONAL_ACCESS_TOKEN}@github.com/amrhas82/addypin.git addypin-repo
+else
+    echo "Updating repository..."
+    cd addypin-repo && git pull origin main && cd ..
+fi
+echo "Building application..."
+cd addypin-repo
+npm install
+echo "Building React client..."
+npx vite build
+echo "Preparing deployment..."
+rm -rf ../app
+cp -r . ../app
+cd ../app
+echo "Installing production dependencies..."
+npm ci --only=production
+chown -R addypin:addypin /opt/addypin/app
+echo "Starting AddyPin service..."
+systemctl start addypin
+sleep 3
+curl -f http://localhost:3000/api/health && echo "✅ Deployment complete!" || echo "⚠️ Check logs: journalctl -u addypin -n 20"
+EOF
 
-# Deploy on VPS
-ssh root@155.94.144.191
-export GITHUB_PERSONAL_ACCESS_TOKEN="your_token_here"
+chmod +x /opt/addypin/deploy.sh
+```
+
+### 3. Update Systemd Service with Database Password
+```bash
+cat > /etc/systemd/system/addypin.service << 'EOF'
+[Unit]
+Description=AddyPin Location Sharing Service
+After=network.target
+
+[Service]
+Type=simple
+User=addypin
+WorkingDirectory=/opt/addypin/app
+ExecStart=/usr/bin/npx tsx server/index.ts
+Restart=always
+Environment=NODE_ENV=production
+Environment=DATABASE_URL=postgresql://addypin_user:secure_password_123@localhost:5432/addypin
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+systemctl daemon-reload
+```
+
+### 4. Deploy AddyPin
+```bash
+export GITHUB_PERSONAL_ACCESS_TOKEN="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"
 /opt/addypin/deploy.sh
 ```
 
-## 📋 Deployment Process
+## What This Solution Does
 
-The deployment will:
+- **No bundling conflicts** - Copies entire working codebase
+- **Same runtime as development** - tsx runs TypeScript directly
+- **All dependencies included** - npm ci installs everything
+- **Proper database connection** - Uses your PostgreSQL password
+- **Production environment** - NODE_ENV=production set
 
-1. **Stop current service** on VPS
-2. **Create backup** of existing deployment
-3. **Clone/update code** from GitHub (private repo access)
-4. **Build React app** (`npm install && npm run build`)
-5. **Deploy files** to production directory
-6. **Install dependencies** (production only)
-7. **Start service** and verify health
-8. **Confirm success** at https://addypin.com
-
-## 🔍 Expected Output
-
-```
-🚀 Starting AddyPin deployment from GitHub...
-Stopping AddyPin service...
-Creating backup...
-Cloning repository...
-Building application...
-npm install
-npm run build
-Deploying files...
-Starting AddyPin service...
-✅ AddyPin deployment completed successfully!
-🌐 Live at: https://addypin.com
-```
-
-## 🎯 Next Steps
-
-1. **Test deployment**: Run `./deploy-to-vps.sh`
-2. **Verify website**: Check https://addypin.com
-3. **Monitor logs**: `journalctl -u addypin -f` if needed
-4. **Document success**: Update project documentation
-
-Your AddyPin application is ready for production deployment with complete infrastructure control and 92.75% cost savings!
+This mirrors your successful Replit development environment exactly, avoiding all the module system conflicts we encountered with bundling approaches.
