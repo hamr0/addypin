@@ -27,8 +27,12 @@ export function UserPinsList({ onPinSelect, onStartEditing }: UserPinsListProps)
   const { toast } = useToast();
 
   // Fetch user pins after authentication
-  const { data: userPins, refetch: refetchPins } = useQuery({
-    queryKey: [`/api/user/pins/${email}`],
+  const { data: userPins, refetch: refetchPins, isLoading: pinsLoading } = useQuery({
+    queryKey: ['user-pins', email],
+    queryFn: async () => {
+      const response = await apiRequest("GET", `/api/user/pins/${encodeURIComponent(email)}`, undefined);
+      return response.json();
+    },
     enabled: isAuthenticated && !!email,
   });
 
@@ -120,10 +124,15 @@ export function UserPinsList({ onPinSelect, onStartEditing }: UserPinsListProps)
       setEditToken(data.editToken);
       setIsAuthenticated(true);
       setShowOtpInput(false);
-      refetchPins();
+      
+      // Force refetch after a small delay to ensure the query is enabled
+      setTimeout(() => {
+        refetchPins();
+      }, 100);
+      
       toast({
         title: "Email Verified! ✅",
-        description: "Select an addypin below to start editing its coordinates",
+        description: "Loading your addypins...",
         duration: 5000,
       });
     },

@@ -376,6 +376,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get user pins by email
+  app.get("/api/user/pins/:email", async (req, res) => {
+    try {
+      const { email } = req.params;
+      
+      if (!email) {
+        return res.status(400).json({ message: "Email is required" });
+      }
+
+      // Basic email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({ message: "Invalid email format" });
+      }
+
+      const pins = await storage.getPinsByEmail(email);
+      res.json(pins);
+    } catch (error) {
+      console.error("Error fetching user pins:", error);
+      res.status(500).json({ message: "Failed to fetch user pins" });
+    }
+  });
+
   // Get analytics stats
   app.get("/api/stats", async (req, res) => {
     try {
