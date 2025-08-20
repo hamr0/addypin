@@ -1,23 +1,31 @@
-# Debug Service Configuration
+# Debug Service Configuration - 502 Bad Gateway
 
-## Commands to run on VPS:
+## Current Status:
+- ✅ Service is running (systemctl shows active)
+- ❌ nginx returns 502 Bad Gateway
+- 🔍 Application likely not listening on correct port
+
+## Debug Commands for VPS:
 
 ```bash
-# Check if the environment override was applied
-systemctl show addypin --property=Environment
+# Check actual application logs
+journalctl -u addypin -f --no-pager
 
-# Check service logs for specific error details
-journalctl -u addypin -n 20 --no-pager
+# Check what ports are actually listening
+netstat -tlnp | grep node
 
-# Check the service file content
-systemctl cat addypin
+# Check nginx configuration
+cat /etc/nginx/sites-available/addypin
 
-# Test database connection directly
-psql -U addypin_user -h localhost -d addypin -c "SELECT COUNT(*) FROM pins;"
+# Test direct connection to app
+curl http://localhost:3000/api/stats
+
+# Check if app is actually starting properly
+ps aux | grep node
 ```
 
-These will show us:
-1. What environment variables the service actually has
-2. Specific error messages from the application
-3. Complete service configuration
-4. If the database connection works at all
+## Likely Issues:
+1. App not binding to port 3000
+2. App crashing after startup
+3. nginx pointing to wrong port
+4. Environment variables not loaded properly
