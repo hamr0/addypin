@@ -74,6 +74,15 @@ export async function sendOTPEmail({ to, code }: OTPEmailParams): Promise<{ succ
                 margin: 20px 0;
                 color: #1f2937;
               }
+              .expiry-note {
+                background: #fff3cd;
+                border: 1px solid #ffeaa7;
+                border-radius: 6px;
+                padding: 12px;
+                margin: 20px 0;
+                color: #856404;
+                font-size: 14px;
+              }
               .footer {
                 background: #f8f9fa;
                 padding: 20px;
@@ -132,7 +141,12 @@ export async function sendOTPEmail({ to, code }: OTPEmailParams): Promise<{ succ
                 <h2 style="margin-top: 0; color: #1f2937;">Verify Your Email</h2>
                 <p>Enter this verification code to edit your addypin coordinates:</p>
                 <div class="otp-code">${code}</div>
-                <p style="color: #6b7280;">This code expires in 10 minutes.</p>
+                
+                <div class="expiry-note">
+                  <strong>⏰ Important:</strong> This code is valid for 10 minutes only and will be the only active code for your email.
+                </div>
+                
+                <p style="color: #6b7280; font-size: 12px;">If you didn't request this code, you can safely ignore this email.</p>
               </div>
               <div class="footer">
                 <p>If you didn't request this code, please ignore this email.</p>

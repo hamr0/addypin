@@ -24,9 +24,10 @@ export interface IStorage {
   
   // OTP methods for coordinate editing
   createOtpCode(otpCode: InsertOtpCode): Promise<OtpCode>;
-  getValidOtpCode(email: string, code: string): Promise<OtpCode | undefined>;
+  getValidOtpCode(email: string, code: string | null): Promise<OtpCode | undefined>;
   markOtpAsUsed(id: string): Promise<void>;
   cleanupExpiredOtpCodes(): Promise<void>;
+  invalidateOtpCodesForEmail(email: string): Promise<void>;
   updatePin(shortcode: string, data: Partial<{ latitude: string; longitude: string }>): Promise<Pin>;
   
   // User pin management
@@ -227,17 +228,31 @@ export class DatabaseStorage implements IStorage {
     return created;
   }
 
-  async getValidOtpCode(email: string, code: string): Promise<OtpCode | undefined> {
-    const [otpRecord] = await db
-      .select()
-      .from(otpCodes)
-      .where(and(
-        eq(otpCodes.email, email),
-        eq(otpCodes.code, code),
-        eq(otpCodes.used, false),
-        gte(otpCodes.expiresAt, new Date())
-      ));
-    return otpRecord || undefined;
+  async getValidOtpCode(email: string, code: string | null): Promise<OtpCode | undefined> {
+    if (code === null) {
+      // Return any valid OTP for this email (for checking existing OTPs)
+      const [otpRecord] = await db
+        .select()
+        .from(otpCodes)
+        .where(and(
+          eq(otpCodes.email, email),
+          eq(otpCodes.used, false),
+          gte(otpCodes.expiresAt, new Date())
+        ));
+      return otpRecord || undefined;
+    } else {
+      // Return specific OTP for verification
+      const [otpRecord] = await db
+        .select()
+        .from(otpCodes)
+        .where(and(
+          eq(otpCodes.email, email),
+          eq(otpCodes.code, code),
+          eq(otpCodes.used, false),
+          gte(otpCodes.expiresAt, new Date())
+        ));
+      return otpRecord || undefined;
+    }
   }
 
   async markOtpAsUsed(id: string): Promise<void> {
@@ -251,6 +266,16 @@ export class DatabaseStorage implements IStorage {
     await db
       .delete(otpCodes)
       .where(lt(otpCodes.expiresAt, new Date()));
+  }
+
+  async invalidateOtpCodesForEmail(email: string): Promise<void> {
+    await db
+      .update(otpCodes)
+      .set({ used: true })
+      .where(and(
+        eq(otpCodes.email, email),
+        eq(otpCodes.used, false)
+      ));
   }
 
   async updatePin(shortcode: string, data: Partial<{ latitude: string; longitude: string }>): Promise<Pin> {

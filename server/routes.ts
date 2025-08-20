@@ -271,16 +271,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Generate 6-digit OTP
-      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      // Check if there's already a valid OTP for this email
+      const existingOtp = await storage.getValidOtpCode(email, null);
+      let otp: string;
       
-      // Store OTP with 10-minute expiry
-      await storage.createOtpCode({
-        email,
-        code: otp,
-        expiresAt: new Date(Date.now() + 10 * 60 * 1000),
-        used: false
-      });
+      if (existingOtp && !existingOtp.used && new Date() < new Date(existingOtp.expiresAt)) {
+        // Use existing valid OTP
+        otp = existingOtp.code;
+        console.log(`📧 Reusing existing OTP for ${email}: ${otp}`);
+      } else {
+        // Invalidate any existing OTPs for this email first
+        await storage.invalidateOtpCodesForEmail(email);
+        
+        // Generate new 6-digit OTP
+        otp = Math.floor(100000 + Math.random() * 900000).toString();
+        
+        // Store OTP with 10-minute expiry
+        await storage.createOtpCode({
+          email,
+          code: otp,
+          expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+          used: false
+        });
+        console.log(`📧 Generated new OTP for ${email}: ${otp}`);
+      }
 
       // Send OTP email
       const { sendOTPEmail } = await import('./services/resend-email');
@@ -355,23 +369,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // For analytics access, only allow admin email
-      if (email === "avoidaccess@msn.com") {
-        // Analytics access verification - skip pin ownership check
-        const otpRecord = await storage.getValidOtpCode(email, otpCode);
-        if (!otpRecord) {
-          return res.status(400).json({ 
-            message: "Invalid or expired OTP code" 
-          });
-        }
-      } else {
-        // Regular pin editing verification
-        const otpRecord = await storage.getValidOtpCode(email, otpCode);
-        if (!otpRecord) {
-          return res.status(400).json({ 
-            message: "Invalid or expired OTP code" 
-          });
-        }
+      // Verify OTP first
+      const otpRecord = await storage.getValidOtpCode(email, otpCode);
+      if (!otpRecord) {
+        return res.status(400).json({ 
+          message: "Invalid or expired OTP code" 
+        });
       }
       
       // Mark OTP as used
