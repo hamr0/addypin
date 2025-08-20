@@ -37,6 +37,7 @@ echo "Deploying files..."
 rm -rf ../app/*
 cp -r dist/* ../app/
 cp package.json ../app/
+cp -r node_modules ../app/
 
 # Create production server.js if needed
 if [ ! -f "../app/server.js" ]; then
