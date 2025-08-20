@@ -25,6 +25,7 @@ export default function Sidebar({ coordinates, generatedLink, onLinkGenerated, i
   const [otpCode, setOtpCode] = useState("");
   const [editToken, setEditToken] = useState("");
   const [showOtpInput, setShowOtpInput] = useState(false);
+  const [hasGeneratedWithoutEmail, setHasGeneratedWithoutEmail] = useState(false);
   const { toast } = useToast();
   const { data: stats, isLoading: statsLoading } = useStats();
 
@@ -45,6 +46,12 @@ export default function Sidebar({ coordinates, generatedLink, onLinkGenerated, i
         webLink: data.webLink,
         emailLink: data.emailLink,
       });
+      
+      // Check if pin was created without email and disable email input
+      if (!email) {
+        setHasGeneratedWithoutEmail(true);
+      }
+      
       // Trigger pin list refresh if user is authenticated and has matching email
       if (data.createdBy) {
         window.dispatchEvent(new CustomEvent('pinCreated', { 
@@ -213,21 +220,32 @@ export default function Sidebar({ coordinates, generatedLink, onLinkGenerated, i
             <Input
               id="creator-email"
               type="email"
-              placeholder="your@email.com"
+              placeholder={hasGeneratedWithoutEmail ? "Refresh page to create another pin" : "your@email.com"}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="border-gray-300 focus:border-addypin-cyan focus:ring-addypin-cyan placeholder:text-gray-400 h-8"
+              disabled={hasGeneratedWithoutEmail}
+              className={`h-8 ${hasGeneratedWithoutEmail 
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200' 
+                : 'border-gray-300 focus:border-addypin-cyan focus:ring-addypin-cyan placeholder:text-gray-400'
+              }`}
               data-testid="input-creator-email"
             />
-            <p className="text-xs text-gray-500 mt-1">
-              Without email, pin will be deleted after 72 hours
+            <p className={`text-xs mt-1 ${hasGeneratedWithoutEmail ? 'text-gray-400' : 'text-gray-500'}`}>
+              {hasGeneratedWithoutEmail 
+                ? "Pin created! Refresh page to create another pin." 
+                : "Without email, pin will be deleted after 72 hours"
+              }
             </p>
           </div>
 
           <Button
             onClick={() => generatePinMutation.mutate()}
-            disabled={!coordinates || generatePinMutation.isPending}
-            className="w-full bg-addypin-cyan hover:bg-cyan-600 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl h-8"
+            disabled={!coordinates || generatePinMutation.isPending || hasGeneratedWithoutEmail}
+            className={`w-full font-semibold py-2 px-4 rounded-lg transition-all duration-200 shadow-lg h-8 ${
+              hasGeneratedWithoutEmail 
+                ? 'bg-gray-400 cursor-not-allowed text-gray-200' 
+                : 'bg-addypin-cyan hover:bg-cyan-600 text-white transform hover:scale-105 active:scale-95 hover:shadow-xl'
+            }`}
             data-testid="button-generate"
           >
             <AddyPinIcon className="mr-2" size={14} />
