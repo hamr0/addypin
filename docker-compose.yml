@@ -1,26 +1,80 @@
 version: '3.8'
+
 services:
-  addypin:
-    build: .
+  frontend:
+    build: 
+      context: ./frontend
+      target: production
+    container_name: addypin-frontend
+    restart: unless-stopped
     ports:
-      - "5000:5000"
+      - "3000:80"
+    depends_on:
+      - backend
+    environment:
+      - VITE_API_URL=/api
+    networks:
+      - addypin-network
+
+  backend:
+    build:
+      context: ./backend  
+      target: production
+    container_name: addypin-backend
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=${DATABASE_URL}
-      - CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
-      - VITE_CLERK_PUBLISHABLE_KEY=${VITE_CLERK_PUBLISHABLE_KEY}
+      - DATABASE_URL=${DATABASE_URL:-postgresql://addypin:addypin_password@postgres:5432/addypin_db}
       - RESEND_API_KEY=${RESEND_API_KEY}
-      - GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY}
       - UMAMI_APP_SECRET=${UMAMI_APP_SECRET}
       - UMAMI_HASH_SALT=${UMAMI_HASH_SALT}
-    restart: unless-stopped
+    depends_on:
+      - postgres
+    networks:
+      - addypin-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/api/stats"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/stats"]
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 40s
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: addypin-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=addypin_db
+      - POSTGRES_USER=addypin
+      - POSTGRES_PASSWORD=addypin_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
     networks:
       - addypin-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: addypin-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - addypin-network
+
+volumes:
+  postgres_data:
+    driver: local
 
 networks:
   addypin-network:

@@ -10,9 +10,19 @@ Project organization: Keep main folder clean - documentation moved to `/docs` fo
 Documentation strategy: Maintain detailed .md files as development journal and troubleshooting knowledge base for complex setups.
 **Critical Requirement**: Stop reactive troubleshooting and whack-a-mole fixes. Use systematic E2E architectural analysis for infrastructure issues. No more repetitive log checking without holistic problem understanding.
 
-**Migration Strategy Update**: Switched from ESBuild bundling approach to Docker containerization for VPS deployment. Docker replicates Replit's environment exactly while avoiding bundling complexity and systemd permission issues. This architectural change addresses the root cause rather than treating symptoms.
+**Migration Strategy Update**: Implemented clean backend + frontend containerization architecture (January 21, 2025). Separated monolithic structure into independent Docker containers with nginx reverse proxy. This systematic approach solves Docker build issues and provides production-ready scalable architecture. Frontend (React/Nginx) and Backend (Node.js/Express) now deploy independently with proper dependency isolation.
 
 ## System Architecture
+
+### **Production Deployment Architecture (Updated January 2025)**
+- **Containerized Services**: Separate Docker containers for frontend and backend
+- **Frontend Container**: React app served by Nginx with optimized static file handling
+- **Backend Container**: Node.js Express API with PostgreSQL connections
+- **Reverse Proxy**: Nginx handles routing, SSL termination, and load balancing
+- **Database**: PostgreSQL container with persistent volume storage
+- **Service Orchestration**: Docker Compose manages container lifecycle and networking
+
+## Development Architecture
 
 ### UI/UX Decisions
 - **Styling**: Tailwind CSS with shadcn/ui for a consistent, modern UI.
