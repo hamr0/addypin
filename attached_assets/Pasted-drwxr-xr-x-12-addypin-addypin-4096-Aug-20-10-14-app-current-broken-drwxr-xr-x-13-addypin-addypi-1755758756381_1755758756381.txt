@@ -1,0 +1,74 @@
+drwxr-xr-x  12 addypin addypin   4096 Aug 20 10:14  app-current-broken
+drwxr-xr-x  13 addypin addypin   4096 Aug 20 15:17  app-new-20250820_151654
+drwxr-xr-x  13 addypin addypin   4096 Aug 20 15:23  app-new-20250820_152239
+drwxr-xr-x  13 addypin addypin   4096 Aug 20 15:31  app-new-20250820_153048
+-rw-r--r--   1 addypin addypin    114 Aug 20 08:15  backup-20250820.tar.gz
+drwxr-xr-x   2 addypin addypin   4096 Aug 20 03:51  config
+-rwxr-xr-x   1 root    root      1471 Aug 20 10:39  create-production-backup.sh
+-rwxr-xr-x   1 root    root       998 Aug 20 09:44  deploy-old.sh.bak
+-rwxr-xr-x   1 root    root       995 Aug 20 10:13  deploy.sh
+-rw-r--r--   1 root    root       771 Aug 21 01:18  docker-compose.yml
+-rw-r--r--   1 root    root        88 Aug 21 01:18  .env
+-rw-r--r--   1 addypin addypin    674 Aug 20 05:16  frontend-base64.txt
+-rw-r--r--   1 root    root     20554 Aug 21 02:36  get-docker.sh
+drwxr-xr-x   2 root    root      4096 Aug 21 01:18  init-db
+drwxr-xr-x   2 addypin addypin   4096 Aug 20 03:44  logs
+-rw-r--r--   1 root    root      2236 Aug 20 10:30 'o check if the file is actually executable and readable'
+drwxr-xr-x   4 root    root      4096 Aug 20 15:30  production-backups
+drwxr-xr-x   2 addypin addypin   4096 Aug 20 05:22  public
+drwxr-xr-x   2 root    root      4096 Aug 20 14:21  scripts
+-rw-r--r--   1 addypin addypin  17459 Aug 20 05:16  server-backup.js
+-rw-r--r--   1 addypin addypin   7223 Aug 20 05:20  server.js
+[root@racknerd-47e65b8 addypin]# clear
+
+[root@racknerd-47e65b8 addypin]# cd /opt/addypin
+[root@racknerd-47e65b8 addypin]# 
+[root@racknerd-47e65b8 addypin]# # Stop current containers
+[root@racknerd-47e65b8 addypin]# docker-compose down
+WARN[0000] /opt/addypin/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion 
+[+] Running 3/3
+ ✔ Container addypin-app    Removed                                        0.0s 
+ ✔ Container addypin-db     Removed                                        0.2s 
+ ✔ Network addypin_default  Removed                                        0.3s 
+[root@racknerd-47e65b8 addypin]# 
+[root@racknerd-47e65b8 addypin]# # Remove old container images
+[root@racknerd-47e65b8 addypin]# docker rmi addypin-app 2>/dev/null || echo "Image not found - that's fine"
+Untagged: addypin-app:latest
+Deleted: sha256:024cc7a9ebe7ac56c988e3d1f32c1418a5c4b7877eadec645de688198fbfd778
+[root@racknerd-47e65b8 addypin]# 
+[root@racknerd-47e65b8 addypin]# # Keep the database running - we'll reuse it
+[root@racknerd-47e65b8 addypin]# docker-compose up -d addypin-db
+WARN[0000] /opt/addypin/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion 
+no such service: addypin-db
+[root@racknerd-47e65b8 addypin]# # Create backup of old files
+[root@racknerd-47e65b8 addypin]# mkdir -p /opt/addypin-old-backup
+[root@racknerd-47e65b8 addypin]# cp -r /opt/addypin/* /opt/addypin-old-backup/ 2>/dev/null || echo "Backup created"
+
+[root@racknerd-47e65b8 addypin]# 
+[root@racknerd-47e65b8 addypin]# # Clean working directory (keep database files)
+[root@racknerd-47e65b8 addypin]# rm -f /opt/addypin/docker-compose.yml
+[root@racknerd-47e65b8 addypin]# rm -f /opt/addypin/Dockerfile
+[root@racknerd-47e65b8 addypin]# rm -rf /opt/addypin/app* /opt/addypin/*tar.gz /opt/addypin/server.js
+[root@racknerd-47e65b8 addypin]# # Verify clean state
+[root@racknerd-47e65b8 addypin]# ls -la /opt/addypin
+total 104
+drwxr-xr-x   9 root    root     4096 Aug 21 02:45  .
+drwxr-xr-x.  7 root    root     4096 Aug 21 02:43  ..
+drwxr-xr-x  13 root    root     4096 Aug 21 01:27  addypin-repo
+drwxr-xr-x   2 addypin addypin  4096 Aug 20 03:51  config
+-rwxr-xr-x   1 root    root     1471 Aug 20 10:39  create-production-backup.sh
+-rwxr-xr-x   1 root    root      998 Aug 20 09:44  deploy-old.sh.bak
+-rwxr-xr-x   1 root    root      995 Aug 20 10:13  deploy.sh
+-rw-r--r--   1 root    root       88 Aug 21 01:18  .env
+-rw-r--r--   1 addypin addypin   674 Aug 20 05:16  frontend-base64.txt
+-rw-r--r--   1 root    root    20554 Aug 21 02:36  get-docker.sh
+drwxr-xr-x   2 root    root     4096 Aug 21 01:18  init-db
+drwxr-xr-x   2 addypin addypin  4096 Aug 20 03:44  logs
+-rw-r--r--   1 root    root     2236 Aug 20 10:30 'o check if the file is actually executable and readable'
+drwxr-xr-x   4 root    root     4096 Aug 20 15:30  production-backups
+drwxr-xr-x   2 addypin addypin  4096 Aug 20 05:22  public
+drwxr-xr-x   2 root    root     4096 Aug 20 14:21  scripts
+-rw-r--r--   1 addypin addypin 17459 Aug 20 05:16  server-backup.js
+[root@racknerd-47e65b8 addypin]# 
+[root@racknerd-47e65b8 addypin]# # Check database is still running
+[root@racknerd-47e65b8 addypin]# docker ps | grep postgres

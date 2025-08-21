@@ -1,0 +1,57 @@
+
+   8 |     COPY --chown=appuser:node package*.json ./
+
+   9 | >>> RUN npm ci --only=production
+
+  10 |     
+
+  11 |     COPY --chown=appuser:node . .
+
+--------------------
+
+failed to solve: process "/bin/sh -c npm ci --only=production" did not complete successfully: exit code: 243
+
+[root@racknerd-47e65b8 addypin]# ^C
+[root@racknerd-47e65b8 addypin]# docker-compose ps
+WARN[0000] /opt/addypin/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion 
+NAME      IMAGE     COMMAND   SERVICE   CREATED   STATUS    PORTS
+[root@racknerd-47e65b8 addypin]# docker-compose logs -f app
+WARN[0000] /opt/addypin/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion 
+[root@racknerd-47e65b8 addypin]# clear
+
+[root@racknerd-47e65b8 addypin]# # 1. Check the base node image user setup
+[root@racknerd-47e65b8 addypin]# docker run --rm node:20-bookworm id
+Unable to find image 'node:20-bookworm' locally
+20-bookworm: Pulling from library/node
+f014853ae203: Already exists 
+6d6401b7636b: Already exists 
+cffef7dc6f99: Already exists 
+1e6ffe3614ab: Already exists 
+da5ac7bf34b4: Already exists 
+9378faddd94e: Already exists 
+109d3905ff4a: Already exists 
+e73aab849563: Already exists 
+Digest: sha256:572a90df10a58ebb7d3f223d661d964a6c2383a9c2b5763162b4f631c53dc56a
+Status: Downloaded newer image for node:20-bookworm
+uid=0(root) gid=0(root) groups=0(root)
+[root@racknerd-47e65b8 addypin]# 
+[root@racknerd-47e65b8 addypin]# # 2. Check if node user exists and its permissions
+[root@racknerd-47e65b8 addypin]# docker run --rm node:20-bookworm id node
+uid=1000(node) gid=1000(node) groups=1000(node)
+[root@racknerd-47e65b8 addypin]# 
+[root@racknerd-47e65b8 addypin]# # 3. Check home directory structure in base image
+[root@racknerd-47e65b8 addypin]# docker run --rm node:20-bookworm ls -la /home/
+total 12
+drwxr-xr-x 1 root root 4096 Aug 12 22:57 .
+drwxr-xr-x 1 root root 4096 Aug 21 05:34 ..
+drwxr-xr-x 2 node node 4096 Aug 12 22:57 node
+[root@racknerd-47e65b8 addypin]# 
+[root@racknerd-47e65b8 addypin]# # 4. Test if the issue is with our specific useradd command
+[root@racknerd-47e65b8 addypin]# docker run --rm node:20-bookworm sh -c "useradd -r -u 1001 -g node appuser && id appuser"
+useradd warning: appuser's uid 1001 is greater than SYS_UID_MAX 999
+uid=1001(appuser) gid=1000(node) groups=1000(node)
+[root@racknerd-47e65b8 addypin]# 
+[root@racknerd-47e65b8 addypin]# # 5. Check if .npmrc exists in our repo (might cause issues)
+[root@racknerd-47e65b8 addypin]# ls -la addypin-repo/.npmrc
+ls: cannot access 'addypin-repo/.npmrc': No such file or directory
+[root@racknerd-47e65b8 addypin]# 

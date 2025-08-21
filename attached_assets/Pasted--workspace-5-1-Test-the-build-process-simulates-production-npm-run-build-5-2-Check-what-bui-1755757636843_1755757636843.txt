@@ -1,0 +1,85 @@
+~/workspace$ # 5.1 Test the build process (simulates production)
+npm run build
+
+# 5.2 Check what build creates
+ls -la dist/
+
+# 5.3 Test production start (briefly)
+timeout 10s npm start || echo "Build test completed"
+
+# 5.4 Check TypeScript compiler
+npx tsc --version
+
+# 5.5 Check Vite version and config
+npx vite --version
+
+# 5.6 Final environment summary
+echo "=== REPLIT ENVIRONMENT SUMMARY ===" && \
+echo "Node: $(node --version)" && \
+echo "NPM: $(npm --version)" && \
+echo "Working Dir: $(pwd)" && \
+echo "Build Tools: $(which gcc g++ make)" && \
+echo "TypeScript: $(npx tsc --version)"
+
+> rest-express@1.0.0 build
+> vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist
+
+vite v5.4.19 building for production...
+Browserslist: browsers data (caniuse-lite) is 10 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+✓ 1789 modules transformed.
+../dist/public/index.html                   2.20 kB │ gzip:   0.86 kB
+../dist/public/assets/index-DXjIntR-.css   88.22 kB │ gzip:  19.33 kB
+../dist/public/assets/index-Ds1nxbAN.js   632.19 kB │ gzip: 189.31 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 4.14s
+
+  dist/index.js  87.3kb
+
+⚡ Done in 158ms
+total 88
+drwxr-xr-x 1 runner runner    28 Aug 20 11:20 .
+drwxr-xr-x 1 runner runner  1948 Aug 21 06:26 ..
+-rw-r--r-- 1 runner runner 89393 Aug 21 06:26 index.js
+drwxr-xr-x 1 runner runner    32 Aug 21 06:26 public
+
+> rest-express@1.0.0 start
+> NODE_ENV=production node dist/index.js
+
+node:events:502
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use 0.0.0.0:5000
+    at Server.setupListenHandle [as _listen2] (node:net:1908:16)
+    at listenInCluster (node:net:1965:12)
+    at doListen (node:net:2139:7)
+    at process.processTicksAndRejections (node:internal/process/task_queues:83:21)
+Emitted 'error' event on Server instance at:
+    at emitErrorNT (node:net:1944:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:82:21) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '0.0.0.0',
+  port: 5000
+}
+
+Node.js v20.19.3
+Build test completed
+Version 5.6.3
+vite/5.4.19 linux-x64 node-v20.19.3
+=== REPLIT ENVIRONMENT SUMMARY ===
+Node: v20.19.3
+NPM: 10.8.2
+Working Dir: /home/runner/workspace
+Build Tools: /nix/store/1yj5z39xwiram4s0dm1i2ldpw4cbmwa6-replit-runtime-path/bin/gcc
+/nix/store/1yj5z39xwiram4s0dm1i2ldpw4cbmwa6-replit-runtime-path/bin/g++
+/nix/store/1yj5z39xwiram4s0dm1i2ldpw4cbmwa6-replit-runtime-path/bin/make
+TypeScript: Version 5.6.3
+~/workspace$ 

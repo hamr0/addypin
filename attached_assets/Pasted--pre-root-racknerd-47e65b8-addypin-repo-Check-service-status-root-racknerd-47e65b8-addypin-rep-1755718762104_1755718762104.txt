@@ -1,0 +1,37 @@
+<pre>[root@racknerd-47e65b8 addypin-repo]# # Check service status
+[root@racknerd-47e65b8 addypin-repo]# systemctl status addypin
+<font color="#4E9A06"><b>●</b></font> addypin.service - AddyPin Location Sharing Service
+   Loaded: loaded (/etc/systemd/system/addypin.service; enabled; vendor preset:<span style="background-color:#123354"><font color="#F5F7FA">&gt;</font></span>
+   Active: <font color="#4E9A06"><b>active (running)</b></font> since Wed 2025-08-20 15:36:10 EDT; 8s ago
+ Main PID: 76722 (node)
+    Tasks: 11 (limit: 5854)
+   Memory: 61.8M
+   CGroup: /system.slice/addypin.service
+           └─76722 /usr/bin/node index.js
+
+Aug 20 15:36:15 racknerd-47e65b8 node[76722]:       fingerprint512: &apos;BF:D7:BE:8<span style="background-color:#123354"><font color="#F5F7FA">&gt;</font></span>
+Aug 20 15:36:15 racknerd-47e65b8 node[76722]:       ext_key_usage: [Array],
+Aug 20 15:36:15 racknerd-47e65b8 node[76722]:       serialNumber: &apos;065BFBAED422<span style="background-color:#123354"><font color="#F5F7FA">&gt;</font></span>
+Aug 20 15:36:15 racknerd-47e65b8 node[76722]:       raw: &lt;Buffer 30 82 05 03 30<span style="background-color:#123354"><font color="#F5F7FA">&gt;</font></span>
+Aug 20 15:36:15 racknerd-47e65b8 node[76722]:       issuerCertificate: [Object]
+Aug 20 15:36:15 racknerd-47e65b8 node[76722]:     }
+Aug 20 15:36:15 racknerd-47e65b8 node[76722]:   },
+Aug 20 15:36:15 racknerd-47e65b8 node[76722]:   [Symbol(kMessage)]: &quot;Hostname/I<span style="background-color:#123354"><font color="#F5F7FA">&gt;</font></span>
+Aug 20 15:36:15 racknerd-47e65b8 node[76722]: }
+Aug 20 15:36:15 racknerd-47e65b8 node[76722]: 3:36:15 PM [express] GET /api/sta<span style="background-color:#123354"><font color="#F5F7FA">&gt;</font></span>
+[root@racknerd-47e65b8 addypin-repo]# # Check what&apos;s currently in the production database file
+[root@racknerd-47e65b8 addypin-repo]# cat /opt/addypin/app/server/db.ts
+cat: /opt/addypin/app/server/db.ts: No such file or directory
+[root@racknerd-47e65b8 addypin-repo]# 
+[root@racknerd-47e65b8 addypin-repo]# # Copy the corrected database file
+[root@racknerd-47e65b8 addypin-repo]# cp /opt/addypin/addypin-repo/server/db.ts /opt/addypin/app/server/db.ts
+cp: cannot create regular file &apos;/opt/addypin/app/server/db.ts&apos;: No such file or directory
+[root@racknerd-47e65b8 addypin-repo]# 
+[root@racknerd-47e65b8 addypin-repo]# # Restart the service to apply the fix
+[root@racknerd-47e65b8 addypin-repo]# systemctl restart addypin
+[root@racknerd-47e65b8 addypin-repo]# 
+[root@racknerd-47e65b8 addypin-repo]# # Test the API endpoint
+[root@racknerd-47e65b8 addypin-repo]# curl https://addypin.com/api/stats
+{&quot;message&quot;:&quot;Failed to fetch stats&quot;}[root@racknerd-47e65b8 addypin-repo]# 
+[root@racknerd-47e65b8 addypin-repo]# 
+</pre>
