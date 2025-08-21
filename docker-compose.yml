@@ -1,0 +1,27 @@
+version: '3.8'
+services:
+  addypin:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=${DATABASE_URL}
+      - CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
+      - VITE_CLERK_PUBLISHABLE_KEY=${VITE_CLERK_PUBLISHABLE_KEY}
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY}
+      - UMAMI_APP_SECRET=${UMAMI_APP_SECRET}
+      - UMAMI_HASH_SALT=${UMAMI_HASH_SALT}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/api/stats"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - addypin-network
+
+networks:
+  addypin-network:
+    driver: bridge
