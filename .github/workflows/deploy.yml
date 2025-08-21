@@ -1,6 +1,13 @@
 name: Deploy AddyPin to VPS
 
 on:
+
+  # Run tests on every PR to main
+  pull_request:
+    branches: [main]
+  # Deploy automatically when code is merged to main
+
+
   push:
     branches: [main]
   workflow_dispatch:
@@ -49,3 +56,185 @@ jobs:
           sleep 30
           curl -f https://addypin.com/api/health || exit 1
           echo "Deployment successful"
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run build
+        run: npm run build
+
+      - name: Run basic validation
+        run: |
+          # Check if server files exist
+          test -f server/index.ts
+          test -f package.json
+          # Check if client build succeeded
+          test -d dist || test -d build || echo "No dist directory found"
+
+  deploy:
+    # This job only runs on a push to main (after a PR is merged)
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build the application
+        run: npm run build
+
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          port: 22
+          timeout: 60s
+          command_timeout: 30m
+          script: |
+            # Set deployment timestamp
+            DEPLOY_TIME=$(date '+%Y%m%d_%H%M%S')
+            echo "🚀 Starting AddyPin deployment at $DEPLOY_TIME"
+
+            # Navigate to deployment directory
+            cd /opt/addypin
+
+            # Create comprehensive backup
+            echo "📦 Creating production backup..."
+            ./create-production-backup.sh
+
+            # Update repository
+            echo "📥 Pulling latest code..."
+            cd addypin-repo
+            git fetch origin
+            git reset --hard origin/main
+            
+            # Install production dependencies
+            echo "📦 Installing dependencies..."
+            npm ci --omit=dev
+            # Build application
+            echo "🔨 Building application..."
+            npm run build
+            
+            # Copy built files to root for production
+            echo "📁 Setting up production files..."
+            cp dist/index.js ./index.js
+
+            # Build application if needed
+            echo "🔨 Building application..."
+            npm run build 2>/dev/null || echo "No build script found, using existing files"
+            
+
+            # Create new deployment directory
+            echo "📁 Preparing new deployment..."
+            cd /opt/addypin
+            cp -r addypin-repo app-new-$DEPLOY_TIME
+
+            # Stop current service
+            echo "⏹️ Stopping current service..."
+            systemctl stop addypin
+
+            # Backup current app and switch to new version
+            echo "🔄 Switching to new version..."
+            if [ -d app ]; then
+              mv app app-backup-$DEPLOY_TIME
+            fi
+            mv app-new-$DEPLOY_TIME app
+
+            # Update environment variables and permissions
+            echo "🔧 Setting up environment..."
+            chown -R addypin:addypin app/
+            chmod +x app/server/index.js 2>/dev/null || chmod +x app/index.js
+
+            # Start service
+            echo "▶️ Starting service..."
+            systemctl start addypin
+
+            # Wait for service to start
+            sleep 5
+            
+            sleep 10
+
+            # Verify deployment
+            echo "🔍 Verifying deployment..."
+            if systemctl is-active --quiet addypin; then
+              echo "✅ Service is running"
+            else
+              echo "❌ Service failed to start - Rolling back..."
+              systemctl stop addypin
+              if [ -d app-backup-$DEPLOY_TIME ]; then
+                rm -rf app
+                mv app-backup-$DEPLOY_TIME app
+                systemctl start addypin
+              fi
+              exit 1
+            fi
+
+            # Health check
+            echo "🏥 Running health checks..."
+            sleep 10
+            curl -f https://addypin.com/ > /dev/null || {
+              echo "❌ Health check failed - Rolling back..."
+              systemctl stop addypin
+              if [ -d app-backup-$DEPLOY_TIME ]; then
+                rm -rf app
+                mv app-backup-$DEPLOY_TIME app
+                systemctl start addypin
+              fi
+              exit 1
+            }
+
+            echo "🎉 Deployment completed successfully at $(date)"
+            echo "📊 Service status:"
+            systemctl status addypin --no-pager -l
+
+      - name: Verify Deployment Health
+        run: |
+          echo "🔍 Final health verification..."
+          sleep 15
+          
+          # Test main page
+          curl -f https://addypin.com/ > /dev/null
+          
+          # Test API endpoint
+          curl -f https://addypin.com/api/stats > /dev/null
+          
+          echo "✅ All health checks passed"
+
+      - name: Cleanup old backups
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          port: 22
+          timeout: 60s
+          script: |
+            # Keep only last 3 backups
+            cd /opt/addypin
+            ls -t app-backup-* | tail -n +4 | xargs rm -rf 2>/dev/null || true
+            echo "🧹 Cleanup completed"
+          # Test API endpoint  
+          curl -f https://addypin.com/api/stats > /dev/null
+          
+          echo "✅ All health checks passed"

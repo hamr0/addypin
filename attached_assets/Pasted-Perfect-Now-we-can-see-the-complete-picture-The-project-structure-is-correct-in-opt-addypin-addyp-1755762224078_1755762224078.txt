@@ -1,0 +1,104 @@
+Perfect! Now we can see the complete picture. The project structure is correct in /opt/addypin/addypin-repo/ and we have the client/index.html file. The issue is that the Dockerfile needs to be updated to match the Vite configuration.
+The Problem
+
+Looking at your vite.config.ts, we can see:
+
+    root: path.resolve(import.meta.dirname, "client") - Vite expects to find everything in the client/ directory
+
+    The build output goes to dist/public/
+
+But the error suggests that Vite can't find the entry point. Let me check if there's an issue with the Docker build context or file copying.
+Solution
+
+Let's create a proper Dockerfile that works with your project structure:
+bash
+
+cd /opt/addypin/addypin-repo
+
+# Create a corrected Dockerfile
+cat > Dockerfile << 'EOF'
+# Use exact Node.js version from Replit
+FROM node:20.19.3-bullseye-slim
+
+# Install build tools
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    make \
+    python3 \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Update npm
+RUN npm install -g npm@11.5.2
+
+# Create non-root user
+RUN groupadd -r runner && useradd -r -g runner runner
+
+# Set working directory
+WORKDIR /home/runner/workspace
+RUN chown -R runner:runner /home/runner/workspace
+
+# Fix npm cache permissions
+RUN mkdir -p /home/runner/.npm && chown -R runner:runner /home/runner/.npm
+RUN npm config set cache /home/runner/.npm --global
+
+# Copy package files first for better caching
+COPY --chown=runner:runner package*.json ./
+
+# Switch to runner user
+USER runner
+
+# Install ALL dependencies
+RUN npm ci
+
+# Copy ALL source files (from the current directory which is addypin-repo)
+COPY --chown=runner:runner . .
+
+# Debug: Check what files we have
+RUN echo "=== Current directory structure ==="
+RUN ls -la
+RUN echo "=== Client directory ==="
+RUN ls -la client/
+RUN echo "=== Check if index.html exists ==="
+RUN find . -name "index.html" -type f
+
+# Build the application
+RUN npm run build
+
+# Remove dev dependencies after build
+RUN npm prune --omit=dev
+
+# Set production environment
+ENV NODE_ENV=production
+
+# Expose the port
+EXPOSE 5000
+
+# Start the application
+CMD ["npm", "start"]
+EOF
+
+# Now build from the correct directory
+docker build -t addypin-app .
+
+If this still fails, let's try a different approach by examining the exact error. Run the build and if it fails, let's check what's happening:
+bash
+
+# If the build fails, let's debug step by step
+docker build -t addypin-app --progress=plain .
+
+The key issue might be that the Vite configuration expects certain Replit-specific environment variables or the build process has some Replit-specific requirements. Let me also check your package.json to understand the build script better:
+bash
+
+cat package.json | grep -A 5 -B 5 '"build"'
+
+If the build continues to fail, we might need to:
+
+    Adjust the Vite configuration for non-Replit environments
+
+    Create a custom build process that doesn't rely on Replit-specific plugins
+
+    Use a different approach to build the frontend
+
+Let me know what the build output shows and we'll tackle the specific error.
