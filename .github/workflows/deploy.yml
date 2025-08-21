@@ -2,7 +2,7 @@ name: Deploy AddyPin to VPS
 
 on:
   push:
-    branches: [main]
+    branches: [main, replit-containerized]
   workflow_dispatch:
 
 jobs:
@@ -19,22 +19,34 @@ jobs:
         node-version: '18'
         cache: 'npm'
         
-    - name: Build frontend (where dependencies work)
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Build React application
       run: |
-        npm ci
         cd client
         npm run build
+        echo "=== Real React Bundle Built ==="
+        ls -lh ../dist/public/assets/
         
+    - name: Prepare deployment files
+      run: |
+        mkdir -p deploy/frontend/dist/assets
+        cp dist/public/index.html deploy/frontend/dist/
+        cp dist/public/assets/* deploy/frontend/dist/assets/
+        ls -lh deploy/frontend/dist/assets/
+
     - name: Transfer built files to VPS
       uses: appleboy/scp-action@v0.1.7
       with:
         host: ${{ secrets.VPS_HOST }}
         username: ${{ secrets.VPS_USERNAME }}
         key: ${{ secrets.VPS_SSH_KEY }}
-        source: "dist/public/*"
+        source: "deploy/frontend/dist/*"
         target: "/opt/addypin/frontend/dist/"
+        strip_components: 3
         
-    - name: Deploy containers on VPS
+    - name: Deploy to VPS
       uses: appleboy/ssh-action@v1.0.3
       with:
         host: ${{ secrets.VPS_HOST }}
@@ -42,10 +54,9 @@ jobs:
         key: ${{ secrets.VPS_SSH_KEY }}
         script: |
           cd /opt/addypin
-          docker-compose down || true
-          docker-compose up -d --build
-          
-          # Health check
-          sleep 30
-          curl -f https://addypin.com/api/health || exit 1
-          echo "Deployment successful"
+          echo "=== Real React bundle files ==="
+          ls -lh frontend/dist/assets/
+          docker-compose stop frontend
+          docker-compose up -d --build frontend
+          sleep 15
+          curl -f https://addypin.com
