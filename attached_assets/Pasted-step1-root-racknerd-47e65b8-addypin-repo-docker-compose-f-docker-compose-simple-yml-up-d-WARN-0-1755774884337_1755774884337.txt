@@ -1,0 +1,974 @@
+step1
+[root@racknerd-47e65b8 addypin-repo]# docker-compose -f docker-compose.simple.yml up -d
+WARN[0000] /opt/addypin/addypin-repo/docker-compose.simple.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion 
+[+] Building 0.0s (0/0)                                                         
+[+] Running 3/3
+ ✔ addypin-repo-app              Built                                     0.0s 
+ ✔ Network addypin-repo_default  Created                                   0.5s 
+ ✔ Container addypin-app         Started                                   0.6s 
+[root@racknerd-47e65b8 addypin-repo]# 
+[root@racknerd-47e65b8 addypin-repo]# # Check if it works
+[root@racknerd-47e65b8 addypin-repo]# docker-compose -f docker-compose.simple.yml ps
+WARN[0000] /opt/addypin/addypin-repo/docker-compose.simple.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion 
+NAME          IMAGE              COMMAND                  SERVICE   CREATED          STATUS                         PORTS
+addypin-app   addypin-repo-app   "docker-entrypoint.s…"   app       55 minutes ago   Restarting (1) 5 seconds ago   
+[root@racknerd-47e65b8 addypin-repo]# clear
+
+[root@racknerd-47e65b8 addypin-repo]# # Go to your current working directory
+[root@racknerd-47e65b8 addypin-repo]# cd /opt/addypin
+[root@racknerd-47e65b8 addypin]# 
+[root@racknerd-47e65b8 addypin]# # Since we can't directly transfer from Replit, let's recreate the exact structure
+[root@racknerd-47e65b8 addypin]# # from our containerization plan
+[root@racknerd-47e65b8 addypin]# 
+[root@racknerd-47e65b8 addypin]# # Create the directory structure as planned
+[root@racknerd-47e65b8 addypin]# mkdir -p frontend backend nginx scripts
+[root@racknerd-47e65b8 addypin]# 
+[root@racknerd-47e65b8 addypin]# # Verify structure
+[root@racknerd-47e65b8 addypin]# ls -la
+total 520
+drwxr-xr-x  16 root    root      4096 Aug 21 06:12  .
+drwxr-xr-x.  7 root    root      4096 Aug 21 02:43  ..
+-rw-r--r--   1 root    docker       0 Aug 21 02:57 '}'
+-rw-r--r--   1 root    root        45 Aug 21 05:56  addypin-containerized.tar.gz
+drwxr-xr-x  13 root    root      4096 Aug 21 06:12  addypin-repo
+drwxr-xr-x  13 root    root      4096 Aug 21 05:56  addypin-repo-backup-20250821-055637
+drwxr-xr-x   2 root    root      4096 Aug 21 06:12  backend
+drwxr-xr-x   3 root    docker    4096 Aug 21 02:48  client
+-rw-r--r--   1 root    docker     348 Aug 21 02:50  components.json
+drwxr-xr-x   2 addypin addypin   4096 Aug 20 03:51  config
+-rwxr-xr-x   1 root    root      1471 Aug 20 10:39  create-production-backup.sh
+-rwxr-xr-x   1 root    root       998 Aug 20 09:44  deploy-old.sh.bak
+-rwxr-xr-x   1 root    root       995 Aug 20 10:13  deploy.sh
+-rw-r--r--   1 root    docker     709 Aug 21 02:47  docker-compose.yml
+-rw-r--r--   1 root    docker    1661 Aug 21 03:35  Dockerfile
+-rw-r--r--   1 root    docker     156 Aug 21 02:50  drizzle.config.ts
+-rw-r--r--   1 root    root       353 Aug 21 06:06  .env
+-rw-r--r--   1 root    docker       0 Aug 21 02:57  EOF
+drwxr-xr-x   2 root    root      4096 Aug 21 06:12  frontend
+-rw-r--r--   1 addypin addypin    674 Aug 20 05:16  frontend-base64.txt
+-rw-r--r--   1 root    root     20554 Aug 21 02:36  get-docker.sh
+drwxr-xr-x   2 root    root      4096 Aug 21 01:18  init-db
+drwxr-xr-x   2 addypin addypin   4096 Aug 20 03:44  logs
+drwxr-xr-x   2 root    root      4096 Aug 21 06:12  nginx
+-rw-r--r--   1 root    root      2236 Aug 20 10:30 'o check if the file is actually executable and readable'
+-rw-r--r--   1 root    docker    3956 Aug 21 02:48  package.json
+-rw-r--r--   1 root    root    360363 Aug 21 03:14  package-lock.json
+-rw-r--r--   1 root    docker      80 Aug 21 02:50  postcss.config.js
+drwxr-xr-x   4 root    root      4096 Aug 20 15:30  production-backups
+drwxr-xr-x   2 addypin addypin   4096 Aug 20 05:22  public
+drwxr-xr-x   2 root    root      4096 Aug 20 14:21  scripts
+drwxr-xr-x   2 root    docker    4096 Aug 21 02:56  server
+-rw-r--r--   1 addypin addypin  17459 Aug 20 05:16  server-backup.js
+drwxr-xr-x   2 root    docker    4096 Aug 21 02:53  shared
+-rw-r--r--   1 root    docker     657 Aug 21 02:49  tsconfig.json
+-rw-r--r--   1 root    docker     971 Aug 21 02:49  vite.config.ts
+[root@racknerd-47e65b8 addypin]# ^C
+
+
+step 2
+
+# Create frontend structure
+mkdir -p frontend/src
+cd frontend
+
+# Frontend package.json
+cat > package.json << 'EOF'
+{
+  "name": "addypin-frontend",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@clerk/clerk-react": "^5.42.0",
+    "@hookform/resolvers": "^3.10.0",
+    "@radix-ui/react-accordion": "^1.2.4",
+    "@radix-ui/react-dialog": "^1.1.7",
+    "@radix-ui/react-dropdown-menu": "^2.1.7",
+    "@tanstack/react-query": "^5.60.5",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "cmdk": "^1.1.1",
+    "leaflet": "^1.9.4",
+    "lucide-react": "^0.460.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-hook-form": "^7.54.0",
+    "tailwind-merge": "^2.6.0",
+    "wouter": "^3.3.7",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/leaflet": "^1.9.20",
+    "@types/react": "^18.3.17",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.5.3",
+    "tailwindcss": "^3.5.7",
+    "tailwindcss-animate": "^1.0.7",
+    "typescript": "^5.7.2",
+    "vite": "^5.4.19"
+  }
+}
+EOF
+
+# Frontend Dockerfile
+cat > Dockerfile << 'EOF'
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --no-audit
+COPY . .
+RUN npm run build
+
+FROM nginx:alpine AS production
+COPY --from=builder /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
+EOF
+
+# Frontend nginx config
+cat > nginx.conf << 'EOF'
+server {
+    listen 80;
+    root /usr/share/nginx/html;
+    index index.html;
+    
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+    
+    location /assets/ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+}
+EOF
+
+# Frontend vite config
+cat > vite.config.ts << 'EOF'
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import path from "path";
+
+export default defineConfig({
+  plugins: [react()],
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "src"),
+    },
+  },
+  build: {
+    outDir: "dist",
+    emptyOutDir: true,
+  },
+  server: {
+    host: "0.0.0.0",
+    port: 3000,
+  },
+});
+EOF
+
+# Copy existing client files
+cp -r ../addypin-repo/client/* . 2>/dev/null || true
+
+step 3
+
+-rw-r--r--   1 root    docker       0 Aug 21 02:57  EOF
+drwxr-xr-x   2 root    root      4096 Aug 21 06:12  frontend
+-rw-r--r--   1 addypin addypin    674 Aug 20 05:16  frontend-base64.txt
+-rw-r--r--   1 root    root     20554 Aug 21 02:36  get-docker.sh
+drwxr-xr-x   2 root    root      4096 Aug 21 01:18  init-db
+drwxr-xr-x   2 addypin addypin   4096 Aug 20 03:44  logs
+drwxr-xr-x   2 root    root      4096 Aug 21 06:12  nginx
+-rw-r--r--   1 root    root      2236 Aug 20 10:30 'o check if the file is actually executable and readable'
+-rw-r--r--   1 root    docker    3956 Aug 21 02:48  package.json
+-rw-r--r--   1 root    root    360363 Aug 21 03:14  package-lock.json
+-rw-r--r--   1 root    docker      80 Aug 21 02:50  postcss.config.js
+drwxr-xr-x   4 root    root      4096 Aug 20 15:30  production-backups
+drwxr-xr-x   2 addypin addypin   4096 Aug 20 05:22  public
+drwxr-xr-x   2 root    root      4096 Aug 20 14:21  scripts
+drwxr-xr-x   2 root    docker    4096 Aug 21 02:56  server
+-rw-r--r--   1 addypin addypin  17459 Aug 20 05:16  server-backup.js
+drwxr-xr-x   2 root    docker    4096 Aug 21 02:53  shared
+-rw-r--r--   1 root    docker     657 Aug 21 02:49  tsconfig.json
+-rw-r--r--   1 root    docker     971 Aug 21 02:49  vite.config.ts
+[root@racknerd-47e65b8 addypin]# ^C
+[root@racknerd-47e65b8 addypin]# clear
+
+[root@racknerd-47e65b8 addypin]# # Navigate back and create backend
+[root@racknerd-47e65b8 addypin]# cd /opt/addypin
+[root@racknerd-47e65b8 addypin]# mkdir -p backend/src
+[root@racknerd-47e65b8 addypin]# cd backend
+[root@racknerd-47e65b8 backend]# 
+[root@racknerd-47e65b8 backend]# # Backend package.json
+[root@racknerd-47e65b8 backend]# cat > package.json << 'EOF'
+> {
+>   "name": "addypin-backend",
+>   "version": "1.0.0",
+>   "type": "module",
+>   "scripts": {
+>     "dev": "tsx src/index.ts",
+>     "build": "esbuild src/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
+>     "start": "node dist/index.js",
+>     "db:push": "drizzle-kit push"
+>   },
+>   "dependencies": {
+>     "@clerk/clerk-sdk-node": "^4.13.23",
+>     "@neondatabase/serverless": "^0.10.4",
+>     "@sendgrid/mail": "^8.1.5",
+>     "drizzle-orm": "^0.38.2",
+>     "express": "^4.21.2",
+>     "pg": "^8.13.1",
+>     "resend": "^4.0.1",
+>     "zod": "^3.24.1"
+>   },
+>   "devDependencies": {
+>     "@types/express": "^5.0.0",
+>     "@types/node": "^22.10.2",
+>     "@types/pg": "^8.15.5",
+>     "drizzle-kit": "^0.28.1",
+>     "esbuild": "^0.24.2",
+>     "tsx": "^4.19.2",
+>     "typescript": "^5.7.2"
+>   }
+> }
+> EOF
+[root@racknerd-47e65b8 backend]# 
+[root@racknerd-47e65b8 backend]# # Backend Dockerfile
+[root@racknerd-47e65b8 backend]# cat > Dockerfile << 'EOF'
+> FROM node:20-alpine AS builder
+> RUN apk add --no-cache python3 make g++ git
+> WORKDIR /app
+> COPY package*.json ./
+> RUN npm ci --no-audit
+> COPY . .
+> RUN npm run build
+> 
+> FROM node:20-alpine AS production
+> RUN apk add --no-cache dumb-init
+> RUN addgroup -g 1001 -S nodejs && adduser -S backend -u 1001
+> WORKDIR /app
+> COPY package*.json ./
+> RUN npm ci --only=production --no-audit
+> COPY --from=builder /app/dist ./dist
+> COPY --from=builder /app/shared ./shared
+> RUN chown -R backend:nodejs /app
+> USER backend
+> EXPOSE 3000
+> ENTRYPOINT ["dumb-init", "--"]
+> CMD ["node", "dist/index.js"]
+> EOF
+[root@racknerd-47e65b8 backend]# 
+[root@racknerd-47e65b8 backend]# # Backend tsconfig
+[root@racknerd-47e65b8 backend]# cat > tsconfig.json << 'EOF'
+> {
+>   "compilerOptions": {
+>     "target": "ES2022",
+>     "module": "ESNext",
+>     "moduleResolution": "bundler",
+>     "allowSyntheticDefaultImports": true,
+>     "esModuleInterop": true,
+>     "strict": true,
+>     "skipLibCheck": true,
+>     "resolveJsonModule": true,
+>     "isolatedModules": true,
+>     "noEmit": true,
+>     "baseUrl": ".",
+>     "paths": {
+>       "@/*": ["src/*"],
+>       "@shared/*": ["shared/*"]
+>     }
+>   },
+>   "include": ["src/**/*", "shared/**/*"]
+> }
+> EOF
+[root@racknerd-47e65b8 backend]# 
+[root@racknerd-47e65b8 backend]# # Copy existing server files
+[root@racknerd-47e65b8 backend]# cp -r ../addypin-repo/server/* src/ 2>/dev/null || true
+[root@racknerd-47e65b8 backend]# cp -r ../addypin-repo/shared . 2>/dev/null || true
+[root@racknerd-47e65b8 backend]# # Create frontend structure
+[root@racknerd-47e65b8 backend]# mkdir -p frontend/src
+[root@racknerd-47e65b8 backend]# cd frontend
+[root@racknerd-47e65b8 frontend]# 
+[root@racknerd-47e65b8 frontend]# # Frontend package.json
+[root@racknerd-47e65b8 frontend]# cat > package.json << 'EOF'
+> {
+>   "name": "addypin-frontend",
+>   "version": "1.0.0",
+>   "type": "module",
+>   "scripts": {
+>     "dev": "vite",
+>     "build": "vite build",
+>     "preview": "vite preview"
+>   },
+>   "dependencies": {
+>     "@clerk/clerk-react": "^5.42.0",
+>     "@hookform/resolvers": "^3.10.0",
+>     "@radix-ui/react-accordion": "^1.2.4",
+>     "@radix-ui/react-dialog": "^1.1.7",
+>     "@radix-ui/react-dropdown-menu": "^2.1.7",
+>     "@tanstack/react-query": "^5.60.5",
+>     "class-variance-authority": "^0.7.1",
+>     "clsx": "^2.1.1",
+>     "cmdk": "^1.1.1",
+>     "leaflet": "^1.9.4",
+>     "lucide-react": "^0.460.0",
+>     "react": "^18.3.1",
+>     "react-dom": "^18.3.1",
+>     "react-hook-form": "^7.54.0",
+>     "tailwind-merge": "^2.6.0",
+>     "wouter": "^3.3.7",
+>     "zod": "^3.24.1"
+>   },
+>   "devDependencies": {
+>     "@types/leaflet": "^1.9.20",
+>     "@types/react": "^18.3.17",
+>     "@types/react-dom": "^18.3.5",
+>     "@vitejs/plugin-react": "^4.3.4",
+>     "autoprefixer": "^10.4.20",
+>     "postcss": "^8.5.3",
+>     "tailwindcss": "^3.5.7",
+>     "tailwindcss-animate": "^1.0.7",
+>     "typescript": "^5.7.2",
+>     "vite": "^5.4.19"
+>   }
+> }
+> EOF
+[root@racknerd-47e65b8 frontend]# 
+[root@racknerd-47e65b8 frontend]# # Frontend Dockerfile
+[root@racknerd-47e65b8 frontend]# cat > Dockerfile << 'EOF'
+> FROM node:20-alpine AS builder
+> WORKDIR /app
+> COPY package*.json ./
+> RUN npm ci --no-audit
+> COPY . .
+> RUN npm run build
+> 
+> FROM nginx:alpine AS production
+> COPY --from=builder /app/dist /usr/share/nginx/html
+> COPY nginx.conf /etc/nginx/conf.d/default.conf
+> EXPOSE 80
+> CMD ["nginx", "-g", "daemon off;"]
+> EOF
+[root@racknerd-47e65b8 frontend]# 
+[root@racknerd-47e65b8 frontend]# # Frontend nginx config
+[root@racknerd-47e65b8 frontend]# cat > nginx.conf << 'EOF'
+> server {
+>     listen 80;
+>     root /usr/share/nginx/html;
+>     index index.html;
+>     
+>     location / {
+>         try_files $uri $uri/ /index.html;
+>     }
+>     
+>     location /assets/ {
+>         expires 1y;
+>         add_header Cache-Control "public, immutable";
+>     }
+> }
+> EOF
+[root@racknerd-47e65b8 frontend]# 
+[root@racknerd-47e65b8 frontend]# # Frontend vite config
+[root@racknerd-47e65b8 frontend]# cat > vite.config.ts << 'EOF'
+> import { defineConfig } from "vite";
+> import react from "@vitejs/plugin-react";
+> import path from "path";
+> 
+> export default defineConfig({
+>   plugins: [react()],
+>   resolve: {
+>     alias: {
+>       "@": path.resolve(__dirname, "src"),
+>     },
+>   },
+>   build: {
+>     outDir: "dist",
+>     emptyOutDir: true,
+>   },
+>   server: {
+>     host: "0.0.0.0",
+>     port: 3000,
+>   },
+> });
+> EOF
+[root@racknerd-47e65b8 frontend]# 
+[root@racknerd-47e65b8 frontend]# # Copy existing client files
+[root@racknerd-47e65b8 frontend]# cp -r ../addypin-repo/client/* . 2>/dev/null || true
+[root@racknerd-47e65b8 frontend]# # Navigate back to main directory
+[root@racknerd-47e65b8 frontend]# cd /opt/addypin
+[root@racknerd-47e65b8 addypin]# 
+[root@racknerd-47e65b8 addypin]# # Create docker-compose.yml
+[root@racknerd-47e65b8 addypin]# cat > docker-compose.yml << 'EOF'
+> services:
+>   frontend:
+>     build: 
+>       context: ./frontend
+>       target: production
+>     container_name: addypin-frontend
+>     restart: unless-stopped
+>     ports:
+>       - "3000:80"
+>     depends_on:
+>       - backend
+> 
+>   backend:
+>     build:
+>       context: ./backend
+>       target: production
+>     container_name: addypin-backend
+>     restart: unless-stopped
+>     ports:
+>       - "3001:3000"
+>     environment:
+>       - NODE_ENV=production
+>       - DATABASE_URL=${DATABASE_URL:-postgresql://addypin:addypin_password@postgres:5432/addypin_db}
+>       - RESEND_API_KEY=${RESEND_API_KEY}
+>     depends_on:
+>       - postgres
+>     healthcheck:
+>       test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/api/stats"]
+>       interval: 30s
+>       timeout: 10s
+>       retries: 3
+> 
+>   postgres:
+>     image: postgres:15-alpine
+>     container_name: addypin-postgres
+>     restart: unless-stopped
+>     environment:
+>       - POSTGRES_DB=addypin_db
+>       - POSTGRES_USER=addypin
+>       - POSTGRES_PASSWORD=addypin_password
+>     volumes:
+>       - postgres_data:/var/lib/postgresql/data
+>     ports:
+>       - "5432:5432"
+> 
+> volumes:
+>   postgres_data:
+> EOF
+[root@racknerd-47e65b8 addypin]# 
+[root@racknerd-47e65b8 addypin]# # Start the deployment
+[root@racknerd-47e65b8 addypin]# docker-compose up --build -d
+[+] Running 12/12
+ ✔ postgres Pulled                                                         7.7s 
+   ✔ 9824c27679d3 Pull complete                                            0.6s 
+   ✔ 61a7421693bd Pull complete                                            0.6s 
+   ✔ 51a939567803 Pull complete                                            0.7s 
+   ✔ a612d38c9b48 Pull complete                                            0.8s 
+   ✔ 901a9540064a Pull complete                                            0.8s 
+   ✔ 6c13c55b4b82 Pull complete                                            6.5s 
+   ✔ 0f940631c13f Pull complete                                            6.5s 
+   ✔ a15854d6fd91 Pull complete                                            6.5s 
+   ✔ 685be96195b7 Pull complete                                            6.5s 
+   ✔ ce414b3fa674 Pull complete                                            6.5s 
+   ✔ 6afcd9ec0fd9 Pull complete                                            6.5s 
+[+] Building 0.0s (0/0)                                                         
+{
+
+  "vertexes": [
+
+    {
+
+      "digest": "sha256:658d6eadf0575ec0e01ef07172fad56d2af72f514c7cf8106e5f3baa6bfce282",
+
+      "name": "[internal] load local bake definitions",
+
+      "started": "2025-08-21T07:12:35.534908014-04:00"
+
+    }
+
+  ]
+
+}
+
+{
+
+  "statuses": [
+
+    {
+
+      "id": "reading from stdin",
+
+      "vertex": "sha256:658d6eadf0575ec0e01ef07172fad56d2af72f514c7cf8106e5f3baa6bfce282",
+
+      "current": 0,
+
+      "timestamp": "0001-01-01T00:00:00Z",
+
+      "started": "2025-08-21T07:12:35.534910338-04:00"
+
+    }
+
+  ]
+
+}
+
+{
+
+  "statuses": [
+
+    {
+
+      "id": "reading from stdin",
+
+      "vertex": "sha256:658d6eadf0575ec0e01ef07172fad56d2af72f514c7cf8106e5f3baa6bfce282",
+
+      "current": 973,
+
+      "timestamp": "0001-01-01T00:00:00Z",
+
+      "started": "2025-08-21T07:12:35.534910338-04:00",
+
+      "completed": "2025-08-21T07:12:35.53549594-04:00"
+
+    }
+
+  ]
+
+}
+
+{
+
+  "statuses": [
+
+    {
+
+      "id": "reading from stdin",
+
+      "vertex": "sha256:658d6eadf0575ec0e01ef07172fad56d2af72f514c7cf8106e5f3baa6bfce282",
+
+      "current": 973,
+
+      "timestamp": "0001-01-01T00:00:00Z",
+
+      "started": "2025-08-21T07:12:35.534910338-04:00",
+
+      "completed": "2025-08-21T07:12:35.53549594-04:00"
+
+    }
+
+  ]
+
+}
+
+{
+
+  "vertexes": [
+
+    {
+
+      "digest": "sha256:658d6eadf0575ec0e01ef07172fad56d2af72f514c7cf8106e5f3baa6bfce282",
+
+      "name": "[internal] load local bake definitions",
+
+      "started": "2025-08-21T07:12:35.534908014-04:00",
+
+      "completed": "2025-08-21T07:12:35.535512387-04:00"
+
+    }
+
+  ]
+
+}
+
+{
+
+  "vertexes": [
+
+    {
+
+      "digest": "sha256:e2ba6ecbea47af62e8ad9be55da2200692fa1ca9585d4c323e02b10e9a50ba6c",
+
+      "name": "[backend internal] load build definition from Dockerfile"
+
+    }
+
+  ]
+
+}
+
+{
+
+  "vertexes": [
+
+    {
+
+      "digest": "sha256:e2ba6ecbea47af62e8ad9be55da2200692fa1ca9585d4c323e02b10e9a50ba6c",
+
+      "name": "[backend internal] load build definition from Dockerfile",
+
+      "started": "2025-08-21T11:12:35.735460134Z",
+
+      "completed": "2025-08-21T11:12:35.736372821Z"
+
+    },
+
+    {
+
+      "digest": "sha256:e2ba6ecbea47af62e8ad9be55da2200692fa1ca9585d4c323e02b10e9a50ba6c",
+
+      "name": "[backend internal] load build definition from Dockerfile",
+
+      "started": "2025-08-21T11:12:35.738557554Z"
+
+    }
+
+  ]
+
+}
+
+{
+
+  "statuses": [
+
+    {
+
+      "id": "transferring dockerfile:",
+
+      "vertex": "sha256:e2ba6ecbea47af62e8ad9be55da2200692fa1ca9585d4c323e02b10e9a50ba6c",
+
+      "name": "transferring",
+
+      "current": 0,
+
+      "timestamp": "2025-08-21T11:12:35.756789244Z",
+
+      "started": "2025-08-21T11:12:35.756788791Z"
+
+    }
+
+  ]
+
+}
+
+{
+
+  "statuses": [
+
+    {
+
+      "id": "transferring dockerfile:",
+
+      "vertex": "sha256:e2ba6ecbea47af62e8ad9be55da2200692fa1ca9585d4c323e02b10e9a50ba6c",
+
+      "name": "transferring",
+
+      "current": 30,
+
+      "timestamp": "2025-08-21T11:12:35.7632138Z",
+
+      "started": "2025-08-21T11:12:35.756788791Z"
+
+    }
+
+  ]
+
+}
+
+{
+
+  "vertexes": [
+
+    {
+
+      "digest": "sha256:4fae821fd59d80d94fd06a2a7e29619eca3cef3395df26bfb40b1343f2b80c41",
+
+      "name": "[frontend internal] load build definition from Dockerfile"
+
+    }
+
+  ]
+
+}
+
+{
+
+  "vertexes": [
+
+    {
+
+      "digest": "sha256:4fae821fd59d80d94fd06a2a7e29619eca3cef3395df26bfb40b1343f2b80c41",
+
+      "name": "[frontend internal] load build definition from Dockerfile",
+
+      "started": "2025-08-21T11:12:35.764563478Z",
+
+      "completed": "2025-08-21T11:12:35.764611168Z"
+
+    },
+
+    {
+
+      "digest": "sha256:4fae821fd59d80d94fd06a2a7e29619eca3cef3395df26bfb40b1343f2b80c41",
+
+      "name": "[frontend internal] load build definition from Dockerfile",
+
+      "started": "2025-08-21T11:12:35.765044717Z"
+
+    }
+
+  ]
+
+}
+
+{
+
+  "statuses": [
+
+    {
+
+      "id": "transferring dockerfile:",
+
+      "vertex": "sha256:e2ba6ecbea47af62e8ad9be55da2200692fa1ca9585d4c323e02b10e9a50ba6c",
+
+      "name": "transferring",
+
+      "current": 599,
+
+      "timestamp": "2025-08-21T11:12:35.770786731Z",
+
+      "started": "2025-08-21T11:12:35.756788791Z",
+
+      "completed": "2025-08-21T11:12:35.77078632Z"
+
+    }
+
+  ]
+
+}
+
+{
+
+  "vertexes": [
+
+    {
+
+      "digest": "sha256:e2ba6ecbea47af62e8ad9be55da2200692fa1ca9585d4c323e02b10e9a50ba6c",
+
+      "name": "[backend internal] load build definition from Dockerfile",
+
+      "started": "2025-08-21T11:12:35.738557554Z",
+
+      "completed": "2025-08-21T11:12:35.777356226Z"
+
+    }
+
+  ]
+
+}
+
+{
+
+  "statuses": [
+
+    {
+
+      "id": "transferring dockerfile:",
+
+      "vertex": "sha256:4fae821fd59d80d94fd06a2a7e29619eca3cef3395df26bfb40b1343f2b80c41",
+
+      "name": "transferring",
+
+      "current": 0,
+
+      "timestamp": "2025-08-21T11:12:35.78071043Z",
+
+      "started": "2025-08-21T11:12:35.780709972Z"
+
+    }
+
+  ]
+
+}
+
+{
+
+  "statuses": [
+
+    {
+
+      "id": "transferring dockerfile:",
+
+      "vertex": "sha256:4fae821fd59d80d94fd06a2a7e29619eca3cef3395df26bfb40b1343f2b80c41",
+
+      "name": "transferring",
+
+      "current": 0,
+
+      "timestamp": "2025-08-21T11:12:35.786248353Z",
+
+      "started": "2025-08-21T11:12:35.780709972Z"
+
+    }
+
+  ]
+
+}
+
+{
+
+  "vertexes": [
+
+    {
+
+      "digest": "sha256:ccecbba0a2e5c072602481fed7ccd4ede19058d4d7721294b010c0440ce9c682",
+
+      "name": "[backend internal] load metadata for docker.io/library/node:20-alpine",
+
+      "started": "2025-08-21T11:12:35.79821655Z"
+
+    },
+
+    {
+
+      "digest": "sha256:ccecbba0a2e5c072602481fed7ccd4ede19058d4d7721294b010c0440ce9c682",
+
+      "name": "[backend internal] load metadata for docker.io/library/node:20-alpine",
+
+      "started": "2025-08-21T11:12:35.801537573Z"
+
+    }
+
+  ]
+
+}
+
+{
+
+  "vertexes": [
+
+    {
+
+      "digest": "sha256:4fae821fd59d80d94fd06a2a7e29619eca3cef3395df26bfb40b1343f2b80c41",
+
+      "name": "[frontend internal] load build definition from Dockerfile",
+
+      "started": "2025-08-21T11:12:35.765044717Z",
+
+      "completed": "2025-08-21T11:12:35.805307365Z"
+
+    }
+
+  ],
+
+  "statuses": [
+
+    {
+
+      "id": "transferring dockerfile:",
+
+      "vertex": "sha256:4fae821fd59d80d94fd06a2a7e29619eca3cef3395df26bfb40b1343f2b80c41",
+
+      "name": "transferring",
+
+      "current": 2,
+
+      "timestamp": "2025-08-21T11:12:35.801478275Z",
+
+      "started": "2025-08-21T11:12:35.780709972Z",
+
+      "completed": "2025-08-21T11:12:35.801477964Z"
+
+    }
+
+  ]
+
+}
+
+{
+
+  "vertexes": [
+
+    {
+
+      "digest": "sha256:ccecbba0a2e5c072602481fed7ccd4ede19058d4d7721294b010c0440ce9c682",
+
+      "name": "[backend internal] load metadata for docker.io/library/node:20-alpine",
+
+      "started": "2025-08-21T11:12:35.801537573Z",
+
+      "completed": "2025-08-21T11:12:35.832454365Z",
+
+      "error": "failed to do request: Head \"https://registry-1.docker.io/v2/library/node/manifests/20-alpine\": context canceled"
+
+    }
+
+  ]
+
+}
+
+{
+
+  "vertexes": [
+
+    {
+
+      "digest": "sha256:ccecbba0a2e5c072602481fed7ccd4ede19058d4d7721294b010c0440ce9c682",
+
+      "name": "[backend internal] load metadata for docker.io/library/node:20-alpine",
+
+      "started": "2025-08-21T11:12:35.79821655Z",
+
+      "completed": "2025-08-21T11:12:35.832584572Z",
+
+      "error": "failed to do request: Head \"https://registry-1.docker.io/v2/library/node/manifests/20-alpine\": context canceled"
+
+    }
+
+  ]
+
+}
+
+failed to solve: failed to read dockerfile: open Dockerfile: no such file or directory
+
+[root@racknerd-47e65b8 addypin]# 
+[root@racknerd-47e65b8 addypin]# # Monitor the deployment
+[root@racknerd-47e65b8 addypin]# docker-compose ps
+NAME      IMAGE     COMMAND   SERVICE   CREATED   STATUS    PORTS
+[root@racknerd-47e65b8 addypin]# 
+
+
+      "started": "2025-08-21T11:12:35.79821655Z",
+
+      "completed": "2025-08-21T11:12:35.832584572Z",
+
+      "error": "failed to do request: Head \"https://registry-1.docker.io/v2/library/node/manifests/20-alpine\": context canceled"
+
+    }
+
+  ]
+
+}
+
+failed to solve: failed to read dockerfile: open Dockerfile: no such file or directory
+
+[root@racknerd-47e65b8 addypin]# 
+[root@racknerd-47e65b8 addypin]# # Monitor the deployment
+[root@racknerd-47e65b8 addypin]# docker-compose ps
+NAME      IMAGE     COMMAND   SERVICE   CREATED   STATUS    PORTS
+[root@racknerd-47e65b8 addypin]# clear
+
+[root@racknerd-47e65b8 addypin]# # Check container status
+[root@racknerd-47e65b8 addypin]# docker-compose ps
+NAME      IMAGE     COMMAND   SERVICE   CREATED   STATUS    PORTS
+[root@racknerd-47e65b8 addypin]# 
+[root@racknerd-47e65b8 addypin]# # Check logs
+[root@racknerd-47e65b8 addypin]# docker-compose logs backend
+[root@racknerd-47e65b8 addypin]# docker-compose logs frontend
+[root@racknerd-47e65b8 addypin]# 
+[root@racknerd-47e65b8 addypin]# # Test services
+[root@racknerd-47e65b8 addypin]# curl http://localhost:3001/api/stats
+curl: (7) Failed to connect to localhost port 3001: Connection refused
+[root@racknerd-47e65b8 addypin]# curl http://localhost:3000
+curl: (7) Failed to connect to localhost port 3000: Connection refused
+[root@racknerd-47e65b8 addypin]# 
+
+

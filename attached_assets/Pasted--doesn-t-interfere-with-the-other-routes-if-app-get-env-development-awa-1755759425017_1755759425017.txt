@@ -1,0 +1,261 @@
+>   // doesn't interfere with the other routes
+>   if (app.get("env") === "development") {
+>     await setupVite(app, server);
+>   } else {
+>     serveStatic(app);
+>   }
+> 
+>   // ALWAYS serve the app on the port specified in the environment variable PORT
+>   // Other ports are firewalled. Default to 5000 if not specified.
+>   // this serves both the API and the client.
+>   // It is the only port that is not firewalled.
+>   const port = parseInt(process.env.PORT || '5000', 10);
+>   server.listen({
+>     port,
+>     host: "0.0.0.0",
+>     reusePort: true,
+>   }, () => {
+>     log(`serving on port ${port}`);
+>   });
+> })();
+> EOF
+[root@racknerd-47e65b8 addypin]# clear
+
+[root@racknerd-47e65b8 addypin]# cat > server/vite.ts << 'EOF'
+> import express, { type Express } from "express";
+> import fs from "fs";
+> import path from "path";
+> import { createServer as createViteServer, createLogger } from "vite";
+> import { type Server } from "http";
+> import viteConfig from "../vite.config";
+> import { nanoid } from "nanoid";
+> 
+> const viteLogger = createLogger();
+> 
+> export function log(message: string, source = "express") {
+>   const formattedTime = new Date().toLocaleTimeString("en-US", {
+>     hour: "numeric",
+>     minute: "2-digit",
+>     second: "2-digit",
+>     hour12: true,
+>   });
+> 
+>   console.log(`${formattedTime} [${source}] ${message}`);
+> }
+> 
+> export async function setupVite(app: Express, server: Server) {
+>   const serverOptions = {
+>     middlewareMode: true,
+>     hmr: { server },
+>     allowedHosts: true as const,
+>   };
+> 
+>   const vite = await createViteServer({
+>     ...viteConfig,
+>     configFile: false,
+>     customLogger: {
+>       ...viteLogger,
+>       error: (msg, options) => {
+>         viteLogger.error(msg, options);
+>         process.exit(1);
+>       },
+>     },
+>     server: serverOptions,
+>     appType: "custom",
+>   });
+> 
+>   app.use(vite.middlewares);
+>   app.use("*", async (req, res, next) => {
+>     const url = req.originalUrl;
+> 
+>     try {
+>       const clientTemplate = path.resolve(
+>         import.meta.dirname,
+>         "..",
+>         "client",
+>         "index.html",
+>       );
+> 
+>       // always reload the index.html file from disk incase it changes
+>       let template = await fs.promises.readFile(clientTemplate, "utf-8");
+>       template = template.replace(
+>         `src="/src/main.tsx"`,
+>         `src="/src/main.tsx?v=${nanoid()}"`,
+>       );
+>       const page = await vite.transformIndexHtml(url, template);
+>       res.status(200).set({ "Content-Type": "text/html" }).end(page);
+>     } catch (e) {
+>       vite.ssrFixStacktrace(e as Error);
+>       next(e);
+>     }
+>   });
+> }
+> 
+> export function serveStatic(app: Express) {
+>   const distPath = path.resolve(import.meta.dirname, "public");
+> 
+>   if (!fs.existsSync(distPath)) {
+>     throw new Error(
+>       `Could not find the build directory: ${distPath}, make sure to build the client first`,
+>     );
+>   }
+> 
+>   app.use(express.static(distPath));
+> 
+>   // fall through to index.html if the file doesn't exist
+>   app.use("*", (_req, res) => {
+>     res.sendFile(path.resolve(distPath, "index.html"));
+>   });
+> }
+> EOF
+[root@racknerd-47e65b8 addypin]# cat > server/db.ts << 'EOF'
+> import { drizzle } from "drizzle-orm/postgres-js";
+> import postgres from "postgres";
+> import * as schema from "@shared/schema";
+> 
+> if (!process.env.DATABASE_URL) {
+>   throw new Error("DATABASE_URL is not set");
+> }
+> 
+> const client = postgres(process.env.DATABASE_URL);
+> export const db = drizzle(client, { schema });
+> EOF
+[root@racknerd-47e65b8 addypin]# cat > server/storage.ts << 'EOF'
+> import { db } from "./db";
+> import { pins, analytics, dailyStats } from "@shared/schema";
+> import { eq, desc, count, sql } from "drizzle-orm";
+> import type { InsertPin, Pin, InsertAnalytics } from "@shared/schema";
+> 
+> export class Storage {
+>   async createPin(pin: InsertPin): Promise<Pin> {
+>     const [newPin] = await db.insert(pins).values(pin).returning();
+>     return newPin;
+>   }
+> 
+>   async getPinByShortcode(shortcode: string): Promise<Pin | null> {
+>     const [pin] = await db.select().from(pins).where(eq(pins.shortcode, shortcode)).limit(1);
+>     return pin || null;
+>   }
+> 
+>   async getPinCountByEmail(email: string): Promise<number> {
+>     const result = await db.select({ count: count() }).from(pins).where(eq(pins.createdBy, email));
+>     return result[0]?.count || 0;
+>   }
+> 
+>   async getStats() {
+>     const [pinsCount] = await db.select({ count: count() }).from(pins);
+>     const [analyticsCount] = await db.select({ count: count() }).from(analytics);
+>     
+>     return {
+>       pinsCreated: pinsCount.count,
+>       linksClicked: analyticsCount.count,
+>       pinnedCount: Math.floor(pinsCount.count * 0.45), // Approximation
+>     };
+>   }
+> 
+>   async createAnalyticsEvent(event: InsertAnalytics): Promise<void> {
+>     await db.insert(analytics).values(event);
+>   }
+> }
+> 
+> export const storage = new Storage();
+> EOF
+[root@racknerd-47e65b8 addypin]# cat > server/routes.ts << 'EOF'
+> import type { Express } from "express";
+> import { createServer, type Server } from "http";
+> import { storage } from "./storage";
+> import { insertPinSchema } from "@shared/schema";
+> 
+> export async function registerRoutes(app: Express): Promise<Server> {
+>   const server = createServer(app);
+> 
+>   // Generate shortcode helper
+>   function generateShortcode(): string {
+>     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+>     let code = "";
+>     for (let i = 0; i < 6; i++) {
+>       code += chars.charAt(Math.floor(Math.random() * chars.length));
+>     }
+>     return code;
+>   }
+> 
+>   // Get stats
+>   app.get("/api/stats", async (req, res) => {
+>     try {
+>       const stats = await storage.getStats();
+>       res.json(stats);
+>     } catch (error) {
+>       console.error("Stats error:", error);
+>       res.status(500).json({ message: "Failed to fetch stats" });
+>     }
+>   });
+> 
+>   // Create new pin
+>   app.post("/api/pins", async (req, res) => {
+>     try {
+>       const validatedData = insertPinSchema.parse(req.body);
+>       
+>       // Generate unique shortcode
+>       let shortcode: string;
+>       let attempts = 0;
+>       const maxAttempts = 10;
+>       
+>       do {
+>         shortcode = generateShortcode();
+>         const existing = await storage.getPinByShortcode(shortcode);
+>         if (!existing) break;
+>         attempts++;
+>       } while (attempts < maxAttempts);
+> 
+>       if (attempts >= maxAttempts) {
+>         return res.status(500).json({ message: "Failed to generate unique shortcode" });
+>       }
+> 
+>       // Create pin with expiry if no email provided
+>       const expiresAt = validatedData.createdBy 
+>         ? null 
+>         : new Date(Date.now() + 72 * 60 * 60 * 1000); // 72 hours from now
+> 
+>       const pinData = {
+>         ...validatedData,
+>         shortcode,
+>         expiresAt,
+>       };
+> 
+>       const newPin = await storage.createPin(pinData);
+>       res.json(newPin);
+>     } catch (error) {
+>       console.error("Pin creation error:", error);
+>       res.status(500).json({ message: "Failed to create pin" });
+>     }
+>   });
+> 
+>   // Get pin by shortcode
+>   app.get("/api/pins/:shortcode", async (req, res) => {
+>     try {
+>       const pin = await storage.getPinByShortcode(req.params.shortcode);
+>       if (!pin) {
+>         return res.status(404).json({ message: "Pin not found" });
+>       }
+>       res.json(pin);
+>     } catch (error) {
+>       console.error("Pin fetch error:", error);
+>       res.status(500).json({ message: "Failed to fetch pin" });
+>     }
+>   });
+> 
+>   // Map links for coordinates
+>   app.get("/api/map-links/:lat/:lng", (req, res) => {
+>     const { lat, lng } = req.params;
+>     const mapLinks = {
+>       "Google Maps": `https://www.google.com/maps?q=${lat},${lng}`,
+>       "Apple Maps": `https://maps.apple.com/?q=${lat},${lng}`,
+>       "Waze": `https://waze.com/ul?ll=${lat},${lng}`,
+>     };
+>     res.json(mapLinks);
+>   });
+> 
+>   return server;
+> }
+> EOF
+[root@racknerd-47e65b8 addypin]# 

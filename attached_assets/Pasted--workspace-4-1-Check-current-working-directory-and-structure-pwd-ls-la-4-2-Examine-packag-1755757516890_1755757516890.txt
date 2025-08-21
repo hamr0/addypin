@@ -1,0 +1,108 @@
+~/workspace$ # 4.1 Check current working directory and structure
+pwd && ls -la
+
+# 4.2 Examine package.json scripts
+cat package.json | grep -A 10 '"scripts"'
+
+# 4.3 Check for .env file structure (don't expose values)
+ls -la .env* && echo "--- .env keys (values hidden) ---" && cat .env | grep -o '^[^=]*'
+
+# 4.4 Check active processes when app is running
+ps aux | grep -E "(node|npm|tsx)"
+
+# 4.5 Check listening ports
+netstat -tlnp | grep -E ":3000|:5000|:8080"
+
+# 4.6 Check environment variables that Node.js sees
+node -e "console.log(Object.keys(process.env).filter(k => k.includes('NODE') || k.includes('NPM')).map(k => k + '=' + process.env[k]).join('\n'))"
+/home/runner/workspace
+total 552
+drwxr-xr-x 1 runner runner   1948 Aug 21 06:19  .
+drwxrwxrwx 1 runner runner     54 Aug 21 06:12  ..
+-rw-r--r-- 1 runner runner   1429 Aug 20 21:56  ALTERNATIVE_APPROACH.md
+-rw-r--r-- 1 runner runner   3080 Aug 20 20:56  ARCHITECTURE.md
+drwxr-xr-x 1 runner runner  23764 Aug 21 06:16  attached_assets
+drwxr-xr-x 1 runner runner     32 Aug 16 07:37  .cache
+-rw-r--r-- 1 runner runner    964 Aug 21 05:06  centos-docker-fix.md
+drwxr-xr-x 1 runner runner     26 Aug 14 14:07  client
+-rw-r--r-- 1 runner runner   1616 Aug 20 21:59  commit-and-redeploy.md
+-rw-r--r-- 1 runner runner    459 Aug 14 14:07  components.json
+drwxr-xr-x 1 runner runner     10 Aug 14 17:04  .config
+drwxr-xr-x 1 runner runner     26 Aug 20 21:28  config
+-rw-r--r-- 1 runner runner    763 Aug 20 20:26  debug-production-structure.md
+-rw-r--r-- 1 runner runner   1238 Aug 20 21:47  debug-service-config.md
+-rw-r--r-- 1 runner runner   1136 Aug 20 21:52  DEPLOYMENT_PLAN.md
+-rw-r--r-- 1 runner runner    819 Aug 20 20:31  DEPLOY_NOW.md
+drwxr-xr-x 1 runner runner     28 Aug 20 11:20  dist
+drwxr-xr-x 1 runner runner   2734 Aug 20 20:06  docs
+-rw-r--r-- 1 runner runner    325 Aug 14 14:07  drizzle.config.ts
+-rw-r--r-- 1 runner runner    306 Aug 14 18:03  .env
+-rw-r--r-- 1 runner runner    948 Aug 20 21:54  final-deployment-steps.md
+-rw-r--r-- 1 runner runner   1364 Aug 20 21:07  FIX_GITHUB_WORKFLOW.md
+-rw-r--r-- 1 runner runner   1280 Aug 20 21:45  fix-service-config.md
+drwxr-xr-x 1 runner runner    188 Aug 21 06:20  .git
+drwxr-xr-x 1 runner runner     18 Aug 20 18:06  .github
+-rw-r--r-- 1 runner runner   1141 Aug 20 21:09  github-workflow-fix.yml
+-rw-r--r-- 1 runner runner    128 Aug 20 13:03  .gitignore
+-rw-r--r-- 1 runner runner   2056 Aug 20 21:14 'git version control'
+drwxr-xr-x 1 runner runner     10 Aug 14 13:15  .local
+-rw-r--r-- 1 runner runner   1217 Aug 20 21:48  manual-deployment-final.md
+-rw-r--r-- 1 runner runner   1765 Aug 20 22:08  manual-deployment-guide.md
+-rw-r--r-- 1 runner runner    636 Aug 20 19:31  manual-fix-commands.md
+-rw-r--r-- 1 runner runner   2087 Aug 21 05:01  MIGRATION_PLAN.md
+drwxr-xr-x 1 runner runner   8146 Aug 20 18:34  node_modules
+-rw-r--r-- 1 runner runner   3956 Aug 20 18:34  package.json
+-rw-r--r-- 1 runner runner 360363 Aug 20 18:34  package-lock.json
+-rw-r--r-- 1 runner runner   1300 Aug 20 21:27  PHASE_0_EXECUTION.md
+-rw-r--r-- 1 runner runner   1022 Aug 20 21:29  PHASE_1_EXECUTION.md
+-rw-r--r-- 1 runner runner   1022 Aug 20 21:30  PHASE_1_REVISED.md
+-rw-r--r-- 1 runner runner   1119 Aug 20 21:32  PHASE_2_FIXES.md
+-rw-r--r-- 1 runner runner   6478 Aug 21 05:22  PHASE_3_EXECUTION.md
+-rw-r--r-- 1 runner runner   5862 Aug 21 06:11  PHASE_3_FORENSIC_AUDIT.md
+-rw-r--r-- 1 runner runner     80 Aug 14 14:07  postcss.config.js
+-rw-r--r-- 1 runner runner    896 Aug 20 20:43  production-db-fix.md
+-rwxr-xr-x 1 runner runner   1161 Aug 20 17:50  query_vps.sh
+-rw-r--r-- 1 runner runner   1097 Aug 20 21:35  quick-fix-commands.md
+-rw-r--r-- 1 runner runner    906 Aug 20 21:37  quick-production-fix.md
+-rw-r--r-- 1 runner runner   5118 Aug 20 14:41  README.md
+-rw-r--r-- 1 runner runner    887 Aug 20 17:50  .replit
+-rw-r--r-- 1 runner runner      0 Aug 21 06:19  replit-apt-packages.txt
+-rw-r--r-- 1 runner runner   3418 Aug 21 06:16  replit-dependencies-full.txt
+-rw-r--r-- 1 runner runner   4796 Aug 21 05:01  replit.md
+-rw-r--r-- 1 runner runner   1216 Aug 20 21:50  root-cause-analysis.md
+drwxr-xr-x 1 runner runner     92 Aug 20 19:23  scripts
+drwxr-xr-x 1 runner runner    114 Aug 20 21:29  server
+drwxr-xr-x 1 runner runner     34 Aug 20 15:36  shared
+-rw-r--r-- 1 runner runner   1073 Aug 20 20:23  ssh-investigation.md
+-rw-r--r-- 1 runner runner   3048 Aug 14 14:11  tailwind.config.ts
+-rw-r--r-- 1 runner runner   1224 Aug 20 22:10  test-deployment.md
+-rw-r--r-- 1 runner runner    934 Aug 20 20:18  test-ssh-connection.md
+-rw-r--r-- 1 runner runner    657 Aug 14 14:07  tsconfig.json
+-rw-r--r-- 1 runner runner    598 Aug 20 21:29  tsconfig.server.json
+drwxr-xr-x 1 runner runner     20 Aug 20 18:34  .upm
+-rw-r--r-- 1 runner runner    971 Aug 14 14:07  vite.config.ts
+  "scripts": {
+    "dev": "NODE_ENV=development tsx server/index.ts",
+    "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
+    "start": "NODE_ENV=production node dist/index.js",
+    "check": "tsc",
+    "db:push": "drizzle-kit push"
+  },
+  "dependencies": {
+    "@clerk/clerk-react": "^5.42.0",
+    "@clerk/clerk-sdk-node": "^4.13.23",
+    "@hookform/resolvers": "^3.10.0",
+-rw-r--r-- 1 runner runner 306 Aug 14 18:03 .env
+--- .env keys (values hidden) ---
+DATABASE_URL
+CLERK_SECRET_KEY
+VITE_CLERK_PUBLISHABLE_KEY
+NODE_ENV
+runner     442  0.0  0.1 1173068 71036 pts/1   Ssl+ 06:12   0:00 npm run dev
+runner     494  0.0  0.0   2916  1792 pts/1    S+   06:12   0:00 sh -c NODE_ENV=development tsx server/index.ts
+runner     495  0.0  0.0 1030984 58600 pts/1   Sl+  06:12   0:00 /nix/store/lz7iav1hd92jbv44zf2rdd7b2mj23536-nodejs-20.19.3/bin/node /home/runner/workspace/node_modules/.bin/tsx server/index.ts
+runner     520  1.1  0.3 54707076 231632 pts/1 Sl+  06:12   0:09 /nix/store/lz7iav1hd92jbv44zf2rdd7b2mj23536-nodejs-20.19.3/bin/node --require /home/runner/workspace/node_modules/tsx/dist/preflight.cjs --import file:///home/runner/workspace/node_modules/tsx/dist/loader.mjs server/index.ts
+runner     539  0.0  0.0 1237432 12544 pts/1   Sl+  06:12   0:00 /home/runner/workspace/node_modules/tsx/node_modules/@esbuild/linux-x64/bin/esbuild --service=0.23.1 --ping
+runner     549  0.0  0.0 722428 13708 pts/1    Sl+  06:12   0:00 /home/runner/workspace/node_modules/vite/node_modules/@esbuild/linux-x64/bin/esbuild --service=0.21.5 --ping
+runner    1423  0.0  0.0   6920  2688 pts/0    S+   06:24   0:00 /nix/store/8b4vn1iyn6kqiisjvlmv67d1c0p3j6wj-gnugrep-3.11/bin/grep --color=auto -E (node|npm|tsx)
+bash: netstat: command not found

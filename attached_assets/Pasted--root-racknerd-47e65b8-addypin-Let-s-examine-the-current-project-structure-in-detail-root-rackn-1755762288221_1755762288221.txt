@@ -1,0 +1,162 @@
+[root@racknerd-47e65b8 addypin]# # Let's examine the current project structure in detail
+[root@racknerd-47e65b8 addypin]# cd /opt/addypin
+[root@racknerd-47e65b8 addypin]# echo "=== Current Project Structure ==="
+=== Current Project Structure ===
+[root@racknerd-47e65b8 addypin]# find . -name "*.html" -type f
+./production-backups/prod_addypin_working_20250820_142152/public/index.html
+./production-backups/prod_addypin_working_20250820_142152/node_modules/tslib/tslib.es6.html
+./production-backups/prod_addypin_working_20250820_142152/node_modules/tslib/tslib.html
+./production-backups/prod_addypin_working_20250820_142152/node_modules/recharts/umd/report.html
+./production-backups/prod_addypin_working_20250820_142152/node_modules/@clerk/clerk-sdk-node/node_modules/tslib/tslib.es6.html
+./production-backups/prod_addypin_working_20250820_142152/node_modules/@clerk/clerk-sdk-node/node_modules/tslib/tslib.html
+./production-backups/prod_addypin_working_20250820_142152/node_modules/@clerk/backend/node_modules/tslib/tslib.es6.html
+./production-backups/prod_addypin_working_20250820_142152/node_modules/@clerk/backend/node_modules/tslib/tslib.html
+./production-backups/prod_addypin_working_20250820_142152/node_modules/decimal.js-light/doc/API.html
+./production-backups/prod_addypin_working_20250820_103953/public/index.html
+./production-backups/prod_addypin_working_20250820_103953/node_modules/tslib/tslib.es6.html
+./production-backups/prod_addypin_working_20250820_103953/node_modules/tslib/tslib.html
+./production-backups/prod_addypin_working_20250820_103953/node_modules/recharts/umd/report.html
+./production-backups/prod_addypin_working_20250820_103953/node_modules/@clerk/clerk-sdk-node/node_modules/tslib/tslib.es6.html
+./production-backups/prod_addypin_working_20250820_103953/node_modules/@clerk/clerk-sdk-node/node_modules/tslib/tslib.html
+./production-backups/prod_addypin_working_20250820_103953/node_modules/@clerk/backend/node_modules/tslib/tslib.es6.html
+./production-backups/prod_addypin_working_20250820_103953/node_modules/@clerk/backend/node_modules/tslib/tslib.html
+./production-backups/prod_addypin_working_20250820_103953/node_modules/decimal.js-light/doc/API.html
+./addypin-repo/client/index.html
+./addypin-repo/node_modules/tslib/tslib.es6.html
+./addypin-repo/node_modules/tslib/tslib.html
+./addypin-repo/node_modules/recharts/umd/report.html
+./addypin-repo/node_modules/@clerk/clerk-sdk-node/node_modules/tslib/tslib.es6.html
+./addypin-repo/node_modules/@clerk/clerk-sdk-node/node_modules/tslib/tslib.html
+./addypin-repo/node_modules/@clerk/backend/node_modules/tslib/tslib.es6.html
+./addypin-repo/node_modules/@clerk/backend/node_modules/tslib/tslib.html
+./addypin-repo/node_modules/decimal.js-light/doc/API.html
+./addypin-repo/dist/public/index.html
+./addypin-repo/.local/state/replit/agent/design_reference/c3934407-c1d8-42aa-a0fd-09e9e69d55ae/1f4c2b7c-02e7-42a1-b3cf-53be0dcb7da6.html
+./addypin-repo/.local/state/replit/agent/design_reference/c3934407-c1d8-42aa-a0fd-09e9e69d55ae/73d6511f-6225-42ad-a557-ab1a06dcf5f8.html
+./addypin-repo/.local/state/replit/agent/design_reference/c3934407-c1d8-42aa-a0fd-09e9e69d55ae/7ecf41c0-41e5-48e6-b3d2-3c8f5e263c0a.html
+./addypin-repo/.local/state/replit/agent/design_reference/c3934407-c1d8-42aa-a0fd-09e9e69d55ae/8d7a4d4a-b3e2-4728-ac2e-4e0cd30dc84e.html
+./addypin-repo/.local/state/replit/agent/design_reference/c3934407-c1d8-42aa-a0fd-09e9e69d55ae/1452d4fd-c802-49bb-b334-e12928848f3c.html
+./addypin-repo/.local/state/replit/agent/design_reference/c3934407-c1d8-42aa-a0fd-09e9e69d55ae/2c75fcda-9269-4b3a-8a9b-2c2c15e89f48.html
+./addypin-repo/.local/state/replit/agent/design_reference/c3934407-c1d8-42aa-a0fd-09e9e69d55ae/fbca1d2f-3b5e-44dd-9fe4-64d555036136.html
+./addypin-repo/.local/state/replit/agent/design_reference/c3934407-c1d8-42aa-a0fd-09e9e69d55ae/8f691c83-c71f-49cc-8a37-a0ee95e4d183.html
+./addypin-repo/.local/state/replit/agent/design_reference/c3934407-c1d8-42aa-a0fd-09e9e69d55ae/e9f875a6-181e-4319-88eb-c4f6136e37f4.html
+./addypin-repo/attached_assets/dynamic_addypin_map_final_with_title_links_1755177029607.html
+[root@racknerd-47e65b8 addypin]# echo "=== Vite Config ==="
+=== Vite Config ===
+[root@racknerd-47e65b8 addypin]# find . -name "vite.config.*" -type f
+./production-backups/prod_addypin_working_20250820_142152/node_modules/@tanstack/react-query/build/query-codemods/vite.config.ts
+./production-backups/prod_addypin_working_20250820_103953/node_modules/@tanstack/react-query/build/query-codemods/vite.config.ts
+./addypin-repo/vite.config.ts
+./addypin-repo/node_modules/@tanstack/react-query/build/query-codemods/vite.config.ts
+./vite.config.ts
+[root@racknerd-47e65b8 addypin]# echo "=== Package.json build script ==="
+=== Package.json build script ===
+[root@racknerd-47e65b8 addypin]# npm run | grep build
+  build
+    vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist
+[root@racknerd-47e65b8 addypin]# 
+[root@racknerd-47e65b8 addypin]# # Check what's actually in the client directory
+[root@racknerd-47e65b8 addypin]# echo "=== Client Directory Contents ==="
+=== Client Directory Contents ===
+[root@racknerd-47e65b8 addypin]# ls -la client/
+total 12
+drwxr-xr-x  3 root docker 4096 Aug 21 02:48 .
+drwxr-xr-x 12 root root   4096 Aug 21 03:14 ..
+drwxr-xr-x  6 root docker 4096 Aug 21 02:48 src
+[root@racknerd-47e65b8 addypin]# if [ -d "client/src" ]; then
+>     ls -la client/src/
+> fi
+total 24
+drwxr-xr-x 6 root docker 4096 Aug 21 02:48 .
+drwxr-xr-x 3 root docker 4096 Aug 21 02:48 ..
+drwxr-xr-x 3 root docker 4096 Aug 21 02:48 components
+drwxr-xr-x 2 root docker 4096 Aug 21 02:48 hooks
+drwxr-xr-x 2 root docker 4096 Aug 21 02:48 lib
+drwxr-xr-x 2 root docker 4096 Aug 21 02:48 pages
+[root@racknerd-47e65b8 addypin]# # Check the actual project structure
+[root@racknerd-47e65b8 addypin]# cd /opt/addypin/addypin-repo
+[root@racknerd-47e65b8 addypin-repo]# echo "=== Project Structure in addypin-repo ==="
+=== Project Structure in addypin-repo ===
+[root@racknerd-47e65b8 addypin-repo]# ls -la
+total 504
+drwxr-xr-x  13 root root   4096 Aug 21 01:27  .
+drwxr-xr-x  12 root root   4096 Aug 21 03:14  ..
+drwxr-xr-x   2 root root   4096 Aug 20 09:26  attached_assets
+drwxr-xr-x   3 root root   4096 Aug 20 09:26  client
+-rw-r--r--   1 root root    459 Aug 20 09:26  components.json
+drwxr-xr-x   3 root root   4096 Aug 20 09:26  .config
+drwxr-xr-x   3 root root   4096 Aug 20 09:26  dist
+-rw-r--r--   1 root root    624 Aug 21 01:54  Dockerfile
+-rw-r--r--   1 root root     59 Aug 21 01:18  .dockerignore
+drwxr-xr-x   2 root root   4096 Aug 20 09:26  docs
+-rw-r--r--   1 root root    325 Aug 20 09:26  drizzle.config.ts
+-rw-r--r--   1 root root    707 Aug 20 17:35 'ervice --lines=10'
+-rw-r--r--   1 root root  12202 Aug 20 15:47 'ervice logs for specific errors'
+-rw-r--r--   1 root root   6509 Aug 20 09:26  export-to-github.sh
+drwxr-xr-x   8 root root   4096 Aug 20 16:32  .git
+drwxr-xr-x   3 root root   4096 Aug 20 15:09  .github
+-rw-r--r--   1 root root    555 Aug 20 09:26  .gitignore
+-rw-r--r--   1 root root      0 Aug 20 09:26 'git version control'
+drwxr-xr-x   3 root root   4096 Aug 20 09:26  .local
+drwxr-xr-x 377 root root  12288 Aug 20 16:32  node_modules
+-rw-r--r--   1 root root   3813 Aug 21 01:27  package.json
+-rw-r--r--   1 root root 359751 Aug 20 16:32  package-lock.json
+-rw-r--r--   1 root root     80 Aug 20 09:26  postcss.config.js
+-rw-r--r--   1 root root   4909 Aug 20 09:26  README.md
+-rw-r--r--   1 root root    864 Aug 20 09:26  .replit
+-rw-r--r--   1 root root   8924 Aug 20 09:26  replit.md
+drwxr-xr-x   4 root root   4096 Aug 20 15:09  server
+drwxr-xr-x   2 root root   4096 Aug 20 09:26  shared
+-rw-r--r--   1 root root   3048 Aug 20 09:26  tailwind.config.ts
+-rw-r--r--   1 root root    657 Aug 20 09:26  tsconfig.json
+-rw-r--r--   1 root root    664 Aug 20 17:48 'uccessful, test the application'
+-rw-r--r--   1 root root    971 Aug 20 09:26  vite.config.ts
+[root@racknerd-47e65b8 addypin-repo]# echo "=== Client Directory ==="
+=== Client Directory ===
+[root@racknerd-47e65b8 addypin-repo]# ls -la client/
+total 16
+drwxr-xr-x  3 root root 4096 Aug 20 09:26 .
+drwxr-xr-x 13 root root 4096 Aug 21 01:27 ..
+-rw-r--r--  1 root root 2097 Aug 20 09:26 index.html
+drwxr-xr-x  7 root root 4096 Aug 20 09:26 src
+[root@racknerd-47e65b8 addypin-repo]# echo "=== Vite Config Content ==="
+=== Vite Config Content ===
+[root@racknerd-47e65b8 addypin-repo]# cat vite.config.ts 2>/dev/null || echo "No vite.config.ts found"
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import path from "path";
+import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
+
+export default defineConfig({
+  plugins: [
+    react(),
+    runtimeErrorOverlay(),
+    ...(process.env.NODE_ENV !== "production" &&
+    process.env.REPL_ID !== undefined
+      ? [
+          await import("@replit/vite-plugin-cartographer").then((m) =>
+            m.cartographer(),
+          ),
+        ]
+      : []),
+  ],
+  resolve: {
+    alias: {
+      "@": path.resolve(import.meta.dirname, "client", "src"),
+      "@shared": path.resolve(import.meta.dirname, "shared"),
+      "@assets": path.resolve(import.meta.dirname, "attached_assets"),
+    },
+  },
+  root: path.resolve(import.meta.dirname, "client"),
+  build: {
+    outDir: path.resolve(import.meta.dirname, "dist/public"),
+    emptyOutDir: true,
+  },
+  server: {
+    fs: {
+      strict: true,
+      deny: ["**/.*"],
+    },
+  },
+});
+[root@racknerd-47e65b8 addypin-repo]# 

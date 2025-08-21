@@ -1,0 +1,84 @@
+[root@racknerd-47e65b8 addypin-repo]# cd /opt/addypin/addypin-repo
+[root@racknerd-47e65b8 addypin-repo]# 
+[root@racknerd-47e65b8 addypin-repo]# # Fix the Docker image tag - use standard Node.js Alpine version
+[root@racknerd-47e65b8 addypin-repo]# cat > Dockerfile << 'EOF'
+> FROM node:20-alpine3.19
+> 
+> # Install minimal build dependencies
+> RUN apk add --no-cache python3 make g++ git
+> 
+> # Create user
+> RUN addgroup -g 1001 -S runner && adduser -u 1001 -S runner -G runner
+> 
+> # Set working directory
+> WORKDIR /app
+> RUN chown -R runner:runner /app
+> 
+> # Copy package files
+> COPY --chown=runner:runner package*.json ./
+> 
+> # Switch to runner user
+> USER runner
+> 
+> # Clear any existing npm cache issues
+> RUN npm cache clean --force
+> 
+> # Install dependencies with aggressive cleanup
+> RUN npm ci --no-audit --prefer-offline && npm cache clean --force
+> 
+> # Copy source code
+> COPY --chown=runner:runner . .
+> 
+> # Set production environment (disables Replit plugins)
+> ENV NODE_ENV=production
+> 
+> # Build application
+> RUN npm run build
+> 
+> # Remove dev dependencies
+> RUN npm prune --omit=dev --no-audit
+> 
+> EXPOSE 5000
+> CMD ["npm", "start"]
+> EOF
+[root@racknerd-47e65b8 addypin-repo]# 
+[root@racknerd-47e65b8 addypin-repo]# # Build with the corrected image tag
+[root@racknerd-47e65b8 addypin-repo]# echo "Building with valid Node.js Alpine image..."
+Building with valid Node.js Alpine image...
+[root@racknerd-47e65b8 addypin-repo]# docker build -t addypin-app .
+[+] Building 68.6s (16/16) FINISHED                              docker:default
+ => [internal] load build definition from Dockerfile                       0.0s
+ => => transferring dockerfile: 851B                                       0.0s
+ => [internal] load metadata for docker.io/library/node:20-alpine3.19      1.0s
+ => [internal] load .dockerignore                                          0.0s
+ => => transferring context: 99B                                           0.0s
+ => [ 1/11] FROM docker.io/library/node:20-alpine3.19@sha256:1cc9088b0fbc  4.1s
+ => => resolve docker.io/library/node:20-alpine3.19@sha256:1cc9088b0fbcb2  0.0s
+ => => sha256:1cc9088b0fbcb2009a8fc2cb57916cd129cd5e32b3c 7.69kB / 7.69kB  0.0s
+ => => sha256:50209a555b1016096a415de2c055bc88dffb31b5afb 1.72kB / 1.72kB  0.0s
+ => => sha256:6b6f766ab64e08a57fa2255a5347d83880d1947f1bf 6.20kB / 6.20kB  0.0s
+ => => sha256:a7cd7d9a21440da0d765f2989d75f069adf9b3463a7 3.42MB / 3.42MB  0.3s
+ => => sha256:b508a0a802cc38d079a5055ea5b2663aa750189a5 42.63MB / 42.63MB  1.6s
+ => => sha256:24ccc27c613d79e23ab0d19893d0505ba531b266e6b 1.39MB / 1.39MB  0.4s
+ => => extracting sha256:a7cd7d9a21440da0d765f2989d75f069adf9b3463a765421  0.3s
+ => => sha256:c53026b414f8e18bfde927049ab4a6e1ec606161d8f0614 445B / 445B  0.6s
+ => => extracting sha256:b508a0a802cc38d079a5055ea5b2663aa750189a5a59534c  2.3s
+ => => extracting sha256:24ccc27c613d79e23ab0d19893d0505ba531b266e6b6c562  0.1s
+ => => extracting sha256:c53026b414f8e18bfde927049ab4a6e1ec606161d8f06145  0.0s
+ => [internal] load build context                                          0.7s
+ => => transferring context: 18.70MB                                       0.7s
+ => [ 2/11] RUN apk add --no-cache python3 make g++ git                    4.0s
+ => [ 3/11] RUN addgroup -g 1001 -S runner && adduser -u 1001 -S runner -  0.3s 
+ => [ 4/11] WORKDIR /app                                                   0.0s
+ => [ 5/11] RUN chown -R runner:runner /app                                0.2s
+ => [ 6/11] COPY --chown=runner:runner package*.json ./                    0.0s
+ => [ 7/11] RUN npm cache clean --force                                    1.0s
+ => [ 8/11] RUN npm ci --no-audit --prefer-offline && npm cache clean --  25.7s
+ => [ 9/11] COPY --chown=runner:runner . .                                 0.2s
+ => [10/11] RUN npm run build                                             16.8s
+ => [11/11] RUN npm prune --omit=dev --no-audit                            3.0s
+ => exporting to image                                                    12.2s
+ => => exporting layers                                                   12.2s
+ => => writing image sha256:17c375146f5f89c5afb0dd38d31d0bb150297ff86f115  0.0s
+ => => naming to docker.io/library/addypin-app                             0.0s
+[root@racknerd-47e65b8 addypin-repo]# 

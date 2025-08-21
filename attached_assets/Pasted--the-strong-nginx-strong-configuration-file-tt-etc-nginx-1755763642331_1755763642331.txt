@@ -1,0 +1,93 @@
+                    the <strong>nginx</strong> configuration file
+                    <tt>/etc/nginx/nginx.conf</tt>.</p>
+
+                    <p>For information on AlmaLinux, please visit the <a href="http://www.almalinux.org/">AlmaLinux website</a>.</p>
+
+                </div>
+            </div>
+
+            <div class="logos">
+                <a href="http://nginx.net/"><img
+                    src="nginx-logo.png"
+                    alt="[ Powered by nginx ]"
+                    width="121" height="32" /></a>
+                <a href="http://www.almalinux.org/"><img
+                    src="poweredby.png"
+                    alt="[ Powered by AlmaLinux ]"
+                    width="124" height="32" /></a>
+            </div>
+        </div>
+    </body>
+</html>
+[root@racknerd-47e65b8 addypin-repo]# clear
+
+[root@racknerd-47e65b8 addypin-repo]# # Step 1: Clean up any existing containers
+[root@racknerd-47e65b8 addypin-repo]# echo "🧹 Cleaning up existing containers..."
+🧹 Cleaning up existing containers...
+[root@racknerd-47e65b8 addypin-repo]# docker stop addypin-production 2>/dev/null || true
+addypin-production
+[root@racknerd-47e65b8 addypin-repo]# docker rm addypin-production 2>/dev/null || true
+addypin-production
+[root@racknerd-47e65b8 addypin-repo]# 
+[root@racknerd-47e65b8 addypin-repo]# # Step 2: Create production environment file with proper database connection
+[root@racknerd-47e65b8 addypin-repo]# echo "📝 Setting up environment..."
+📝 Setting up environment...
+[root@racknerd-47e65b8 addypin-repo]# cat > /opt/addypin/addypin-repo/.env.production << 'EOF'
+> NODE_ENV=production
+> DATABASE_URL=postgresql://addypin:your_actual_db_password@localhost:5432/addypin
+> RESEND_API_KEY=your_resend_key
+> PORT=5000
+> EOF
+[root@racknerd-47e65b8 addypin-repo]# 
+[root@racknerd-47e65b8 addypin-repo]# # Step 3: Run Docker container on port 3000 (avoiding nginx conflict)
+[root@racknerd-47e65b8 addypin-repo]# echo "🚀 Starting Docker container on port 3000..."
+🚀 Starting Docker container on port 3000...
+[root@racknerd-47e65b8 addypin-repo]# docker run -d \
+>   -p 3000:5000 \
+>   --name addypin-production \
+>   --restart unless-stopped \
+>   --env-file /opt/addypin/addypin-repo/.env.production \
+>   addypin-app
+23fda79416e86d10bd3645d7e09b096651380b3a007a59e53220c87f14334c69
+[root@racknerd-47e65b8 addypin-repo]# 
+[root@racknerd-47e65b8 addypin-repo]# # Step 4: Verify container startup
+[root@racknerd-47e65b8 addypin-repo]# echo "✅ Checking container status..."
+✅ Checking container status...
+[root@racknerd-47e65b8 addypin-repo]# docker ps
+CONTAINER ID   IMAGE         COMMAND                  CREATED        STATUS                  PORTS                    NAMES
+23fda79416e8   addypin-app   "docker-entrypoint.s…"   1 second ago   Up Less than a second   0.0.0.0:3000->5000/tcp   addypin-production
+[root@racknerd-47e65b8 addypin-repo]# sleep 5
+[root@racknerd-47e65b8 addypin-repo]# 
+[root@racknerd-47e65b8 addypin-repo]# # Step 5: Test direct container access
+[root@racknerd-47e65b8 addypin-repo]# echo "🔍 Testing container directly..."
+🔍 Testing container directly...
+[root@racknerd-47e65b8 addypin-repo]# curl -v http://localhost:3000/api/stats || echo "Container still starting..."
+*   Trying 127.0.0.1...
+* TCP_NODELAY set
+* Connected to localhost (127.0.0.1) port 3000 (#0)
+> GET /api/stats HTTP/1.1
+> Host: localhost:3000
+> User-Agent: curl/7.61.1
+> Accept: */*
+> 
+* Recv failure: Connection reset by peer
+* Closing connection 0
+curl: (56) Recv failure: Connection reset by peer
+Container still starting...
+[root@racknerd-47e65b8 addypin-repo]# 
+[root@racknerd-47e65b8 addypin-repo]# # Step 6: Check container logs for issues
+[root@racknerd-47e65b8 addypin-repo]# echo "📋 Container logs:"
+📋 Container logs:
+[root@racknerd-47e65b8 addypin-repo]# docker logs addypin-production
+
+> rest-express@1.0.0 start
+> NODE_ENV=production npx tsx server/index.ts
+
+npm warn exec The following package was not found and will be installed: tsx@4.20.4
+[root@racknerd-47e65b8 addypin-repo]# 
+[root@racknerd-47e65b8 addypin-repo]# # Step 7: Configure nginx reverse proxy
+[root@racknerd-47e65b8 addypin-repo]# echo "⚙️ Configuring nginx reverse proxy..."
+⚙️ Configuring nginx reverse proxy...
+[root@racknerd-47e65b8 addypin-repo]# cp /etc/nginx/nginx.conf /etc/nginx/nginx.conf.backup
+cp: overwrite '/etc/nginx/nginx.conf.backup'? 
+[root@racknerd-47e65b8 addypin-repo]# 

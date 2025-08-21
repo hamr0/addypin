@@ -1,0 +1,493 @@
+[root@racknerd-47e65b8 addypin-repo]# curl http://localhost:3000/api/stats
+curl: (7) Failed to connect to localhost port 3000: Connection refused
+[root@racknerd-47e65b8 addypin-repo]# clear
+
+[root@racknerd-47e65b8 addypin-repo]# # Step 1: Check current state
+[root@racknerd-47e65b8 addypin-repo]# echo "🔍 Checking current container state..."
+🔍 Checking current container state...
+[root@racknerd-47e65b8 addypin-repo]# docker ps
+CONTAINER ID   IMAGE         COMMAND                  CREATED          STATUS                          PORTS     NAMES
+98125cd3d3fc   addypin-app   "docker-entrypoint.s…"   14 minutes ago   Restarting (1) 42 seconds ago             addypin-production
+[root@racknerd-47e65b8 addypin-repo]# docker logs addypin-production 2>/dev/null || echo "No container logs available"
+
+> rest-express@1.0.0 start
+> NODE_ENV=production npx tsx server/index.ts
+
+
+> rest-express@1.0.0 start
+> NODE_ENV=production npx tsx server/index.ts
+
+
+> rest-express@1.0.0 start
+> NODE_ENV=production npx tsx server/index.ts
+
+
+> rest-express@1.0.0 start
+> NODE_ENV=production npx tsx server/index.ts
+
+
+> rest-express@1.0.0 start
+> NODE_ENV=production npx tsx server/index.ts
+
+
+> rest-express@1.0.0 start
+> NODE_ENV=production npx tsx server/index.ts
+
+
+> rest-express@1.0.0 start
+> NODE_ENV=production npx tsx server/index.ts
+
+
+> rest-express@1.0.0 start
+> NODE_ENV=production npx tsx server/index.ts
+
+
+> rest-express@1.0.0 start
+> NODE_ENV=production npx tsx server/index.ts
+
+
+> rest-express@1.0.0 start
+> NODE_ENV=production npx tsx server/index.ts
+
+
+> rest-express@1.0.0 start
+> NODE_ENV=production npx tsx server/index.ts
+
+
+> rest-express@1.0.0 start
+> NODE_ENV=production npx tsx server/index.ts
+
+
+> rest-express@1.0.0 start
+> NODE_ENV=production npx tsx server/index.ts
+
+
+> rest-express@1.0.0 start
+> NODE_ENV=production npx tsx server/index.ts
+
+
+> rest-express@1.0.0 start
+> NODE_ENV=production npx tsx server/index.ts
+
+
+> rest-express@1.0.0 start
+> NODE_ENV=production npx tsx server/index.ts
+
+
+> rest-express@1.0.0 start
+> NODE_ENV=production npx tsx server/index.ts
+
+
+> rest-express@1.0.0 start
+> NODE_ENV=production npx tsx server/index.ts
+
+
+> rest-express@1.0.0 start
+> NODE_ENV=production npx tsx server/index.ts
+
+
+> rest-express@1.0.0 start
+> NODE_ENV=production npx tsx server/index.ts
+
+
+> rest-express@1.0.0 start
+> NODE_ENV=production npx tsx server/index.ts
+
+
+> rest-express@1.0.0 start
+> NODE_ENV=production npx tsx server/index.ts
+
+[root@racknerd-47e65b8 addypin-repo]# 
+[root@racknerd-47e65b8 addypin-repo]# # Step 2: Fix the Dockerfile with all required dependencies
+[root@racknerd-47e65b8 addypin-repo]# cd /opt/addypin/addypin-repo
+[root@racknerd-47e65b8 addypin-repo]# 
+[root@racknerd-47e65b8 addypin-repo]# cat > Dockerfile << 'EOF'
+> FROM node:20-alpine3.19
+> 
+> # Install minimal build dependencies
+> RUN apk add --no-cache python3 make g++ git
+> 
+> # Create user
+> RUN addgroup -g 1001 -S runner && adduser -u 1001 -S runner -G runner
+> 
+> # Set working directory
+> WORKDIR /app
+> RUN chown -R runner:runner /app
+> 
+> # Copy package files
+> COPY --chown=runner:runner package*.json ./
+> 
+> # Switch to runner user
+> USER runner
+> 
+> # Clear npm cache to avoid conflicts
+> RUN npm cache clean --force
+> 
+> # Install ALL dependencies (including dev dependencies for build)
+> RUN npm ci --no-audit --prefer-offline
+> 
+> # Copy source code
+> COPY --chown=runner:runner . .
+> 
+> # Set production environment
+> ENV NODE_ENV=production
+> 
+> # Build application
+> RUN npm run build
+> 
+> # Install production dependencies only (remove dev dependencies)
+> RUN npm prune --production --no-audit
+> 
+> EXPOSE 5000
+> CMD ["npm", "start"]
+> EOF
+[root@racknerd-47e65b8 addypin-repo]# 
+[root@racknerd-47e65b8 addypin-repo]# # Step 3: Rebuild and restart
+[root@racknerd-47e65b8 addypin-repo]# echo "🔨 Rebuilding with fixed dependencies..."
+🔨 Rebuilding with fixed dependencies...
+[root@racknerd-47e65b8 addypin-repo]# docker build -t addypin-app .
+[+] Building 0.5s (1/2)                                          docker:default
+[+] Building 83.8s (16/16) FINISHED                              docker:default
+ => [internal] load build definition from Dockerfile                       0.0s
+ => => transferring dockerfile: 857B                                       0.0s
+ => [internal] load metadata for docker.io/library/node:20-alpine3.19      0.6s
+ => [internal] load .dockerignore                                          0.0s
+ => => transferring context: 99B                                           0.0s
+ => [ 1/11] FROM docker.io/library/node:20-alpine3.19@sha256:1cc9088b0fbc  0.0s
+ => [internal] load build context                                          0.0s
+ => => transferring context: 19.48kB                                       0.0s
+ => CACHED [ 2/11] RUN apk add --no-cache python3 make g++ git             0.0s
+ => CACHED [ 3/11] RUN addgroup -g 1001 -S runner && adduser -u 1001 -S r  0.0s
+ => CACHED [ 4/11] WORKDIR /app                                            0.0s
+ => CACHED [ 5/11] RUN chown -R runner:runner /app                         0.0s
+ => CACHED [ 6/11] COPY --chown=runner:runner package*.json ./             0.0s
+ => CACHED [ 7/11] RUN npm cache clean --force                             0.0s
+ => [ 8/11] RUN npm ci --no-audit --prefer-offline                        29.5s
+ => [ 9/11] COPY --chown=runner:runner . .                                 0.6s 
+ => [10/11] RUN npm run build                                             32.0s 
+ => [11/11] RUN npm prune --production --no-audit                          6.2s 
+ => exporting to image                                                    14.5s 
+ => => exporting layers                                                   14.4s 
+ => => writing image sha256:11d6ae6f9aad0c8c15e2578a1788e5538fa3f394e226c  0.0s 
+ => => naming to docker.io/library/addypin-app                             0.0s 
+[root@racknerd-47e65b8 addypin-repo]# 
+[root@racknerd-47e65b8 addypin-repo]# # Stop and remove old container
+[root@racknerd-47e65b8 addypin-repo]# docker stop addypin-production 2>/dev/null || true
+addypin-production
+[root@racknerd-47e65b8 addypin-repo]# docker rm addypin-production 2>/dev/null || true
+addypin-production
+[root@racknerd-47e65b8 addypin-repo]# 
+[root@racknerd-47e65b8 addypin-repo]# # Start new container with proper environment
+[root@racknerd-47e65b8 addypin-repo]# docker run -d \
+>   -p 3000:5000 \
+>   --name addypin-production \
+>   --restart unless-stopped \
+>   -e NODE_ENV=production \
+>   -e DATABASE_URL="postgresql://addypin:your_db_password@localhost:5432/addypin" \
+>   addypin-app
+97a051ed107ffb327f525fc99d700cd928cfd9a1fd123647124c71191e438358
+[root@racknerd-47e65b8 addypin-repo]# 
+[root@racknerd-47e65b8 addypin-repo]# # Wait for startup and check logs
+[root@racknerd-47e65b8 addypin-repo]# sleep 15
+[root@racknerd-47e65b8 addypin-repo]# echo "📋 Container logs:"
+📋 Container logs:
+[root@racknerd-47e65b8 addypin-repo]# docker logs addypin-production
+
+> rest-express@1.0.0 start
+> NODE_ENV=production npx tsx server/index.ts
+
+npm warn exec The following package was not found and will be installed: tsx@4.20.4
+
+node:internal/modules/run_main:128
+    triggerUncaughtException(
+    ^
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'vite' imported from /app/server/vite.ts
+    at packageResolve (node:internal/modules/esm/resolve:854:9)
+    at moduleResolve (node:internal/modules/esm/resolve:927:18)
+    at defaultResolve (node:internal/modules/esm/resolve:1169:11)
+    at nextResolve (node:internal/modules/esm/hooks:868:28)
+    at resolveBase (file:///home/runner/.npm/_npx/fd45a72a545557e9/node_modules/tsx/dist/esm/index.mjs?1755764735623:2:3811)
+    at resolveDirectory (file:///home/runner/.npm/_npx/fd45a72a545557e9/node_modules/tsx/dist/esm/index.mjs?1755764735623:2:4310)
+    at resolveTsPaths (file:///home/runner/.npm/_npx/fd45a72a545557e9/node_modules/tsx/dist/esm/index.mjs?1755764735623:2:5051)
+    at async resolve (file:///home/runner/.npm/_npx/fd45a72a545557e9/node_modules/tsx/dist/esm/index.mjs?1755764735623:2:5422)
+    at async nextResolve (node:internal/modules/esm/hooks:868:22)
+    at async Hooks.resolve (node:internal/modules/esm/hooks:306:24) {
+  code: 'ERR_MODULE_NOT_FOUND'
+}
+
+Node.js v20.18.1
+
+> rest-express@1.0.0 start
+> NODE_ENV=production npx tsx server/index.ts
+
+
+node:internal/modules/run_main:128
+    triggerUncaughtException(
+    ^
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'vite' imported from /app/server/vite.ts
+    at packageResolve (node:internal/modules/esm/resolve:854:9)
+    at moduleResolve (node:internal/modules/esm/resolve:927:18)
+    at defaultResolve (node:internal/modules/esm/resolve:1169:11)
+    at nextResolve (node:internal/modules/esm/hooks:868:28)
+    at resolveBase (file:///home/runner/.npm/_npx/fd45a72a545557e9/node_modules/tsx/dist/esm/index.mjs?1755764738611:2:3811)
+    at resolveDirectory (file:///home/runner/.npm/_npx/fd45a72a545557e9/node_modules/tsx/dist/esm/index.mjs?1755764738611:2:4310)
+    at resolveTsPaths (file:///home/runner/.npm/_npx/fd45a72a545557e9/node_modules/tsx/dist/esm/index.mjs?1755764738611:2:5051)
+    at async resolve (file:///home/runner/.npm/_npx/fd45a72a545557e9/node_modules/tsx/dist/esm/index.mjs?1755764738611:2:5422)
+    at async nextResolve (node:internal/modules/esm/hooks:868:22)
+    at async Hooks.resolve (node:internal/modules/esm/hooks:306:24) {
+  code: 'ERR_MODULE_NOT_FOUND'
+}
+
+Node.js v20.18.1
+
+> rest-express@1.0.0 start
+> NODE_ENV=production npx tsx server/index.ts
+
+
+node:internal/modules/run_main:128
+    triggerUncaughtException(
+    ^
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'vite' imported from /app/server/vite.ts
+    at packageResolve (node:internal/modules/esm/resolve:854:9)
+    at moduleResolve (node:internal/modules/esm/resolve:927:18)
+    at defaultResolve (node:internal/modules/esm/resolve:1169:11)
+    at nextResolve (node:internal/modules/esm/hooks:868:28)
+    at resolveBase (file:///home/runner/.npm/_npx/fd45a72a545557e9/node_modules/tsx/dist/esm/index.mjs?1755764741302:2:3811)
+    at resolveDirectory (file:///home/runner/.npm/_npx/fd45a72a545557e9/node_modules/tsx/dist/esm/index.mjs?1755764741302:2:4310)
+    at resolveTsPaths (file:///home/runner/.npm/_npx/fd45a72a545557e9/node_modules/tsx/dist/esm/index.mjs?1755764741302:2:5051)
+    at async resolve (file:///home/runner/.npm/_npx/fd45a72a545557e9/node_modules/tsx/dist/esm/index.mjs?1755764741302:2:5422)
+    at async nextResolve (node:internal/modules/esm/hooks:868:22)
+    at async Hooks.resolve (node:internal/modules/esm/hooks:306:24) {
+  code: 'ERR_MODULE_NOT_FOUND'
+}
+
+Node.js v20.18.1
+
+> rest-express@1.0.0 start
+> NODE_ENV=production npx tsx server/index.ts
+
+
+node:internal/modules/run_main:128
+    triggerUncaughtException(
+    ^
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'vite' imported from /app/server/vite.ts
+    at packageResolve (node:internal/modules/esm/resolve:854:9)
+    at moduleResolve (node:internal/modules/esm/resolve:927:18)
+    at defaultResolve (node:internal/modules/esm/resolve:1169:11)
+    at nextResolve (node:internal/modules/esm/hooks:868:28)
+    at resolveBase (file:///home/runner/.npm/_npx/fd45a72a545557e9/node_modules/tsx/dist/esm/index.mjs?1755764744262:2:3811)
+    at resolveDirectory (file:///home/runner/.npm/_npx/fd45a72a545557e9/node_modules/tsx/dist/esm/index.mjs?1755764744262:2:4310)
+    at resolveTsPaths (file:///home/runner/.npm/_npx/fd45a72a545557e9/node_modules/tsx/dist/esm/index.mjs?1755764744262:2:5051)
+    at async resolve (file:///home/runner/.npm/_npx/fd45a72a545557e9/node_modules/tsx/dist/esm/index.mjs?1755764744262:2:5422)
+    at async nextResolve (node:internal/modules/esm/hooks:868:22)
+    at async Hooks.resolve (node:internal/modules/esm/hooks:306:24) {
+  code: 'ERR_MODULE_NOT_FOUND'
+}
+
+Node.js v20.18.1
+[root@racknerd-47e65b8 addypin-repo]# 
+[root@racknerd-47e65b8 addypin-repo]# # Test if application is responding
+[root@racknerd-47e65b8 addypin-repo]# echo "🧪 Testing application response..."
+🧪 Testing application response...
+[root@racknerd-47e65b8 addypin-repo]# curl -v http://localhost:3000/api/stats || echo "Still not responding"
+*   Trying 127.0.0.1...
+* TCP_NODELAY set
+* connect to 127.0.0.1 port 3000 failed: Connection refused
+*   Trying ::1...
+* TCP_NODELAY set
+* Immediate connect fail for ::1: Cannot assign requested address
+*   Trying ::1...
+* TCP_NODELAY set
+* Immediate connect fail for ::1: Cannot assign requested address
+* Failed to connect to localhost port 3000: Connection refused
+* Closing connection 0
+curl: (7) Failed to connect to localhost port 3000: Connection refused
+Still not responding
+[root@racknerd-47e65b8 addypin-repo]# 
+[root@racknerd-47e65b8 addypin-repo]# # Step 4: Configure nginx properly
+[root@racknerd-47e65b8 addypin-repo]# echo "⚙️ Configuring nginx reverse proxy..."
+⚙️ Configuring nginx reverse proxy...
+[root@racknerd-47e65b8 addypin-repo]# cat > /etc/nginx/conf.d/addypin.conf << 'EOF'
+> server {
+>     listen 80;
+>     server_name addypin.com www.addypin.com 155.94.144.191;
+>     
+>     location / {
+>         proxy_pass http://localhost:3000;
+>         proxy_http_version 1.1;
+>         proxy_set_header Upgrade $http_upgrade;
+>         proxy_set_header Connection 'upgrade';
+>         proxy_set_header Host $host;
+>         proxy_set_header X-Real-IP $remote_addr;
+>         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+>         proxy_set_header X-Forwarded-Proto $scheme;
+>         proxy_cache_bypass $http_upgrade;
+>         
+>         # Increase timeouts
+>         proxy_connect_timeout 60s;
+>         proxy_send_timeout 60s;
+>         proxy_read_timeout 60s;
+>     }
+> }
+> EOF
+[root@racknerd-47e65b8 addypin-repo]# 
+[root@racknerd-47e65b8 addypin-repo]# # Test and reload nginx
+[root@racknerd-47e65b8 addypin-repo]# nginx -t && systemctl reload nginx
+nginx: [warn] conflicting server name "addypin.com" on 0.0.0.0:80, ignored
+nginx: [warn] conflicting server name "www.addypin.com" on 0.0.0.0:80, ignored
+nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+nginx.service is not active, cannot reload.
+[root@racknerd-47e65b8 addypin-repo]# 
+[root@racknerd-47e65b8 addypin-repo]# # Final comprehensive test
+[root@racknerd-47e65b8 addypin-repo]# echo "🎯 Final testing..."
+🎯 Final testing...
+[root@racknerd-47e65b8 addypin-repo]# echo "Direct container test:"
+Direct container test:
+[root@racknerd-47e65b8 addypin-repo]# curl -I http://localhost:3000 2>/dev/null || echo "Container not responding"
+Container not responding
+[root@racknerd-47e65b8 addypin-repo]# 
+[root@racknerd-47e65b8 addypin-repo]# echo "Nginx proxy test:"
+Nginx proxy test:
+[root@racknerd-47e65b8 addypin-repo]# curl -I http://localhost 2>/dev/null || echo "Nginx proxy not working"
+HTTP/1.1 200 OK
+Server: nginx/1.14.1
+Date: Thu, 21 Aug 2025 08:25:46 GMT
+Content-Type: text/html
+Content-Length: 3854
+Last-Modified: Mon, 19 Apr 2021 10:05:11 GMT
+Connection: keep-alive
+ETag: "607d55d7-f0e"
+Accept-Ranges: bytes
+
+[root@racknerd-47e65b8 addypin-repo]# 
+[root@racknerd-47e65b8 addypin-repo]# echo "API endpoint test:"
+API endpoint test:
+[root@racknerd-47e65b8 addypin-repo]# curl http://localhost/api/stats 2>/dev/null || echo "API not accessible"
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+    <head>
+        <title>The page is not found</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <style type="text/css">
+            /*<![CDATA[*/
+            body {
+                background-color: #FAF5F5;
+                color: #000;
+                font-size: 0.9em;
+                font-family: sans-serif,helvetica;
+                margin: 0;
+                padding: 0;
+            }
+            :link {
+                color: #0B2335;
+            }
+            :visited {
+                color: #0B2335;
+            }
+            a:hover {
+                color: #0069DA;
+            }
+            h1 {
+                text-align: center;
+                margin: 0;
+                padding: 0.6em 2em 0.4em;
+                background-color: #0B2335;
+                color: #fff;
+                font-weight: normal;
+                font-size: 1.75em;
+                border-bottom: 2px solid #000;
+            }
+            h1 strong {
+                font-weight: bold;
+                font-size: 1.5em;
+            }
+            h2 {
+                text-align: center;
+                background-color: #0B2335;
+                font-size: 1.1em;
+                font-weight: bold;
+                color: #fff;
+                margin: 0;
+                padding: 0.5em;
+                border-bottom: 2px solid #000;
+            }
+            h3 {
+                text-align: center;
+                background-color: #ff0000;
+                padding: 0.5em;
+                color: #fff;
+            }
+            hr {
+                display: none;
+            }
+            .content {
+                padding: 1em 5em;
+            }
+            .alert {
+                border: 2px solid #000;
+            }
+
+            img {
+                border: 2px solid #FAF5F5;
+                padding: 2px;
+                margin: 2px;
+            }
+            a:hover img {
+                border: 2px solid #294172;
+            }
+            .logos {
+                margin: 1em;
+                text-align: center;
+            }
+            /*]]>*/
+        </style>
+    </head>
+
+    <body>
+        <h1><strong>nginx error!</strong></h1>
+
+        <div class="content">
+
+            <h3>The page you are looking for is not found.</h3>
+
+            <div class="alert">
+                <h2>Website Administrator</h2>
+                <div class="content">
+                    <p>Something has triggered missing webpage on your
+                    website. This is the default 404 error page for
+                    <strong>nginx</strong> that is distributed with
+                    AlmaLinux.  It is located
+                    <tt>/usr/share/nginx/html/404.html</tt></p>
+
+                    <p>You should customize this error page for your own
+                    site or edit the <tt>error_page</tt> directive in
+                    the <strong>nginx</strong> configuration file
+                    <tt>/etc/nginx/nginx.conf</tt>.</p>
+
+                    <p>For information on AlmaLinux, please visit the <a href="http://www.almalinux.org/">AlmaLinux website</a>.</p>
+
+                </div>
+            </div>
+
+            <div class="logos">
+                <a href="http://nginx.net/"><img
+                    src="nginx-logo.png"
+                    alt="[ Powered by nginx ]"
+                    width="121" height="32" /></a>
+                <a href="http://www.almalinux.org/"><img
+                    src="poweredby.png"
+                    alt="[ Powered by AlmaLinux ]"
+                    width="124" height="32" /></a>
+            </div>
+        </div>
+    </body>
+</html>
+[root@racknerd-47e65b8 addypin-repo]# 
+[root@racknerd-47e65b8 addypin-repo]# # Show container status
+[root@racknerd-47e65b8 addypin-repo]# echo "📊 Container status:"
+📊 Container status:
+[root@racknerd-47e65b8 addypin-repo]# docker ps | grep addypin
+97a051ed107f   addypin-app   "docker-entrypoint.s…"   17 seconds ago   Up 1 second   0.0.0.0:3000->5000/tcp   addypin-production
+[root@racknerd-47e65b8 addypin-repo]# 
