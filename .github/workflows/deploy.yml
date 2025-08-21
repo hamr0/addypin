@@ -1,6 +1,7 @@
-name: Deploy AddyPin to Production
+name: Deploy AddyPin to VPS
 
 on:
+
   # Run tests on every PR to main
   pull_request:
     branches: [main]
@@ -9,13 +10,53 @@ on:
 
   push:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
-  test:
-    # This job only runs on Pull Requests
-    if: github.event_name == 'pull_request'
+  build-and-deploy:
     runs-on: ubuntu-latest
+    
     steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Build frontend (where dependencies work)
+      run: |
+        npm ci
+        cd client
+        npm run build
+        
+    - name: Transfer built files to VPS
+      uses: appleboy/scp-action@v0.1.7
+      with:
+        host: ${{ secrets.VPS_HOST }}
+        username: ${{ secrets.VPS_USERNAME }}
+        key: ${{ secrets.VPS_SSH_KEY }}
+        source: "dist/public/*"
+        target: "/opt/addypin/frontend/dist/"
+        
+    - name: Deploy containers on VPS
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.VPS_HOST }}
+        username: ${{ secrets.VPS_USERNAME }}
+        key: ${{ secrets.VPS_SSH_KEY }}
+        script: |
+          cd /opt/addypin
+          docker-compose down || true
+          docker-compose up -d --build
+          
+          # Health check
+          sleep 30
+          curl -f https://addypin.com/api/health || exit 1
+          echo "Deployment successful"
+
       - name: Checkout code
         uses: actions/checkout@v4
 
