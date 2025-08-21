@@ -1,0 +1,319 @@
+  code: 'ERR_MODULE_NOT_FOUND'
+}
+
+Node.js v20.18.1
+
+> rest-express@1.0.0 start
+> NODE_ENV=production npx tsx server/index.ts
+
+
+node:internal/modules/run_main:128
+    triggerUncaughtException(
+    ^
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'vite' imported from /app/server/vite.ts
+    at packageResolve (node:internal/modules/esm/resolve:854:9)
+    at moduleResolve (node:internal/modules/esm/resolve:927:18)
+    at defaultResolve (node:internal/modules/esm/resolve:1169:11)
+    at nextResolve (node:internal/modules/esm/hooks:868:28)
+    at resolveBase (file:///home/runner/.npm/_npx/fd45a72a545557e9/node_modules/tsx/dist/esm/index.mjs?1755763532663:2:3811)
+    at resolveDirectory (file:///home/runner/.npm/_npx/fd45a72a545557e9/node_modules/tsx/dist/esm/index.mjs?1755763532663:2:4310)
+    at resolveTsPaths (file:///home/runner/.npm/_npx/fd45a72a545557e9/node_modules/tsx/dist/esm/index.mjs?1755763532663:2:5051)
+    at async resolve (file:///home/runner/.npm/_npx/fd45a72a545557e9/node_modules/tsx/dist/esm/index.mjs?1755763532663:2:5422)
+    at async nextResolve (node:internal/modules/esm/hooks:868:22)
+    at async Hooks.resolve (node:internal/modules/esm/hooks:306:24) {
+  code: 'ERR_MODULE_NOT_FOUND'
+}
+
+Node.js v20.18.1
+
+> rest-express@1.0.0 start
+> NODE_ENV=production npx tsx server/index.ts
+
+
+node:internal/modules/run_main:128
+    triggerUncaughtException(
+    ^
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'vite' imported from /app/server/vite.ts
+    at packageResolve (node:internal/modules/esm/resolve:854:9)
+    at moduleResolve (node:internal/modules/esm/resolve:927:18)
+    at defaultResolve (node:internal/modules/esm/resolve:1169:11)
+    at nextResolve (node:internal/modules/esm/hooks:868:28)
+    at resolveBase (file:///home/runner/.npm/_npx/fd45a72a545557e9/node_modules/tsx/dist/esm/index.mjs?1755763548006:2:3811)
+    at resolveDirectory (file:///home/runner/.npm/_npx/fd45a72a545557e9/node_modules/tsx/dist/esm/index.mjs?1755763548006:2:4310)
+    at resolveTsPaths (file:///home/runner/.npm/_npx/fd45a72a545557e9/node_modules/tsx/dist/esm/index.mjs?1755763548006:2:5051)
+    at async resolve (file:///home/runner/.npm/_npx/fd45a72a545557e9/node_modules/tsx/dist/esm/index.mjs?1755763548006:2:5422)
+    at async nextResolve (node:internal/modules/esm/hooks:868:22)
+    at async Hooks.resolve (node:internal/modules/esm/hooks:306:24) {
+  code: 'ERR_MODULE_NOT_FOUND'
+}
+
+Node.js v20.18.1
+
+> rest-express@1.0.0 start
+> NODE_ENV=production npx tsx server/index.ts
+
+
+node:internal/modules/run_main:128
+    triggerUncaughtException(
+    ^
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'vite' imported from /app/server/vite.ts
+    at packageResolve (node:internal/modules/esm/resolve:854:9)
+    at moduleResolve (node:internal/modules/esm/resolve:927:18)
+    at defaultResolve (node:internal/modules/esm/resolve:1169:11)
+    at nextResolve (node:internal/modules/esm/hooks:868:28)
+    at resolveBase (file:///home/runner/.npm/_npx/fd45a72a545557e9/node_modules/tsx/dist/esm/index.mjs?1755763576028:2:3811)
+    at resolveDirectory (file:///home/runner/.npm/_npx/fd45a72a545557e9/node_modules/tsx/dist/esm/index.mjs?1755763576028:2:4310)
+    at resolveTsPaths (file:///home/runner/.npm/_npx/fd45a72a545557e9/node_modules/tsx/dist/esm/index.mjs?1755763576028:2:5051)
+    at async resolve (file:///home/runner/.npm/_npx/fd45a72a545557e9/node_modules/tsx/dist/esm/index.mjs?1755763576028:2:5422)
+    at async nextResolve (node:internal/modules/esm/hooks:868:22)
+    at async Hooks.resolve (node:internal/modules/esm/hooks:306:24) {
+  code: 'ERR_MODULE_NOT_FOUND'
+}
+
+Node.js v20.18.1
+
+> rest-express@1.0.0 start
+> NODE_ENV=production npx tsx server/index.ts
+
+
+node:internal/modules/run_main:128
+    triggerUncaughtException(
+    ^
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'vite' imported from /app/server/vite.ts
+    at packageResolve (node:internal/modules/esm/resolve:854:9)
+    at moduleResolve (node:internal/modules/esm/resolve:927:18)
+    at defaultResolve (node:internal/modules/esm/resolve:1169:11)
+    at nextResolve (node:internal/modules/esm/hooks:868:28)
+    at resolveBase (file:///home/runner/.npm/_npx/fd45a72a545557e9/node_modules/tsx/dist/esm/index.mjs?1755763629780:2:3811)
+    at resolveDirectory (file:///home/runner/.npm/_npx/fd45a72a545557e9/node_modules/tsx/dist/esm/index.mjs?1755763629780:2:4310)
+    at resolveTsPaths (file:///home/runner/.npm/_npx/fd45a72a545557e9/node_modules/tsx/dist/esm/index.mjs?1755763629780:2:5051)
+    at async resolve (file:///home/runner/.npm/_npx/fd45a72a545557e9/node_modules/tsx/dist/esm/index.mjs?1755763629780:2:5422)
+    at async nextResolve (node:internal/modules/esm/hooks:868:22)
+    at async Hooks.resolve (node:internal/modules/esm/hooks:306:24) {
+  code: 'ERR_MODULE_NOT_FOUND'
+}
+
+Node.js v20.18.1
+
+> rest-express@1.0.0 start
+> NODE_ENV=production npx tsx server/index.ts
+
+
+node:internal/modules/run_main:128
+    triggerUncaughtException(
+    ^
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'vite' imported from /app/server/vite.ts
+    at packageResolve (node:internal/modules/esm/resolve:854:9)
+    at moduleResolve (node:internal/modules/esm/resolve:927:18)
+    at defaultResolve (node:internal/modules/esm/resolve:1169:11)
+    at nextResolve (node:internal/modules/esm/hooks:868:28)
+    at resolveBase (file:///home/runner/.npm/_npx/fd45a72a545557e9/node_modules/tsx/dist/esm/index.mjs?1755763692361:2:3811)
+    at resolveDirectory (file:///home/runner/.npm/_npx/fd45a72a545557e9/node_modules/tsx/dist/esm/index.mjs?1755763692361:2:4310)
+    at resolveTsPaths (file:///home/runner/.npm/_npx/fd45a72a545557e9/node_modules/tsx/dist/esm/index.mjs?1755763692361:2:5051)
+    at async resolve (file:///home/runner/.npm/_npx/fd45a72a545557e9/node_modules/tsx/dist/esm/index.mjs?1755763692361:2:5422)
+    at async nextResolve (node:internal/modules/esm/hooks:868:22)
+    at async Hooks.resolve (node:internal/modules/esm/hooks:306:24) {
+  code: 'ERR_MODULE_NOT_FOUND'
+}
+
+Node.js v20.18.1
+[root@racknerd-47e65b8 addypin-repo]# 
+[root@racknerd-47e65b8 addypin-repo]# # Test if application is now responding
+[root@racknerd-47e65b8 addypin-repo]# curl -v http://localhost:3000/api/stats
+*   Trying 127.0.0.1...
+* TCP_NODELAY set
+* connect to 127.0.0.1 port 3000 failed: Connection refused
+*   Trying ::1...
+* TCP_NODELAY set
+* Immediate connect fail for ::1: Cannot assign requested address
+*   Trying ::1...
+* TCP_NODELAY set
+* Immediate connect fail for ::1: Cannot assign requested address
+* Failed to connect to localhost port 3000: Connection refused
+* Closing connection 0
+curl: (7) Failed to connect to localhost port 3000: Connection refused
+[root@racknerd-47e65b8 addypin-repo]# 
+[root@racknerd-47e65b8 addypin-repo]# # If still not working, restart container with tsx pre-installed
+[root@racknerd-47e65b8 addypin-repo]# echo "🔄 Rebuilding with tsx included..."
+🔄 Rebuilding with tsx included...
+[root@racknerd-47e65b8 addypin-repo]# cd /opt/addypin/addypin-repo
+[root@racknerd-47e65b8 addypin-repo]# 
+[root@racknerd-47e65b8 addypin-repo]# # Update Dockerfile to include tsx
+[root@racknerd-47e65b8 addypin-repo]# cat > Dockerfile << 'EOF'
+> FROM node:20-alpine3.19
+> 
+> # Install minimal build dependencies
+> RUN apk add --no-cache python3 make g++ git
+> 
+> # Create user
+> RUN addgroup -g 1001 -S runner && adduser -u 1001 -S runner -G runner
+> 
+> # Set working directory
+> WORKDIR /app
+> RUN chown -R runner:runner /app
+> 
+> # Copy package files
+> COPY --chown=runner:runner package*.json ./
+> 
+> # Switch to runner user
+> USER runner
+> 
+> # Clear any existing npm cache issues
+> RUN npm cache clean --force
+> 
+> # Install dependencies and tsx globally for production
+> RUN npm ci --no-audit --prefer-offline && \
+>     npm install -g tsx && \
+>     npm cache clean --force
+> 
+> # Copy source code
+> COPY --chown=runner:runner . .
+> 
+> # Set production environment
+> ENV NODE_ENV=production
+> 
+> # Build application
+> RUN npm run build
+> 
+> # Remove dev dependencies but keep tsx
+> RUN npm prune --omit=dev --no-audit
+> 
+> EXPOSE 5000
+> CMD ["npm", "start"]
+> EOF
+[root@racknerd-47e65b8 addypin-repo]# 
+[root@racknerd-47e65b8 addypin-repo]# # Rebuild the image
+[root@racknerd-47e65b8 addypin-repo]# docker build -t addypin-app .
+[+] Building 31.8s (12/15)                                       docker:default
+ => [internal] load build definition from Dockerfile                       0.0s
+ => => transferring dockerfile: 880B                                       0.0s
+ => [internal] load metadata for docker.io/library/node:20-alpine3.19      0.6s
+ => [internal] load .dockerignore                                          0.0s
+ => => transferring context: 99B                                           0.0s
+ => [ 1/11] FROM docker.io/library/node:20-alpine3.19@sha256:1cc9088b0fbc  0.0s
+ => [internal] load build context                                          0.0s
+ => => transferring context: 19.50kB                                       0.0s
+ => CACHED [ 2/11] RUN apk add --no-cache python3 make g++ git             0.0s
+ => CACHED [ 3/11] RUN addgroup -g 1001 -S runner && adduser -u 1001 -S r  0.0s
+ => CACHED [ 4/11] WORKDIR /app                                            0.0s
+ => CACHED [ 5/11] RUN chown -R runner:runner /app                         0.0s
+ => CACHED [ 6/11] COPY --chown=runner:runner package*.json ./             0.0s
+ => CACHED [ 7/11] RUN npm cache clean --force                             0.0s
+ => ERROR [ 8/11] RUN npm ci --no-audit --prefer-offline &&     npm inst  31.1s
+------                                                                          
+ > [ 8/11] RUN npm ci --no-audit --prefer-offline &&     npm install -g tsx &&     npm cache clean --force:                                                     
+16.38 npm warn deprecated @esbuild-kit/esm-loader@2.6.5: Merged into tsx: https://tsx.is                                                                        
+16.53 npm warn deprecated @esbuild-kit/core-utils@3.3.2: Merged into tsx: https://tsx.is
+27.50 
+27.50 added 574 packages in 27s
+27.50 
+27.50 72 packages are looking for funding
+27.50   run `npm fund` for details
+30.91 npm error code EACCES
+30.91 npm error syscall mkdir
+30.91 npm error path /usr/local/lib/node_modules/tsx
+30.91 npm error errno -13
+30.91 npm error Error: EACCES: permission denied, mkdir '/usr/local/lib/node_modules/tsx'
+30.91 npm error     at async mkdir (node:internal/fs/promises:858:10)
+30.91 npm error     at async /usr/local/lib/node_modules/npm/node_modules/@npmcli/arborist/lib/arborist/reify.js:624:20
+30.91 npm error     at async Promise.allSettled (index 0)
+30.91 npm error     at async [reifyPackages] (/usr/local/lib/node_modules/npm/node_modules/@npmcli/arborist/lib/arborist/reify.js:325:11)
+30.91 npm error     at async Arborist.reify (/usr/local/lib/node_modules/npm/node_modules/@npmcli/arborist/lib/arborist/reify.js:142:5)
+30.91 npm error     at async Install.exec (/usr/local/lib/node_modules/npm/lib/commands/install.js:150:5)
+30.91 npm error     at async Npm.exec (/usr/local/lib/node_modules/npm/lib/npm.js:207:9)
+30.91 npm error     at async module.exports (/usr/local/lib/node_modules/npm/lib/cli/entry.js:74:5) {
+30.91 npm error   errno: -13,
+30.91 npm error   code: 'EACCES',
+30.91 npm error   syscall: 'mkdir',
+30.91 npm error   path: '/usr/local/lib/node_modules/tsx'
+30.91 npm error }
+30.91 npm error
+30.91 npm error The operation was rejected by your operating system.
+30.91 npm error It is likely you do not have the permissions to access this file as the current user
+30.91 npm error
+30.91 npm error If you believe this might be a permissions issue, please double-check the
+30.91 npm error permissions of the file and its containing directories, or try running
+30.91 npm error the command again as root/Administrator.
+30.92 npm error A complete log of this run can be found in: /home/runner/.npm/_logs/2025-08-21T08_09_37_083Z-debug-0.log
+------
+Dockerfile:23
+--------------------
+  22 |     # Install dependencies and tsx globally for production
+  23 | >>> RUN npm ci --no-audit --prefer-offline && \
+  24 | >>>     npm install -g tsx && \
+  25 | >>>     npm cache clean --force
+  26 |     
+--------------------
+ERROR: failed to solve: process "/bin/sh -c npm ci --no-audit --prefer-offline &&     npm install -g tsx &&     npm cache clean --force" did not complete successfully: exit code: 243
+[root@racknerd-47e65b8 addypin-repo]# 
+[root@racknerd-47e65b8 addypin-repo]# # Stop old container and start new one
+[root@racknerd-47e65b8 addypin-repo]# docker stop addypin-production
+addypin-production
+[root@racknerd-47e65b8 addypin-repo]# docker rm addypin-production
+addypin-production
+[root@racknerd-47e65b8 addypin-repo]# 
+[root@racknerd-47e65b8 addypin-repo]# docker run -d \
+>   -p 3000:5000 \
+>   --name addypin-production \
+>   --restart unless-stopped \
+>   --env-file /opt/addypin/addypin-repo/.env.production \
+>   addypin-app
+98125cd3d3fc519d18e2148b9cc3ba33ddf58c4827a435a82366d7303dc32ae4
+[root@racknerd-47e65b8 addypin-repo]# 
+[root@racknerd-47e65b8 addypin-repo]# # Test the fixed application
+[root@racknerd-47e65b8 addypin-repo]# sleep 10
+[root@racknerd-47e65b8 addypin-repo]# docker logs addypin-production
+
+> rest-express@1.0.0 start
+> NODE_ENV=production npx tsx server/index.ts
+
+npm warn exec The following package was not found and will be installed: tsx@4.20.4
+
+node:internal/modules/run_main:128
+    triggerUncaughtException(
+    ^
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'vite' imported from /app/server/vite.ts
+    at packageResolve (node:internal/modules/esm/resolve:854:9)
+    at moduleResolve (node:internal/modules/esm/resolve:927:18)
+    at defaultResolve (node:internal/modules/esm/resolve:1169:11)
+    at nextResolve (node:internal/modules/esm/hooks:868:28)
+    at resolveBase (file:///home/runner/.npm/_npx/fd45a72a545557e9/node_modules/tsx/dist/esm/index.mjs?1755763786005:2:3811)
+    at resolveDirectory (file:///home/runner/.npm/_npx/fd45a72a545557e9/node_modules/tsx/dist/esm/index.mjs?1755763786005:2:4310)
+    at resolveTsPaths (file:///home/runner/.npm/_npx/fd45a72a545557e9/node_modules/tsx/dist/esm/index.mjs?1755763786005:2:5051)
+    at async resolve (file:///home/runner/.npm/_npx/fd45a72a545557e9/node_modules/tsx/dist/esm/index.mjs?1755763786005:2:5422)
+    at async nextResolve (node:internal/modules/esm/hooks:868:22)
+    at async Hooks.resolve (node:internal/modules/esm/hooks:306:24) {
+  code: 'ERR_MODULE_NOT_FOUND'
+}
+
+Node.js v20.18.1
+
+> rest-express@1.0.0 start
+> NODE_ENV=production npx tsx server/index.ts
+
+
+node:internal/modules/run_main:128
+    triggerUncaughtException(
+    ^
+Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'vite' imported from /app/server/vite.ts
+    at packageResolve (node:internal/modules/esm/resolve:854:9)
+    at moduleResolve (node:internal/modules/esm/resolve:927:18)
+    at defaultResolve (node:internal/modules/esm/resolve:1169:11)
+    at nextResolve (node:internal/modules/esm/hooks:868:28)
+    at resolveBase (file:///home/runner/.npm/_npx/fd45a72a545557e9/node_modules/tsx/dist/esm/index.mjs?1755763788806:2:3811)
+    at resolveDirectory (file:///home/runner/.npm/_npx/fd45a72a545557e9/node_modules/tsx/dist/esm/index.mjs?1755763788806:2:4310)
+    at resolveTsPaths (file:///home/runner/.npm/_npx/fd45a72a545557e9/node_modules/tsx/dist/esm/index.mjs?1755763788806:2:5051)
+    at async resolve (file:///home/runner/.npm/_npx/fd45a72a545557e9/node_modules/tsx/dist/esm/index.mjs?1755763788806:2:5422)
+    at async nextResolve (node:internal/modules/esm/hooks:868:22)
+    at async Hooks.resolve (node:internal/modules/esm/hooks:306:24) {
+  code: 'ERR_MODULE_NOT_FOUND'
+}
+
+Node.js v20.18.1
+
+> rest-express@1.0.0 start
+> NODE_ENV=production npx tsx server/index.ts
+
+[root@racknerd-47e65b8 addypin-repo]# curl http://localhost:3000/api/stats
+curl: (7) Failed to connect to localhost port 3000: Connection refused
+[root@racknerd-47e65b8 addypin-repo]# 

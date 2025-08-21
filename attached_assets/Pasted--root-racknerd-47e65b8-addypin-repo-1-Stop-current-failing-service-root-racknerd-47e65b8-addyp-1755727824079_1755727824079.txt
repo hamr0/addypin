@@ -1,0 +1,170 @@
+[root@racknerd-47e65b8 addypin-repo]# # 1. Stop current failing service
+[root@racknerd-47e65b8 addypin-repo]# sudo systemctl stop addypin.service
+[root@racknerd-47e65b8 addypin-repo]# 
+[root@racknerd-47e65b8 addypin-repo]# # 2. Clean deployment directory
+[root@racknerd-47e65b8 addypin-repo]# sudo rm -rf /opt/addypin/app/*
+[root@racknerd-47e65b8 addypin-repo]# 
+[root@racknerd-47e65b8 addypin-repo]# # 3. Deploy complete application structure (not just built files)
+[root@racknerd-47e65b8 addypin-repo]# cd /opt/addypin/addypin-repo
+[root@racknerd-47e65b8 addypin-repo]# cp -r server/ /opt/addypin/app/
+[root@racknerd-47e65b8 addypin-repo]# cp -r shared/ /opt/addypin/app/
+[root@racknerd-47e65b8 addypin-repo]# cp package.json /opt/addypin/app/
+[root@racknerd-47e65b8 addypin-repo]# cp drizzle.config.ts /opt/addypin/app/
+[root@racknerd-47e65b8 addypin-repo]# cp tsconfig.json /opt/addypin/app/
+[root@racknerd-47e65b8 addypin-repo]# 
+[root@racknerd-47e65b8 addypin-repo]# # 4. Install dependencies in production
+[root@racknerd-47e65b8 addypin-repo]# cd /opt/addypin/app
+[root@racknerd-47e65b8 app]# npm install --production
+npm warn config production Use `--omit=dev` instead.
+
+added 554 packages, and audited 555 packages in 1m
+
+64 packages are looking for funding
+  run `npm fund` for details
+
+3 low severity vulnerabilities
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+[root@racknerd-47e65b8 app]# 
+[root@racknerd-47e65b8 app]# # 5. Install tsx globally for TypeScript execution
+[root@racknerd-47e65b8 app]# npm install -g tsx
+
+added 5 packages in 1s
+
+2 packages are looking for funding
+  run `npm fund` for details
+[root@racknerd-47e65b8 app]# 
+[root@racknerd-47e65b8 app]# # 6. Update systemd service to use tsx (like Replit)
+[root@racknerd-47e65b8 app]# sudo tee /etc/systemd/system/addypin.service > /dev/null << 'EOF'
+> [Unit]
+> Description=AddyPin Location Sharing Service
+> After=network.target postgresql.service
+> 
+> [Service]
+> Type=simple
+> User=appuser
+> Group=appuser
+> WorkingDirectory=/opt/addypin/app
+> Environment=NODE_ENV=production
+> Environment=PORT=3000
+> Environment=DATABASE_URL=postgresql://addypin_user:secure_password_123@localhost:5432/addypin
+> Environment=RESEND_API_KEY=re_d3XFqzL8_CRZ8F8NxQNq8gJ2j7mH4CpLw4uP8
+> ExecStart=/usr/local/bin/tsx server/index.ts
+> Restart=always
+> RestartSec=10
+> 
+> [Install]
+> WantedBy=multi-user.target
+> EOF
+[root@racknerd-47e65b8 app]# 
+[root@racknerd-47e65b8 app]# # 7. Set ownership
+[root@racknerd-47e65b8 app]# chown -R appuser:appuser /opt/addypin/app/
+[root@racknerd-47e65b8 app]# 
+[root@racknerd-47e65b8 app]# # 8. Create database schema
+[root@racknerd-47e65b8 app]# npm run db:push
+
+> rest-express@1.0.0 db:push
+> drizzle-kit push
+
+sh: drizzle-kit: command not found
+[root@racknerd-47e65b8 app]# 
+[root@racknerd-47e65b8 app]# # 9. Start service
+[root@racknerd-47e65b8 app]# sudo systemctl daemon-reload
+[root@racknerd-47e65b8 app]# sudo systemctl start addypin.service
+[root@racknerd-47e65b8 app]# sudo systemctl status addypin.service
+● addypin.service - AddyPin Location Sharing Service
+   Loaded: loaded (/etc/systemd/system/addypin.service; enabled; vendor preset:>
+   Active: activating (auto-restart) (Result: exit-code) since Wed 2025-08-20 1>
+  Process: 81804 ExecStart=/usr/local/bin/tsx server/index.ts (code=exited, sta>
+ Main PID: 81804 (code=exited, status=203/EXEC)
+
+Aug 20 18:04:49 racknerd-47e65b8 systemd[1]: addypin.service: Main process exit>
+Aug 20 18:04:49 racknerd-47e65b8 systemd[1]: addypin.service: Failed with resul>
+[root@racknerd-47e65b8 app]# # Fix 1: Install ALL dependencies (not just production)
+[root@racknerd-47e65b8 app]# cd /opt/addypin/app
+[root@racknerd-47e65b8 app]# npm install  # Remove --production flag
+⠧
+npm warn deprecated @esbuild-kit/esm-loader@2.6.5: Merged into tsx: https://tsx.is
+npm warn deprecated @esbuild-kit/core-utils@3.3.2: Merged into tsx: https://tsx.is
+
+added 112 packages, and audited 667 packages in 7s
+
+79 packages are looking for funding
+  run `npm fund` for details
+
+8 vulnerabilities (3 low, 5 moderate)
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+[root@racknerd-47e65b8 app]# 
+[root@racknerd-47e65b8 app]# # Fix 2: Install tsx locally in project instead of global
+[root@racknerd-47e65b8 app]# npm install tsx
+
+up to date, audited 667 packages in 3s
+
+79 packages are looking for funding
+  run `npm fund` for details
+
+8 vulnerabilities (3 low, 5 moderate)
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+[root@racknerd-47e65b8 app]# 
+[root@racknerd-47e65b8 app]# # Fix 3: Update service to use local tsx
+[root@racknerd-47e65b8 app]# sudo tee /etc/systemd/system/addypin.service > /dev/null << 'EOF'
+> [Unit]
+> Description=AddyPin Location Sharing Service
+> After=network.target postgresql.service
+> 
+> [Service]
+> Type=simple
+> User=appuser
+> Group=appuser
+> WorkingDirectory=/opt/addypin/app
+> Environment=NODE_ENV=production
+> Environment=PORT=3000
+> Environment=DATABASE_URL=postgresql://addypin_user:secure_password_123@localhost:5432/addypin
+> Environment=RESEND_API_KEY=re_d3XFqzL8_CRZ8F8NxQNq8gJ2j7mH4CpLw4uP8
+> ExecStart=./node_modules/.bin/tsx server/index.ts
+> Restart=always
+> RestartSec=10
+> 
+> [Install]
+> WantedBy=multi-user.target
+> EOF
+[root@racknerd-47e65b8 app]# 
+[root@racknerd-47e65b8 app]# # Fix 4: Create database schema (should work now)
+[root@racknerd-47e65b8 app]# npm run db:push
+
+> rest-express@1.0.0 db:push
+> drizzle-kit push
+
+No config path provided, using default 'drizzle.config.ts'
+Reading config file '/opt/addypin/app/drizzle.config.ts'
+DATABASE_URL, ensure the database is provisioned
+[root@racknerd-47e65b8 app]# 
+[root@racknerd-47e65b8 app]# # Fix 5: Restart service
+[root@racknerd-47e65b8 app]# sudo systemctl daemon-reload
+[root@racknerd-47e65b8 app]# sudo systemctl start addypin.service
+Failed to start addypin.service: Unit addypin.service has a bad unit file setting.
+See system logs and 'systemctl status addypin.service' for details.
+[root@racknerd-47e65b8 app]# sudo systemctl status addypin.service
+● addypin.service - AddyPin Location Sharing Service
+   Loaded: bad-setting (Reason: Unit addypin.service has a bad unit file settin>
+   Active: failed (Result: exit-code) since Wed 2025-08-20 18:09:26 EDT; 60ms a>
+ Main PID: 81883 (code=exited, status=203/EXEC)
+
+Aug 20 18:09:16 racknerd-47e65b8 systemd[1]: addypin.service: Main process exit>
+Aug 20 18:09:16 racknerd-47e65b8 systemd[1]: addypin.service: Failed with resul>
+Aug 20 18:09:26 racknerd-47e65b8 systemd[1]: /etc/systemd/system/addypin.servic>
+Aug 20 18:09:26 racknerd-47e65b8 systemd[1]: addypin.service: Service RestartSe>
+Aug 20 18:09:26 racknerd-47e65b8 systemd[1]: addypin.service: Failed to schedul>
+Aug 20 18:09:26 racknerd-47e65b8 systemd[1]: addypin.service: Failed with resul>
+[root@racknerd-47e65b8 app]# 

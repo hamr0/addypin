@@ -1,0 +1,71 @@
+[root@racknerd-47e65b8 addypin]# # Check container status
+[root@racknerd-47e65b8 addypin]# docker-compose ps
+NAME      IMAGE     COMMAND   SERVICE   CREATED   STATUS    PORTS
+[root@racknerd-47e65b8 addypin]# 
+[root@racknerd-47e65b8 addypin]# # Check logs
+[root@racknerd-47e65b8 addypin]# docker-compose logs backend
+[root@racknerd-47e65b8 addypin]# docker-compose logs frontend
+[root@racknerd-47e65b8 addypin]# 
+[root@racknerd-47e65b8 addypin]# # Test services
+[root@racknerd-47e65b8 addypin]# curl http://localhost:3001/api/stats
+curl: (7) Failed to connect to localhost port 3001: Connection refused
+[root@racknerd-47e65b8 addypin]# curl http://localhost:3000
+curl: (7) Failed to connect to localhost port 3000: Connection refused
+[root@racknerd-47e65b8 addypin]# clear
+
+
+
+
+
+
+
+
+
+[root@racknerd-47e65b8 addypin]# # Navigate to working directory
+[root@racknerd-47e65b8 addypin]# cd /opt/addypin
+[root@racknerd-47e65b8 addypin]# 
+[root@racknerd-47e65b8 addypin]# # Stop containers and clean up
+[root@racknerd-47e65b8 addypin]# docker-compose down 2>/dev/null || true
+[root@racknerd-47e65b8 addypin]# rm -rf frontend backend nginx scripts 2>/dev/null || true
+[root@racknerd-47e65b8 addypin]# mkdir -p frontend backend nginx scripts
+[root@racknerd-47e65b8 addypin]# 
+[root@racknerd-47e65b8 addypin]# # Verify clean structure
+[root@racknerd-47e65b8 addypin]# ls -la
+total 520
+drwxr-xr-x  16 root    root      4096 Aug 21 07:16  .
+drwxr-xr-x.  7 root    root      4096 Aug 21 02:43  ..
+-rw-r--r--   1 root    docker       0 Aug 21 02:57 '}'
+-rw-r--r--   1 root    root        45 Aug 21 05:56  addypin-containerized.tar.gz
+drwxr-xr-x  13 root    root      4096 Aug 21 06:12  addypin-repo
+drwxr-xr-x  13 root    root      4096 Aug 21 05:56  addypin-repo-backup-20250821-055637
+drwxr-xr-x   2 root    root      4096 Aug 21 07:16  backend
+drwxr-xr-x   3 root    docker    4096 Aug 21 02:48  client
+-rw-r--r--   1 root    docker     348 Aug 21 02:50  components.json
+drwxr-xr-x   2 addypin addypin   4096 Aug 20 03:51  config
+-rwxr-xr-x   1 root    root      1471 Aug 20 10:39  create-production-backup.sh
+-rwxr-xr-x   1 root    root       998 Aug 20 09:44  deploy-old.sh.bak
+-rwxr-xr-x   1 root    root       995 Aug 20 10:13  deploy.sh
+-rw-r--r--   1 root    docker    1100 Aug 21 07:12  docker-compose.yml
+-rw-r--r--   1 root    docker    1661 Aug 21 03:35  Dockerfile
+-rw-r--r--   1 root    docker     156 Aug 21 02:50  drizzle.config.ts
+-rw-r--r--   1 root    root       353 Aug 21 06:06  .env
+-rw-r--r--   1 root    docker       0 Aug 21 02:57  EOF
+drwxr-xr-x   2 root    root      4096 Aug 21 07:16  frontend
+-rw-r--r--   1 addypin addypin    674 Aug 20 05:16  frontend-base64.txt
+-rw-r--r--   1 root    root     20554 Aug 21 02:36  get-docker.sh
+drwxr-xr-x   2 root    root      4096 Aug 21 01:18  init-db
+drwxr-xr-x   2 addypin addypin   4096 Aug 20 03:44  logs
+drwxr-xr-x   2 root    root      4096 Aug 21 07:16  nginx
+-rw-r--r--   1 root    root      2236 Aug 20 10:30 'o check if the file is actually executable and readable'
+-rw-r--r--   1 root    docker    3956 Aug 21 02:48  package.json
+-rw-r--r--   1 root    root    360363 Aug 21 03:14  package-lock.json
+-rw-r--r--   1 root    docker      80 Aug 21 02:50  postcss.config.js
+drwxr-xr-x   4 root    root      4096 Aug 20 15:30  production-backups
+drwxr-xr-x   2 addypin addypin   4096 Aug 20 05:22  public
+drwxr-xr-x   2 root    root      4096 Aug 21 07:16  scripts
+drwxr-xr-x   2 root    docker    4096 Aug 21 02:56  server
+-rw-r--r--   1 addypin addypin  17459 Aug 20 05:16  server-backup.js
+drwxr-xr-x   2 root    docker    4096 Aug 21 02:53  shared
+-rw-r--r--   1 root    docker     657 Aug 21 02:49  tsconfig.json
+-rw-r--r--   1 root    docker     971 Aug 21 02:49  vite.config.ts
+[root@racknerd-47e65b8 addypin]# 

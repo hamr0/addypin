@@ -1,0 +1,163 @@
+[root@racknerd-47e65b8 addypin-repo]# curl -v http://localhost:3000/api/stats || echo "Testing application..."
+*   Trying 127.0.0.1...
+* TCP_NODELAY set
+* connect to 127.0.0.1 port 3000 failed: Connection refused
+*   Trying ::1...
+* TCP_NODELAY set
+* Immediate connect fail for ::1: Cannot assign requested address
+*   Trying ::1...
+* TCP_NODELAY set
+* Immediate connect fail for ::1: Cannot assign requested address
+* Failed to connect to localhost port 3000: Connection refused
+* Closing connection 0
+curl: (7) Failed to connect to localhost port 3000: Connection refused
+Testing application...
+[root@racknerd-47e65b8 addypin-repo]# 
+[root@racknerd-47e65b8 addypin-repo]# # Check what's actually in the dist directory
+[root@racknerd-47e65b8 addypin-repo]# docker exec addypin-production ls -la dist/
+Error response from daemon: Container 147438ae9defc9a210dc193a7155646b71a2a3d32965b4e3e61c32ce7f197acc is restarting, wait until the container is running
+[root@racknerd-47e65b8 addypin-repo]# clear
+
+[root@racknerd-47e65b8 addypin-repo]# # Navigate to correct directory
+[root@racknerd-47e65b8 addypin-repo]# cd /opt/addypin/addypin-repo
+[root@racknerd-47e65b8 addypin-repo]# 
+[root@racknerd-47e65b8 addypin-repo]# # STEP 1: Project Structure Analysis
+[root@racknerd-47e65b8 addypin-repo]# echo "=== PROJECT STRUCTURE ANALYSIS ==="
+=== PROJECT STRUCTURE ANALYSIS ===
+[root@racknerd-47e65b8 addypin-repo]# ls -la
+total 508
+drwxr-xr-x  13 root root   4096 Aug 21 04:04  .
+drwxr-xr-x  12 root root   4096 Aug 21 03:14  ..
+drwxr-xr-x   2 root root   4096 Aug 20 09:26  attached_assets
+drwxr-xr-x   3 root root   4096 Aug 20 09:26  client
+-rw-r--r--   1 root root    459 Aug 20 09:26  components.json
+drwxr-xr-x   3 root root   4096 Aug 20 09:26  .config
+drwxr-xr-x   3 root root   4096 Aug 20 09:26  dist
+-rw-r--r--   1 root root    884 Aug 21 04:27  Dockerfile
+-rw-r--r--   1 root root     59 Aug 21 01:18  .dockerignore
+drwxr-xr-x   2 root root   4096 Aug 20 09:26  docs
+-rw-r--r--   1 root root    325 Aug 20 09:26  drizzle.config.ts
+-rw-r--r--   1 root root    142 Aug 21 04:04  .env.production
+-rw-r--r--   1 root root    707 Aug 20 17:35 'ervice --lines=10'
+-rw-r--r--   1 root root  12202 Aug 20 15:47 'ervice logs for specific errors'
+-rw-r--r--   1 root root   6509 Aug 20 09:26  export-to-github.sh
+drwxr-xr-x   8 root root   4096 Aug 20 16:32  .git
+drwxr-xr-x   3 root root   4096 Aug 20 15:09  .github
+-rw-r--r--   1 root root    555 Aug 20 09:26  .gitignore
+-rw-r--r--   1 root root      0 Aug 20 09:26 'git version control'
+drwxr-xr-x   3 root root   4096 Aug 20 09:26  .local
+drwxr-xr-x 377 root root  12288 Aug 20 16:32  node_modules
+-rw-r--r--   1 root root   3813 Aug 21 01:27  package.json
+-rw-r--r--   1 root root 359751 Aug 20 16:32  package-lock.json
+-rw-r--r--   1 root root     80 Aug 20 09:26  postcss.config.js
+-rw-r--r--   1 root root   4909 Aug 20 09:26  README.md
+-rw-r--r--   1 root root    864 Aug 20 09:26  .replit
+-rw-r--r--   1 root root   8924 Aug 20 09:26  replit.md
+drwxr-xr-x   4 root root   4096 Aug 20 15:09  server
+drwxr-xr-x   2 root root   4096 Aug 20 09:26  shared
+-rw-r--r--   1 root root   3048 Aug 20 09:26  tailwind.config.ts
+-rw-r--r--   1 root root    657 Aug 20 09:26  tsconfig.json
+-rw-r--r--   1 root root    664 Aug 20 17:48 'uccessful, test the application'
+-rw-r--r--   1 root root    971 Aug 20 09:26  vite.config.ts
+[root@racknerd-47e65b8 addypin-repo]# 
+[root@racknerd-47e65b8 addypin-repo]# echo "=== PACKAGE.JSON BUILD & START SCRIPTS ==="
+=== PACKAGE.JSON BUILD & START SCRIPTS ===
+[root@racknerd-47e65b8 addypin-repo]# cat package.json | grep -A 3 -B 1 '"build"'
+    "dev": "NODE_ENV=development tsx server/index.ts",
+    "build": "vite build",
+    "start": "NODE_ENV=production npx tsx server/index.ts",
+    "check": "tsc",
+    "db:push": "drizzle-kit push"
+[root@racknerd-47e65b8 addypin-repo]# cat package.json | grep -A 3 -B 1 '"start"'
+    "build": "vite build",
+    "start": "NODE_ENV=production npx tsx server/index.ts",
+    "check": "tsc",
+    "db:push": "drizzle-kit push"
+  },
+[root@racknerd-47e65b8 addypin-repo]# 
+[root@racknerd-47e65b8 addypin-repo]# echo "=== CURRENT BUILD OUTPUT ==="
+=== CURRENT BUILD OUTPUT ===
+[root@racknerd-47e65b8 addypin-repo]# ls -la dist/ 2>/dev/null || echo "No dist directory found"
+total 88
+drwxr-xr-x  3 root root  4096 Aug 20 09:26 .
+drwxr-xr-x 13 root root  4096 Aug 21 04:04 ..
+-rw-r--r--  1 root root 74869 Aug 20 17:10 index.js
+drwxr-xr-x  3 root root  4096 Aug 20 17:10 public
+[root@racknerd-47e65b8 addypin-repo]# 
+[root@racknerd-47e65b8 addypin-repo]# echo "=== SERVER DIRECTORY CONTENTS ==="
+=== SERVER DIRECTORY CONTENTS ===
+[root@racknerd-47e65b8 addypin-repo]# ls -la server/
+total 64
+drwxr-xr-x  4 root root  4096 Aug 20 15:09 .
+drwxr-xr-x 13 root root  4096 Aug 21 04:04 ..
+-rw-r--r--  1 root root   539 Aug 20 15:09 db.ts
+-rw-r--r--  1 root root  2066 Aug 20 09:26 index.ts
+drwxr-xr-x  2 root root  4096 Aug 20 09:26 middleware
+-rw-r--r--  1 root root 21167 Aug 20 09:26 routes.ts
+drwxr-xr-x  2 root root  4096 Aug 20 09:26 services
+-rw-r--r--  1 root root 10743 Aug 20 09:26 storage.ts
+-rw-r--r--  1 root root  2263 Aug 20 09:26 vite.ts
+[root@racknerd-47e65b8 addypin-repo]# 
+[root@racknerd-47e65b8 addypin-repo]# echo "=== FIND POTENTIAL ENTRY POINTS ==="
+=== FIND POTENTIAL ENTRY POINTS ===
+[root@racknerd-47e65b8 addypin-repo]# find . -name "*.js" -o -name "*.ts" | grep -E "(index|main|server|app)" | head -10
+./server/db.ts
+./server/storage.ts
+./server/services/securityLogger.ts
+./server/services/analytics.ts
+./server/services/email-autoresponder.ts
+./server/services/umami.ts
+./server/services/resend-email.ts
+./server/services/email.ts
+./server/routes.ts
+./server/middleware/security.ts
+[root@racknerd-47e65b8 addypin-repo]# 
+[root@racknerd-47e65b8 addypin-repo]# # STEP 2: Test Build Process Locally
+[root@racknerd-47e65b8 addypin-repo]# echo "=== TESTING BUILD PROCESS ==="
+=== TESTING BUILD PROCESS ===
+[root@racknerd-47e65b8 addypin-repo]# npm run build
+
+> rest-express@1.0.0 build
+> vite build
+
+vite v5.4.19 building for production...
+Browserslist: browsers data (caniuse-lite) is 10 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+✓ 1789 modules transformed.
+../dist/public/index.html                   2.20 kB │ gzip:   0.86 kB
+../dist/public/assets/index-LQT5rKC8.css   88.15 kB │ gzip:  19.30 kB
+../dist/public/assets/index-BgPxo_23.js   623.88 kB │ gzip: 186.93 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 14.68s
+[root@racknerd-47e65b8 addypin-repo]# 
+[root@racknerd-47e65b8 addypin-repo]# echo "=== POST-BUILD ANALYSIS ==="
+=== POST-BUILD ANALYSIS ===
+[root@racknerd-47e65b8 addypin-repo]# find . -name "*.js" | grep -E "(index|main|server|app)" | head -10
+./node_modules/js-cookie/index.js
+./node_modules/es6-iterator/test/index.js
+./node_modules/es6-iterator/index.js
+./node_modules/snakecase-keys/index.js
+./node_modules/regexparam/dist/index.js
+./node_modules/regexparam/dist/index.min.js
+./node_modules/strip-ansi-cjs/node_modules/ansi-regex/index.js
+./node_modules/strip-ansi-cjs/index.js
+./node_modules/eventemitter3/index.js
+./node_modules/normalize-path/index.js
+[root@racknerd-47e65b8 addypin-repo]# ls -la dist/ 2>/dev/null || echo "Still no dist directory"
+total 88
+drwxr-xr-x  3 root root  4096 Aug 20 09:26 .
+drwxr-xr-x 13 root root  4096 Aug 21 04:41 ..
+-rw-r--r--  1 root root 74869 Aug 20 17:10 index.js
+drwxr-xr-x  3 root root  4096 Aug 21 04:41 public
+[root@racknerd-47e65b8 addypin-repo]# 
+[root@racknerd-47e65b8 addypin-repo]# # Show results
+[root@racknerd-47e65b8 addypin-repo]# echo "=== ANALYSIS COMPLETE ==="
+=== ANALYSIS COMPLETE ===
+[root@racknerd-47e65b8 addypin-repo]# echo "Ready for Step 3: Smart Dockerfile creation"
+Ready for Step 3: Smart Dockerfile creation
+[root@racknerd-47e65b8 addypin-repo]# 

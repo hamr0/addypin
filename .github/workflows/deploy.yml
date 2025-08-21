@@ -5,6 +5,8 @@ on:
   pull_request:
     branches: [main]
   # Deploy automatically when code is merged to main
+
+
   push:
     branches: [main]
 
@@ -41,6 +43,9 @@ jobs:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
 
+  deploy:
+    runs-on: ubuntu-latest
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -86,7 +91,6 @@ jobs:
             # Install production dependencies
             echo "📦 Installing dependencies..."
             npm ci --omit=dev
-
             # Build application
             echo "🔨 Building application..."
             npm run build
@@ -94,6 +98,11 @@ jobs:
             # Copy built files to root for production
             echo "📁 Setting up production files..."
             cp dist/index.js ./index.js
+
+            # Build application if needed
+            echo "🔨 Building application..."
+            npm run build 2>/dev/null || echo "No build script found, using existing files"
+            
 
             # Create new deployment directory
             echo "📁 Preparing new deployment..."
@@ -122,6 +131,8 @@ jobs:
 
             # Wait for service to start
             sleep 5
+            
+            sleep 10
 
             # Verify deployment
             echo "🔍 Verifying deployment..."
@@ -182,3 +193,7 @@ jobs:
             cd /opt/addypin
             ls -t app-backup-* | tail -n +4 | xargs rm -rf 2>/dev/null || true
             echo "🧹 Cleanup completed"
+          # Test API endpoint  
+          curl -f https://addypin.com/api/stats > /dev/null
+          
+          echo "✅ All health checks passed"

@@ -1,0 +1,52 @@
+[+] Building 9.1s (12/14)                                        docker:default
+ => [internal] load build definition from Dockerfile                       0.0s
+ => => transferring dockerfile: 331B                                       0.0s
+ => [internal] load metadata for docker.io/library/nginx:alpine            0.3s
+ => [internal] load metadata for docker.io/library/node:20-alpine          0.3s
+ => [internal] load .dockerignore                                          0.0s
+ => => transferring context: 2B                                            0.0s
+ => [builder 1/6] FROM docker.io/library/node:20-alpine@sha256:df02558528  0.0s
+ => [internal] load build context                                          1.2s
+ => => transferring context: 36.12MB                                       1.2s
+ => CACHED [production 1/3] FROM docker.io/library/nginx:alpine@sha256:42  0.0s
+ => CACHED [builder 2/6] WORKDIR /app                                      0.0s
+ => [builder 3/6] COPY package*.json ./                                    0.1s
+ => [builder 4/6] RUN npm ci --no-audit                                    4.6s
+ => [builder 5/6] COPY . .                                                 0.8s
+ => ERROR [builder 6/6] RUN npm run build                                  1.9s 
+------                                                                          
+ > [builder 6/6] RUN npm run build:                                             
+0.886                                                                           
+0.886 > addypin-frontend@1.0.0 build                                            
+0.886 > vite build                                                              
+0.886 
+1.552 vite v5.4.19 building for production...
+1.688 transforming...
+1.795 ✓ 3 modules transformed.
+1.800 x Build failed in 198ms
+1.800 error during build:
+1.800 [vite]: Rollup failed to resolve import "@clerk/clerk-react" from "/app/src/main.tsx".
+1.800 This is most likely unintended because it can break your application at runtime.
+1.800 If you do want to externalize this module explicitly add it to
+1.800 `build.rollupOptions.external`
+1.800     at viteWarn (file:///app/node_modules/vite/dist/node/chunks/dep-C6uTJdX2.js:65839:17)
+1.800     at onRollupWarning (file:///app/node_modules/vite/dist/node/chunks/dep-C6uTJdX2.js:65871:5)
+1.800     at onwarn (file:///app/node_modules/vite/dist/node/chunks/dep-C6uTJdX2.js:65534:7)
+1.800     at file:///app/node_modules/rollup/dist/es/shared/node-entry.js:20877:13
+1.800     at Object.logger [as onLog] (file:///app/node_modules/rollup/dist/es/shared/node-entry.js:22745:9)
+1.800     at ModuleLoader.handleInvalidResolvedId (file:///app/node_modules/rollup/dist/es/shared/node-entry.js:21489:26)
+1.800     at file:///app/node_modules/rollup/dist/es/shared/node-entry.js:21447:26
+------
+Dockerfile:6
+--------------------
+   4 |     RUN npm ci --no-audit
+   5 |     COPY . .
+   6 | >>> RUN npm run build
+   7 |     
+   8 |     FROM nginx:alpine AS production
+--------------------
+ERROR: failed to solve: process "/bin/sh -c npm run build" did not complete successfully: exit code: 1
+[root@racknerd-47e65b8 addypin]# 
+[root@racknerd-47e65b8 addypin]# echo "Frontend build status: $?"
+Frontend build status: 1
+[root@racknerd-47e65b8 addypin]# 

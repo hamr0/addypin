@@ -1,0 +1,49 @@
+[root@racknerd-47e65b8 addypin-repo]# # 1. Stop the failing service
+[root@racknerd-47e65b8 addypin-repo]# sudo systemctl stop addypin.service
+[root@racknerd-47e65b8 addypin-repo]# 
+[root@racknerd-47e65b8 addypin-repo]# # 2. Check actual Node.js path
+[root@racknerd-47e65b8 addypin-repo]# which node
+/root/.nvm/versions/node/v20.19.4/bin/node
+[root@racknerd-47e65b8 addypin-repo]# /root/.nvm/versions/node/v20.19.4/bin/node --version
+v20.19.4
+[root@racknerd-47e65b8 addypin-repo]# 
+[root@racknerd-47e65b8 addypin-repo]# # 3. Fix the systemd service with correct path and permissions
+[root@racknerd-47e65b8 addypin-repo]# sudo tee /etc/systemd/system/addypin.service > /dev/null << 'EOF'
+> [Unit]
+> Description=AddyPin Location Sharing Service
+> After=network.target postgresql.service
+> 
+> [Service]
+> Type=simple
+> User=appuser
+> Group=appuser
+> WorkingDirectory=/opt/addypin/app
+> Environment=NODE_ENV=production
+> Environment=PORT=3000
+> Environment=DATABASE_URL=postgresql://addypin_user:secure_password_123@localhost:5432/addypin
+> Environment=RESEND_API_KEY=re_d3XFqzL8_CRZ8F8NxQNq8gJ2j7mH4CpLw4uP8
+> Environment=PATH=/root/.nvm/versions/node/v20.19.4/bin:/usr/local/bin:/usr/bin:/bin
+> ExecStart=/root/.nvm/versions/node/v20.19.4/bin/node index.js
+> Restart=always
+> RestartSec=10
+> 
+> [Install]
+> WantedBy=multi-user.target
+> EOF
+[root@racknerd-47e65b8 addypin-repo]# 
+[root@racknerd-47e65b8 addypin-repo]# # 4. Make sure appuser can access Node.js
+[root@racknerd-47e65b8 addypin-repo]# sudo chmod +x /root/.nvm/versions/node/v20.19.4/bin/node
+[root@racknerd-47e65b8 addypin-repo]# 
+[root@racknerd-47e65b8 addypin-repo]# # 5. Restart the service
+[root@racknerd-47e65b8 addypin-repo]# sudo systemctl daemon-reload
+[root@racknerd-47e65b8 addypin-repo]# sudo systemctl start addypin.service
+[root@racknerd-47e65b8 addypin-repo]# sudo systemctl status addypin.service
+● addypin.service - AddyPin Location Sharing Service
+   Loaded: loaded (/etc/systemd/system/addypin.service; enabled; vendor preset:>
+   Active: activating (auto-restart) (Result: exit-code) since Wed 2025-08-20 1>
+  Process: 81058 ExecStart=/root/.nvm/versions/node/v20.19.4/bin/node index.js >
+ Main PID: 81058 (code=exited, status=203/EXEC)
+
+Aug 20 17:45:42 racknerd-47e65b8 systemd[1]: addypin.service: Main process exit>
+Aug 20 17:45:42 racknerd-47e65b8 systemd[1]: addypin.service: Failed with resul>
+[root@racknerd-47e65b8 addypin-repo]# 

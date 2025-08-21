@@ -1,0 +1,218 @@
+Solution: Fix Application Startup Issues
+
+I see the main issue is that your application inside the Docker container isn't starting properly, likely due to missing dependencies (like tsx). Let's fix this step by step:
+1. First, let's check the current state
+bash
+
+# Check if container is running
+docker ps
+
+# Check container logs to see the exact error
+docker logs addypin-production
+
+# Test if the application is responding
+curl -v http://localhost:3000/api/stats || echo "Application not responding"
+
+2. Fix the Dockerfile to include all necessary dependencies
+bash
+
+cd /opt/addypin/addypin-repo
+
+# Create an optimized Dockerfile with all required dependencies
+cat > Dockerfile << 'EOF'
+FROM node:20-alpine3.19
+
+# Install minimal build dependencies
+RUN apk add --no-cache python3 make g++ git
+
+# Create user
+RUN addgroup -g 1001 -S runner && adduser -u 1001 -S runner -G runner
+
+# Set working directory
+WORKDIR /app
+RUN chown -R runner:runner /app
+
+# Copy package files
+COPY --chown=runner:runner package*.json ./
+
+# Switch to runner user
+USER runner
+
+# Clear npm cache to avoid conflicts
+RUN npm cache clean --force
+
+# Install ALL dependencies (including dev dependencies for build)
+RUN npm ci --no-audit --prefer-offline
+
+# Copy source code
+COPY --chown=runner:runner . .
+
+# Set production environment
+ENV NODE_ENV=production
+
+# Build application
+RUN npm run build
+
+# Install production dependencies only (remove dev dependencies)
+RUN npm prune --production --no-audit
+
+EXPOSE 5000
+CMD ["npm", "start"]
+EOF
+
+3. Rebuild and restart the container
+bash
+
+# Rebuild the image
+docker build -t addypin-app .
+
+# Stop and remove old container
+docker stop addypin-production 2>/dev/null || true
+docker rm addypin-production 2>/dev/null || true
+
+# Start new container with proper environment variables
+docker run -d \
+  -p 3000:5000 \
+  --name addypin-production \
+  --restart unless-stopped \
+  -e NODE_ENV=production \
+  -e DATABASE_URL="postgresql://addypin:your_db_password@localhost:5432/addypin" \
+  addypin-app
+
+# Wait for startup and check logs
+sleep 10
+docker logs addypin-production
+
+4. Alternative: If you need tsx specifically
+
+If the logs show that tsx is missing, let's install it explicitly:
+bash
+
+# Update Dockerfile to include tsx
+cat > Dockerfile << 'EOF'
+FROM node:20-alpine3.19
+
+# Install minimal build dependencies
+RUN apk add --no-cache python3 make g++ git
+
+# Create user
+RUN addgroup -g 1001 -S runner && adduser -u 1001 -S runner -G runner
+
+# Set working directory
+WORKDIR /app
+RUN chown -R runner:runner /app
+
+# Copy package files
+COPY --chown=runner:runner package*.json ./
+
+# Switch to runner user
+USER runner
+
+# Clear npm cache
+RUN npm cache clean --force
+
+# Install dependencies including tsx
+RUN npm ci --no-audit --prefer-offline
+RUN npm install -g tsx
+
+# Copy source code
+COPY --chown=runner:runner . .
+
+# Set production environment
+ENV NODE_ENV=production
+
+# Build application
+RUN npm run build
+
+# Keep only production dependencies but preserve tsx
+RUN npm prune --production --no-audit
+
+EXPOSE 5000
+CMD ["tsx", "src/index.ts"]
+EOF
+
+# Rebuild and restart
+docker build -t addypin-app .
+docker stop addypin-production 2>/dev/null || true
+docker rm addypin-production 2>/dev/null || true
+
+docker run -d \
+  -p 3000:5000 \
+  --name addypin-production \
+  --restart unless-stopped \
+  -e NODE_ENV=production \
+  -e DATABASE_URL="postgresql://addypin:your_db_password@localhost:5432/addypin" \
+  addypin-app
+
+# Check if it's working
+sleep 10
+docker logs addypin-production
+curl http://localhost:3000/api/stats
+
+5. Update Nginx configuration
+bash
+
+# Create proper nginx configuration
+cat > /etc/nginx/conf.d/addypin.conf << 'EOF'
+server {
+    listen 80;
+    server_name addypin.com www.addypin.com 155.94.144.191;
+    
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+        
+        # Increase timeouts
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+    }
+}
+EOF
+
+# Test and reload nginx
+nginx -t
+systemctl reload nginx
+
+# Test the complete setup
+curl http://localhost/api/stats
+
+6. Debugging tips if still not working
+bash
+
+# Get into the container to debug
+docker exec -it addypin-production sh
+
+# Inside container, check:
+# - If files are present: ls -la
+# - If node_modules exists: ls node_modules
+# - Try starting manually: npm start
+# - Check if tsx is available: which tsx
+
+# Check what's running on port 3000
+netstat -tulpn | grep :3000
+
+# Check system resources
+docker stats addypin-production
+
+# View detailed container info
+docker inspect addypin-production
+
+The key is to check the container logs first to see the exact error, then address that specific issue. The most common problems are:
+
+    Missing dependencies (like tsx)
+
+    Database connection issues
+
+    File permission problems
+
+    Environment variables not set correctly
+
+Once the container logs show a successful startup, your application should be accessible through both port 3000 directly and through the Nginx reverse proxy on port 80.

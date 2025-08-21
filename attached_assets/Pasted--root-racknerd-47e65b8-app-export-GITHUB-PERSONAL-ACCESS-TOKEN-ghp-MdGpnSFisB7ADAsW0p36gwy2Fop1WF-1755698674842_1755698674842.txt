@@ -1,0 +1,102 @@
+[root@racknerd-47e65b8 app]# export GITHUB_PERSONAL_ACCESS_TOKEN="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"
+[root@racknerd-47e65b8 app]# /opt/addypin/deploy.sh
+🚀 Starting AddyPin deployment from GitHub...
+Stopping AddyPin service...
+Creating backup...
+Updating repository...
+From https://github.com/amrhas82/addypin
+ * branch            main       -> FETCH_HEAD
+Already up to date.
+Building application...
+
+up to date, audited 575 packages in 3s
+
+72 packages are looking for funding
+  run `npm fund` for details
+
+14 vulnerabilities (6 low, 8 moderate)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+Building React client...
+vite v5.4.19 building for production...
+transforming (35) src/pages/not-found.tsxBrowserslist: browsers data (caniuse-lite) is 10 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+✓ 1789 modules transformed.
+../dist/public/index.html                   2.20 kB │ gzip:   0.86 kB
+../dist/public/assets/index-LQT5rKC8.css   88.15 kB │ gzip:  19.30 kB
+../dist/public/assets/index-BgPxo_23.js   623.88 kB │ gzip: 186.93 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 13.70s
+Preparing server files...
+Installing production dependencies...
+npm warn config only Use `--omit=dev` to omit dev dependencies from the install.
+
+added 475 packages, and audited 476 packages in 12s
+
+60 packages are looking for funding
+  run `npm fund` for details
+
+6 low severity vulnerabilities
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+npm warn deprecated @esbuild-kit/esm-loader@2.6.5: Merged into tsx: https://tsx.is
+npm warn deprecated @esbuild-kit/core-utils@3.3.2: Merged into tsx: https://tsx.is
+
+added 99 packages, and audited 575 packages in 6s
+
+72 packages are looking for funding
+  run `npm fund` for details
+
+14 vulnerabilities (6 low, 8 moderate)
+
+To address issues that do not require attention, run:
+  npm audit fix
+
+To address all issues (including breaking changes), run:
+  npm audit fix --force
+
+Run `npm audit` for details.
+Compiling TypeScript server...
+
+<--- Last few GCs --->
+
+[71251:0x62a8690]    34412 ms: Mark-Compact (reduce) 472.7 (483.9) -> 471.7 (484.4) MB, 859.08 / 0.00 ms  (average mu = 0.203, current mu = 0.174) allocation failure; scavenge might not succeed
+[71251:0x62a8690]    35428 ms: Mark-Compact (reduce) 472.7 (484.4) -> 472.0 (484.6) MB, 975.98 / 0.00 ms  (average mu = 0.123, current mu = 0.039) allocation failure; scavenge might not succeed
+
+
+<--- JS stacktrace --->
+
+FATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory
+----- Native stack trace -----
+
+ 1: 0xb8cf03 node::OOMErrorHandler(char const*, v8::OOMDetails const&) [node]
+ 2: 0xf060d0 v8::Utils::ReportOOMFailure(v8::internal::Isolate*, char const*, v8::OOMDetails const&) [node]
+ 3: 0xf063b7 v8::internal::V8::FatalProcessOutOfMemory(v8::internal::Isolate*, char const*, v8::OOMDetails const&) [node]
+ 4: 0x1118005  [node]
+ 5: 0x1118594 v8::internal::Heap::RecomputeLimits(v8::internal::GarbageCollector) [node]
+ 6: 0x112f484 v8::internal::Heap::PerformGarbageCollection(v8::internal::GarbageCollector, v8::internal::GarbageCollectionReason, char const*) [node]
+ 7: 0x112fc9c v8::internal::Heap::CollectGarbage(v8::internal::AllocationSpace, v8::internal::GarbageCollectionReason, v8::GCCallbackFlags) [node]
+ 8: 0x1105fa1 v8::internal::HeapAllocator::AllocateRawWithLightRetrySlowPath(int, v8::internal::AllocationType, v8::internal::AllocationOrigin, v8::internal::AllocationAlignment) [node]
+ 9: 0x1107135 v8::internal::HeapAllocator::AllocateRawWithRetryOrFailSlowPath(int, v8::internal::AllocationType, v8::internal::AllocationOrigin, v8::internal::AllocationAlignment) [node]
+10: 0x10e4786 v8::internal::Factory::NewFillerObject(int, v8::internal::AllocationAlignment, v8::internal::AllocationType, v8::internal::AllocationOrigin) [node]
+11: 0x15402c6 v8::internal::Runtime_AllocateInYoungGeneration(int, unsigned long*, v8::internal::Isolate*) [node]
+12: 0x1979ef6  [node]
+/opt/addypin/deploy.sh: line 36: 71240 Aborted                 (core dumped) npx tsc server/index.ts --outDir . --module esnext --target es2020 --moduleResolution node --allowSyntheticDefaultImports
+[root@racknerd-47e65b8 app]#
