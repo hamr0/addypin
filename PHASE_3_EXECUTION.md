@@ -37,24 +37,25 @@ docker-compose --version
 # /opt/addypin/addypin-repo/Dockerfile
 FROM node:20-bookworm
 
-# Create non-root user
-RUN useradd -r -u 1001 -g node appuser
-USER appuser
-
 # Set working directory
 WORKDIR /app
 
 # Copy package files for better caching
-COPY --chown=appuser:node package*.json ./
+COPY package*.json ./
 
 # Install ALL dependencies (including dev for tsx and drizzle-kit)
 RUN npm ci
 
 # Copy application source
-COPY --chown=appuser:node . .
+COPY . .
 
 # Build frontend assets only
 RUN npm run build
+
+# Create non-root user and switch to it
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+RUN chown -R appuser:appuser /app
+USER appuser
 
 # Expose application port
 EXPOSE 3000
