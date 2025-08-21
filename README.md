@@ -42,7 +42,9 @@ Open [http://localhost:5000](http://localhost:5000) in your browser.
 
 ### Production Deployment
 
-See [DOMAIN_SETUP.md](./DOMAIN_SETUP.md) for complete deployment instructions.
+AddyPin is currently live at **[https://addypin.com](https://addypin.com)**
+
+See [docs/deployment/](./docs/deployment/) for complete deployment guides and VPS setup instructions.
 
 ## 🌍 Supported Map Apps
 
@@ -66,12 +68,13 @@ AddyPin works with all major mapping services:
 
 ## 🛠️ Tech Stack
 
-- **Frontend**: React + TypeScript + Tailwind CSS
+- **Frontend**: React + TypeScript + Tailwind CSS + shadcn/ui
 - **Maps**: Leaflet.js with OpenStreetMap
 - **Backend**: Node.js + Express
-- **Database**: PostgreSQL with Drizzle ORM
-- **Email**: Nodemailer (SMTP)
-- **Analytics**: Custom tracking system
+- **Database**: PostgreSQL with Drizzle ORM  
+- **Email**: Resend API for reliable delivery
+- **Analytics**: Custom privacy-focused tracking
+- **Infrastructure**: VPS deployment with SSL (92.75% cost savings)
 
 ## 📚 API Documentation
 
@@ -113,9 +116,8 @@ POST /api/send-location
 # Database
 DATABASE_URL=postgresql://user:pass@localhost:5432/addypin
 
-# Email (optional)
-EMAIL_USER=your@gmail.com
-EMAIL_PASS=your-app-password
+# Email Service
+RESEND_API_KEY=re_your_api_key_here
 
 # Application
 NODE_ENV=development
@@ -124,15 +126,12 @@ PORT=5000
 
 ### Email Setup
 
-For email functionality, you can use:
+AddyPin uses [Resend](https://resend.com) for reliable email delivery:
 
-1. **Gmail** (recommended for development):
-   - Create App Password in Gmail settings
-   - Set `EMAIL_USER` and `EMAIL_PASS`
-
-2. **Custom SMTP**:
-   - Modify `server/services/email.ts`
-   - Configure your SMTP settings
+1. **Sign up for Resend** (free tier available)
+2. **Get your API key** from the Resend dashboard  
+3. **Set `RESEND_API_KEY`** in your environment variables
+4. **Configure domain** (optional) for branded emails
 
 ## 📊 Analytics
 
