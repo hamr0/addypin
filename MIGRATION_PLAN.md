@@ -1,52 +1,63 @@
-# Phase 3 Revised: Replicate Replit Environment
+# Comprehensive Migration Plan: Replit to VPS
 
-## Current Stack Analysis (Keep)
+## Overview
+Systematic migration from Replit managed environment to self-hosted RackNerd VPS using Docker containerization to eliminate environment incompatibility issues.
+
+## Current Stack (Keep)
 ✅ **Infrastructure**: RackNerd VPS, DigitalOcean DNS
 ✅ **Email**: Resend API (working in Replit)
 ✅ **Mail Server**: Maddy (for email receiving)
-✅ **Secrets**: HashiCorp (if using Vault)
-✅ **Database**: PostgreSQL (local on VPS)
+✅ **Database**: PostgreSQL (containerized)
+✅ **Code**: Working TypeScript/Node.js application
 
-## What Needs to Change: Deployment Strategy
+## Phase 1: Build Pipeline (Revised)
+**Goal**: Prepare application for containerized deployment
 
-### Current Problem
-- Trying to bundle complex app into single file
-- Fighting Node.js ecosystem patterns
-- ESBuild fails on native dependencies
+### Key Changes from Original Plan
+- ❌ **Removed**: ESBuild bundling attempt (architectural mismatch)
+- ✅ **Added**: Docker containerization strategy
+- ✅ **Kept**: Frontend build process (Vite)
+- ✅ **Added**: TypeScript source execution via tsx (like Replit)
 
-### Solution: Mirror Replit's Working Pattern
+### Implementation
 ```bash
-# Phase 3 Revised Execution:
+# 1. Frontend build only (no backend bundling)
+npm run build  # Vite builds client assets
 
-# 1. Deploy complete application structure
-cp -r server/ /opt/addypin/app/
-cp -r shared/ /opt/addypin/app/
-cp -r client/dist/ /opt/addypin/app/public/
-cp package.json /opt/addypin/app/
-cp drizzle.config.ts /opt/addypin/app/
-cp tsconfig.json /opt/addypin/app/
+# 2. Type checking (no compilation)
+npm run type-check  # Verify TS correctness
 
-# 2. Install production dependencies
-cd /opt/addypin/app
-npm install --production
-
-# 3. Use tsx runtime (like Replit)
-npm install -g tsx
-
-# 4. Update systemd service to use tsx
-ExecStart=/usr/local/bin/tsx server/index.ts
-
-# 5. Create database schema
-npm run db:push
+# 3. Docker preparation
+# Create Dockerfile and docker-compose.yml
 ```
 
-## Alternative Runtime Options
-- **tsx**: TypeScript execution (mirrors Replit exactly)
-- **ts-node**: Another TypeScript runtime
-- **Bun**: Fast JS runtime with built-in TypeScript support
+## Phase 2: VPS Environment (Unchanged)
+**Goal**: Provision clean VPS infrastructure
 
-## Benefits
-- Exact replication of working Replit environment
-- No bundling complexity
-- Native dependency support
-- Easy debugging and updates
+- PostgreSQL database setup
+- Docker installation
+- Nginx reverse proxy configuration
+- SSL certificates (Let's Encrypt)
+- User management and security
+
+## Phase 3: Docker Deployment (NEW APPROACH)
+**Goal**: Deploy application using Docker containers
+
+### Architecture
+- **Application Container**: Node.js 20 + tsx runtime (replicates Replit)
+- **Database Container**: PostgreSQL 15
+- **Reverse Proxy**: Nginx (host level)
+- **Container Orchestration**: Docker Compose
+
+### Benefits
+- Environment encapsulation (eliminates "works on Replit" issues)
+- Dependency isolation (no more systemd permission problems)
+- Exact replication of Replit's runtime environment
+- Production-grade deployment patterns
+- Easy rollbacks and updates
+
+## Phase 4: Production Hardening (Enhanced)
+- Container security policies
+- Automated backups
+- Monitoring and logging
+- CI/CD pipeline setup

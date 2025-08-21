@@ -10,6 +10,8 @@ Project organization: Keep main folder clean - documentation moved to `/docs` fo
 Documentation strategy: Maintain detailed .md files as development journal and troubleshooting knowledge base for complex setups.
 **Critical Requirement**: Stop reactive troubleshooting and whack-a-mole fixes. Use systematic E2E architectural analysis for infrastructure issues. No more repetitive log checking without holistic problem understanding.
 
+**Migration Strategy Update**: Switched from ESBuild bundling approach to Docker containerization for VPS deployment. Docker replicates Replit's environment exactly while avoiding bundling complexity and systemd permission issues. This architectural change addresses the root cause rather than treating symptoms.
+
 ## System Architecture
 
 ### UI/UX Decisions
