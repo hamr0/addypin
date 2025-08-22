@@ -52,30 +52,48 @@ jobs:
     
     - name: Deploy to VPS
       run: |
-        # Transfer deployment bundle
-        sshpass -p "${{ secrets.SSH_PASSWORD }}" scp -o StrictHostKeyChecking=no addypin-deployment.tar.gz ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}:/opt/addypin/
+        echo "🚀 Starting deployment to VPS..."
         
-        # Deploy and restart services
+        # Transfer deployment bundle
+        echo "📦 Transferring deployment bundle..."
+        sshpass -p "${{ secrets.SSH_PASSWORD }}" scp -o StrictHostKeyChecking=no addypin-deployment.tar.gz ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}:/opt/addypin/ || {
+          echo "❌ Failed to transfer deployment bundle"
+          exit 1
+        }
+        
+        # Deploy and restart services with error handling
+        echo "🔄 Deploying on VPS..."
         sshpass -p "${{ secrets.SSH_PASSWORD }}" ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} "
-          cd /opt/addypin
+          set -e
+          echo '🏠 Current directory: \$(pwd)'
+          cd /opt/addypin || { echo '❌ Failed to cd /opt/addypin'; exit 1; }
           
-          # Stop containers first
-          docker-compose down
+          echo '🛑 Stopping existing containers...'
+          docker-compose down || echo 'No containers to stop'
           
-          # Extract new deployment
-          tar -xzf addypin-deployment.tar.gz
-          cp -r deployment-bundle/* .
+          echo '📂 Extracting deployment bundle...'
+          tar -xzf addypin-deployment.tar.gz || { echo '❌ Failed to extract bundle'; exit 1; }
           
-          # Rebuild containers with fixes
-          docker-compose build --no-cache
+          echo '📋 Copying files...'
+          cp -r deployment-bundle/* . || { echo '❌ Failed to copy files'; exit 1; }
           
-          # Start services
-          docker-compose up -d
+          echo '🔨 Building containers (this may take several minutes)...'
+          docker-compose build --no-cache || { echo '❌ Docker build failed'; exit 1; }
           
-          # Wait and test
-          sleep 15
-          echo 'Testing production deployment:'
-          curl -I https://addypin.com || echo 'Site check failed'
+          echo '🚀 Starting services...'
+          docker-compose up -d || { echo '❌ Failed to start containers'; exit 1; }
           
-          echo 'Deployment completed - check https://addypin.com'
-        "
+          echo '⏳ Waiting for services to stabilize...'
+          sleep 20
+          
+          echo '🔍 Checking deployment status...'
+          docker-compose ps
+          
+          echo '🌐 Testing website...'
+          curl -I https://addypin.com && echo '✅ Website accessible' || echo '⚠️ Website check failed'
+          
+          echo '🎉 Deployment process completed!'
+        " || {
+          echo "❌ VPS deployment failed"
+          exit 1
+        }
