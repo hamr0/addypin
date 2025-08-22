@@ -1,0 +1,49 @@
+[root@racknerd-47e65b8 addypin-repo]# # 1. Ensure we're in repo directory with node_modules
+[root@racknerd-47e65b8 addypin-repo]# cd /opt/addypin/addypin-repo
+[root@racknerd-47e65b8 addypin-repo]# 
+[root@racknerd-47e65b8 addypin-repo]# # 2. Use npx to run esbuild with proper bundling
+[root@racknerd-47e65b8 addypin-repo]# npx esbuild server/index.ts --platform=node --bundle --format=esm --outdir=dist --packages=bundle
+✘ [ERROR] Could not resolve "@react-email/render"
+
+    node_modules/resend/dist/index.mjs:158:51:
+      158 │ ...     const { renderAsync } = yield import("@react-email/render");
+          ╵                                              ~~~~~~~~~~~~~~~~~~~~~
+
+  You can mark the path "@react-email/render" as external to exclude it from the
+  bundle, which will remove this error and leave the unresolved path in the
+  bundle. You can also add ".catch()" here to handle this failure at run-time
+  instead of bundle-time.
+
+✘ [ERROR] Could not resolve "../pkg"
+
+    node_modules/lightningcss/node/index.js:17:27:
+      17 │   module.exports = require(`../pkg`);
+         ╵                            ~~~~~~~~
+
+✘ [ERROR] Could not resolve "@babel/preset-typescript/package.json"
+
+    node_modules/@babel/core/lib/config/files/module-types.js:151:40:
+      151 │ ...t packageJson = require("@babel/preset-typescript/package.json");
+          ╵                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  You can mark the path "@babel/preset-typescript/package.json" as external to
+  exclude it from the bundle, which will remove this error and leave the
+  unresolved path in the bundle. You can also surround this "require" call with
+  a try/catch block to handle this failure at run-time instead of bundle-time.
+
+▲ [WARNING] The glob pattern require("../lightningcss.*.node") did not match any files [empty-glob]
+
+    node_modules/lightningcss/node/index.js:22:29:
+      22 │ ...dule.exports = require(`../lightningcss.${parts.join('-')}.node`);
+         ╵                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1 warning and 3 errors
+[root@racknerd-47e65b8 addypin-repo]# 
+[root@racknerd-47e65b8 addypin-repo]# # 3. Verify the new bundle is larger (should include dependencies)
+[root@racknerd-47e65b8 addypin-repo]# ls -la dist/index.js
+-rw-r--r-- 1 root root 74869 Aug 20 17:10 dist/index.js
+[root@racknerd-47e65b8 addypin-repo]# 
+[root@racknerd-47e65b8 addypin-repo]# # 4. Deploy the fixed bundle
+[root@racknerd-47e65b8 addypin-repo]# cp dist/index.js /opt/addypin/app/
+cp: overwrite '/opt/addypin/app/index.js'? 
+[root@racknerd-47e65b8 addypin-repo]# 

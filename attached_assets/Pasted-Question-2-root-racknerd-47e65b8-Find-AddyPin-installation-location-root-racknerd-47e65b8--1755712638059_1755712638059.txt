@@ -1,0 +1,155 @@
+Question 2: 
+[root@racknerd-47e65b8 ~]# # Find AddyPin installation location
+[root@racknerd-47e65b8 ~]# find / -name "*addypin*" -type d 2>/dev/null
+/sys/fs/cgroup/pids/system.slice/addypin.service
+/sys/fs/cgroup/memory/system.slice/addypin.service
+/sys/fs/cgroup/devices/system.slice/addypin.service
+/sys/fs/cgroup/systemd/system.slice/addypin.service
+/opt/addypin
+/opt/addypin/production-backups/prod_addypin_working_20250820_103953
+/opt/addypin/addypin-repo
+/opt/addypin-migration
+/var/log/addypin
+/etc/addypin
+/etc/letsencrypt/archive/addypin.com
+/etc/letsencrypt/live/addypin.com
+/home/addypin
+[root@racknerd-47e65b8 ~]#
+[root@racknerd-47e65b8 ~]# # Check running processes
+[root@racknerd-47e65b8 ~]# ps aux | grep -i addypin | grep -v grep
+addypin    73019  0.0  7.4 22500812 72168 ?      Ssl  10:32   0:01 /usr/bin/node index.js
+[root@racknerd-47e65b8 ~]# ps aux | grep -i node | grep -v grep
+addypin    73019  0.0  7.4 22500812 72168 ?      Ssl  10:32   0:01 /usr/bin/node index.js
+[root@racknerd-47e65b8 ~]#
+[root@racknerd-47e65b8 ~]# # Check PM2 status
+[root@racknerd-47e65b8 ~]# which pm2 && pm2 list || echo "PM2 not installed"
+/usr/bin/which: no pm2 in (/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/root/bin)
+PM2 not installed
+[root@racknerd-47e65b8 ~]#
+[root@racknerd-47e65b8 ~]# # Check systemd services
+[root@racknerd-47e65b8 ~]# systemctl list-units --type=service | grep -i addypin
+  addypin.service                    loaded active running AddyPin Location Sharing Service
+[root@racknerd-47e65b8 ~]#
+[root@racknerd-47e65b8 ~]# # Check directory structure
+[root@racknerd-47e65b8 ~]# ls -la /opt/
+total 20
+drwxr-xr-x.  5 root    root    4096 Aug 20 03:54 .
+dr-xr-xr-x. 18 root    root    4096 Jan  5  2024 ..
+drwxr-xr-x  24 addypin addypin 4096 Aug 20 10:39 addypin
+drwxr-xr-x   2 root    root    4096 Aug 20 03:47 addypin-migration
+drwxr-xr-x   4 vault   vault   4096 Aug 20 03:54 vault
+[root@racknerd-47e65b8 ~]# ls -la /home/^C
+[root@racknerd-47e65b8 ~]#. 
+
+Question 3: 
+[root@racknerd-47e65b8 ~]# # PostgreSQL status
+[root@racknerd-47e65b8 ~]# systemctl status postgresql
+? postgresql.service - PostgreSQL database server
+   Loaded: loaded (/usr/lib/systemd/system/postgresql.service; enabled; vendor >
+? postgresql.service - PostgreSQL database server
+   Loaded: loaded (/usr/lib/systemd/system/postgresql.service; enabled; vendor >
+   Active: active (running) since Wed 2025-08-20 07:30:50 EDT; 6h ago
+ Main PID: 66015 (postmaster)
+    Tasks: 8 (limit: 5854)
+   Memory: 15.9M
+   CGroup: /system.slice/postgresql.service
+           +-66015 /usr/bin/postmaster -D /var/lib/pgsql/data
+           +-66017 postgres: logger process
+           +-66019 postgres: checkpointer process
+           +-66020 postgres: writer process
+           +-66021 postgres: wal writer process
+           +-66022 postgres: autovacuum launcher process
+           +-66023 postgres: stats collector process
+           +-66024 postgres: bgworker: logical replication launcher
+
+Aug 20 07:30:50 racknerd-47e65b8 systemd[1]: Starting PostgreSQL database serve>
+Aug 20 07:30:50 racknerd-47e65b8 postmaster[66015]: 2025-08-20 07:30:50.464 EDT>
+Aug 20 07:30:50 racknerd-47e65b8 postmaster[66015]: 2025-08-20 07:30:50.464 EDT>
+Aug 20 07:30:50 racknerd-47e65b8 postmaster[66015]: 2025-08-20 07:30:50.464 EDT>
+Aug 20 07:30:50 racknerd-47e65b8 postmaster[66015]: 2025-08-20 07:30:50.465 EDT>
+Aug 20 07:30:50 racknerd-47e65b8 postmaster[66015]: 2025-08-20 07:30:50.466 EDT>
+Aug 20 07:30:50 racknerd-47e65b8 postmaster[66015]: 2025-08-20 07:30:50.478 EDT>
+/bin/bash: -c: line 0: syntax error near unexpected token `('
+/bin/bash: -c: line 0: `lessecho -p0x22 -d0x22 -e\\ -n0x3b -n0x20 -n0x2a -n0x3f -n0x9 -n0xa -n0x27 -n0x22 -n0x28 -n0x29 -n0x3c -n0x3e -n0x5b -n0x5d -n0x7c -n0x26 -n0x5e -n0x60 -n0x23 -n0x5c -n0x24 -n0x25 -n0x3d -n0x7e -n0x7b -n0x7d -n0x2c -- e list (check for addypin database)'
+Warning: "e list (check for addypin database)" exists; Overwrite, Append or Don'Aug 20 07:30:50 racknerd-47e65b8 postmaster[66015]: 2025-08-20 07:30:50.478 EDT>
+Aug 20 07:30:50 racknerd-47e65b8 systemd[1]: Started PostgreSQL database server.
+? postgresql.service - PostgreSQL database server
+   Loaded: loaded (/usr/lib/systemd/system/postgresql.service; enabled; vendor >
+   Active: active (running) since Wed 2025-08-20 07:30:50 EDT; 6h ago
+ Main PID: 66015 (postmaster)
+    Tasks: 8 (limit: 5854)
+   Memory: 15.9M
+   CGroup: /system.slice/postgresql.service
+           +-66015 /usr/bin/postmaster -D /var/lib/pgsql/data
+           +-66017 postgres: logger process
+           +-66019 postgres: checkpointer process
+           +-66020 postgres: writer process
+           +-66021 postgres: wal writer process
+           +-66022 postgres: autovacuum launcher process
+           +-66023 postgres: stats collector process
+           +-66024 postgres: bgworker: logical replication launcher
+
+Aug 20 07:30:50 racknerd-47e65b8 systemd[1]: Starting PostgreSQL database serve>
+Aug 20 07:30:50 racknerd-47e65b8 postmaster[66015]: 2025-08-20 07:30:50.464 EDT>
+Aug 20 07:30:50 racknerd-47e65b8 postmaster[66015]: 2025-08-20 07:30:50.464 EDT>
+Aug 20 07:30:50 racknerd-47e65b8 postmaster[66015]: 2025-08-20 07:30:50.464 EDT>
+Aug 20 07:30:50 racknerd-47e65b8 postmaster[66015]: 2025-08-20 07:30:50.465 EDT>
+Aug 20 07:30:50 racknerd-47e65b8 postmaster[66015]: 2025-08-20 07:30:50.466 EDT>
+Aug 20 07:30:50 racknerd-47e65b8 postmaster[66015]: 2025-08-20 07:30:50.478 EDT>
+free(): double free detected in tcache 2
+[root@racknerd-47e65b8 ~]# [root@racknerd-47e65b8 ~]# [root@racknerd-47e65b8 ~]# could not change directory to "/root": Permission denied
+                                   List of roles
+ Role name |                         Attributes                         | Member
+ of
+-----------+------------------------------------------------------------+-------
+----
+ addypin   | Create DB                                                  | {}
+ postgres  | Superuser, Create role, Create DB, Replication, Bypass RLS | {}
+
+[root@racknerd-47e65b8 ~]# [root@racknerd-47e65b8 ~]# [root@racknerd-47e65b8 ~]#
+
+Qustion 4: 
+
+[root@racknerd-47e65b8 ~]# # Check if git is installed and configured
+[root@racknerd-47e65b8 ~]# which git
+/usr/bin/git
+[root@racknerd-47e65b8 ~]# git --version
+git version 2.43.7
+[root@racknerd-47e65b8 ~]#
+[root@racknerd-47e65b8 ~]# # Check if there's existing repo
+[root@racknerd-47e65b8 ~]# find / -name ".git" -type d 2>/dev/null | grep addypin
+/opt/addypin/addypin-repo/.git
+/opt/addypin/app-current-broken/.git
+/opt/addypin/app-backup-20250820-101402/.git
+[root@racknerd-47e65b8 ~]#
+
+Question 5: 
+[root@racknerd-47e65b8 ~]# # Check how AddyPin is currently running
+[root@racknerd-47e65b8 ~]# systemctl status addypin 2>/dev/null
+? addypin.service - AddyPin Location Sharing Service
+   Loaded: loaded (/etc/systemd/system/addypin.service; enabled; vendor preset: disabled)
+   Active: active (running) since Wed 2025-08-20 10:32:52 EDT; 3h 22min ago
+ Main PID: 73019 (node)
+    Tasks: 11 (limit: 5854)
+   Memory: 61.8M
+   CGroup: /system.slice/addypin.service
+           +-73019 /usr/bin/node index.js
+
+Aug 20 13:08:22 racknerd-47e65b8 node[73019]:       fingerprint512: 'BF:D7:BE:8B:54:6F:E7:D3:C2:0D:46:2F:86:6E:4D:52:B1:13:72:98:40:99:8F:72:94:86:A6:D0:D2:C0:7F:50:49:C1:6E:B2:88:68:19:E9:CC:C5:63:A3:3D:00:22:3F:84:33:87:12:F9:5B:8B:CF:5F:12:87:22:D2:92:6C:4C',
+Aug 20 13:08:22 racknerd-47e65b8 node[73019]:       ext_key_usage: [Array],
+Aug 20 13:08:22 racknerd-47e65b8 node[73019]:       serialNumber: '065BFBAED4223F65E11EC43C11F6FF87D3AA',
+Aug 20 13:08:22 racknerd-47e65b8 node[73019]:       raw: <Buffer 30 82 05 03 30 82 03 eb a0 03 02 01 02 02 12 06 5b fb ae d4 22 3f 65 e1 1e c4 3c 11 f6 ff 87 d3 aa 30 0d 06 09 2a 86 48 86 f7 0d 01 01 0b 05 00 30 33 ... 1237 more bytes>,
+Aug 20 13:08:22 racknerd-47e65b8 node[73019]:       issuerCertificate: [Object]
+Aug 20 13:08:22 racknerd-47e65b8 node[73019]:     }
+Aug 20 13:08:22 racknerd-47e65b8 node[73019]:   },
+Aug 20 13:08:22 racknerd-47e65b8 node[73019]:   [Symbol(kMessage)]: "Hostname/IP does not match certificate's altnames: Host: localhost. is not in the cert's altnames: DNS:addypin.com, DNS:www.addypin.com"
+Aug 20 13:08:22 racknerd-47e65b8 node[73019]: }
+Aug 20 13:08:22 racknerd-47e65b8 node[73019]: 1:08:22 PM [express] GET /api/stats 500 in 14ms :: {"message":"Failed to fetch stats"}
+[root@racknerd-47e65b8 ~]# which node
+/usr/bin/node
+[root@racknerd-47e65b8 ~]# which npm
+/usr/bin/npm
+[root@racknerd-47e65b8 ~]# node --version
+v20.19.4
+[root@racknerd-47e65b8 ~]# npm --version
+10.8.2

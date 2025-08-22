@@ -1,0 +1,145 @@
+[root@racknerd-47e65b8 addypin]# ^C
+[root@racknerd-47e65b8 addypin]# cat > /etc/systemd/system/addypin.service << 'EOF'
+> [Unit]
+> Description=AddyPin Location Sharing Service
+> After=network.target
+>
+> [Service]
+> Type=simple
+> User=addypin
+> WorkingDirectory=/opt/addypin/app
+> ExecStart=/usr/bin/node index.js
+> Restart=always
+> Environment=NODE_ENV=production
+> Environment=DATABASE_URL=postgresql://addypin_user:secure_password_123@localhost:5432/addypin
+> Environment=RESEND_API_KEY=re_d3XFqzL8_CRZ8F8NxQNq8gJ2j7mH4CpLw4uP8
+> Environment=PORT=3000
+>
+> [Install]
+> WantedBy=multi-user.target
+> EOF
+[root@racknerd-47e65b8 addypin]#
+[root@racknerd-47e65b8 addypin]# systemctl daemon-reload
+[root@racknerd-47e65b8 addypin]# systemctl restart addypin
+[root@racknerd-47e65b8 addypin]#
+[root@racknerd-47e65b8 addypin]# # Test the service
+[root@racknerd-47e65b8 addypin]# sleep 5
+[root@racknerd-47e65b8 addypin]# curl -I https://addypin.com
+HTTP/1.1 200 OK
+Server: nginx/1.14.1
+Date: Wed, 20 Aug 2025 14:32:57 GMT
+Content-Type: text/html; charset=UTF-8
+Content-Length: 2195
+Connection: keep-alive
+X-Powered-By: Express
+Accept-Ranges: bytes
+Cache-Control: public, max-age=0
+Last-Modified: Wed, 20 Aug 2025 14:29:14 GMT
+ETag: W/"893-198c7e250f7"
+
+[root@racknerd-47e65b8 addypin]# systemctl status addypin
+● addypin.service - AddyPin Location Sharing Service
+   Loaded: loaded (/etc/systemd/system/addypin.service; enabled; vendor preset:>
+   Active: active (running) since Wed 2025-08-20 10:32:52 EDT; 5s ago
+ Main PID: 73019 (node)
+    Tasks: 11 (limit: 5854)
+   Memory: 65.1M
+   CGroup: /system.slice/addypin.service
+           └─73019 /usr/bin/node index.js
+
+Aug 20 10:32:52 racknerd-47e65b8 systemd[1]: Started AddyPin Location Sharing S>
+Aug 20 10:32:53 racknerd-47e65b8 node[73019]: 10:32:53 AM [express] serving on >
+...skipping...
+● addypin.service - AddyPin Location Sharing Service
+   Loaded: loaded (/etc/systemd/system/addypin.service; enabled; vendor preset:>
+   Active: active (running) since Wed 2025-08-20 10:32:52 EDT; 5s ago
+ Main PID: 73019 (node)
+    Tasks: 11 (limit: 5854)
+   Memory: 65.1M
+   CGroup: /system.slice/addypin.service
+           └─73019 /usr/bin/node index.js
+
+Aug 20 10:32:52 racknerd-47e65b8 systemd[1]: Started AddyPin Location Sharing S>
+Aug 20 10:32:53 racknerd-47e65b8 node[73019]: 10:32:53 AM [express] serving on >
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+...skipping...
+● addypin.service - AddyPin Location Sharing Service
+   Loaded: loaded (/etc/systemd/system/addypin.service; enabled; vendor preset:>
+   Active: active (running) since Wed 2025-08-20 10:32:52 EDT; 5s ago
+ Main PID: 73019 (node)
+    Tasks: 11 (limit: 5854)
+   Memory: 65.1M
+   CGroup: /system.slice/addypin.service
+           └─73019 /usr/bin/node index.js
+
+Aug 20 10:32:52 racknerd-47e65b8 systemd[1]: Started AddyPin Location Sharing S>
+Aug 20 10:32:53 racknerd-47e65b8 node[73019]: 10:32:53 AM [express] serving on >
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+● addypin.service - AddyPin Location Sharing Service
+   Loaded: loaded (/etc/systemd/system/addypin.service; enabled; vendor preset:>
+   Active: active (running) since Wed 2025-08-20 10:32:52 EDT; 5s ago
+ Main PID: 73019 (node)
+    Tasks: 11 (limit: 5854)
+   Memory: 65.1M
+   CGroup: /system.slice/addypin.service
+           └─73019 /usr/bin/node index.js
+
+Aug 20 10:32:52 racknerd-47e65b8 systemd[1]: Started AddyPin Location Sharing S>
+Aug 20 10:32:53 racknerd-47e65b8 node[73019]: 10:32:53 AM [express] serving on >
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+● addypin.service - AddyPin Location Sharing Service
+   Loaded: loaded (/etc/systemd/system/addypin.service; enabled; vendor preset:>
+   Active: active (running) since Wed 2025-08-20 10:32:52 EDT; 5s ago
+ Main PID: 73019 (node)
+    Tasks: 11 (limit: 5854)
+   Memory: 65.1M
+   CGroup: /system.slice/addypin.service
+           └─73019 /usr/bin/node index.js
+
+Aug 20 10:32:52 racknerd-47e65b8 systemd[1]: Started AddyPin Location Sharing S>
+Aug 20 10:32:53 racknerd-47e65b8 node[73019]: 10:32:53 AM [express] serving on >
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~
+~

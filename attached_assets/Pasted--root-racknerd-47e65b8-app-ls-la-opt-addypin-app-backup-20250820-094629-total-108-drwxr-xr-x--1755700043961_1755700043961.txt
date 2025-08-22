@@ -1,0 +1,45 @@
+
+[root@racknerd-47e65b8 app]# ls -la /opt/addypin/app-backup-20250820-094629/
+total 108
+drwxr-xr-x   4 root    root     4096 Aug 20 09:46 .
+drwxr-xr-x  22 addypin addypin  4096 Aug 20 10:14 ..
+-rw-r--r--   1 root    root    74863 Aug 20 09:46 index.js
+drwxr-xr-x 377 root    root    16384 Aug 20 09:46 node_modules
+-rw-r--r--   1 root    root     3907 Aug 20 09:46 package.json
+drwxr-xr-x   3 root    root     4096 Aug 20 09:46 public
+[root@racknerd-47e65b8 app]#
+[root@racknerd-47e65b8 app]# # Look specifically for the main application files (not node_modules)
+[root@racknerd-47e65b8 app]# ls -la /opt/addypin/app-backup-20250820-094629/ | grep -v node_modules
+total 108
+drwxr-xr-x   4 root    root     4096 Aug 20 09:46 .
+drwxr-xr-x  22 addypin addypin  4096 Aug 20 10:14 ..
+-rw-r--r--   1 root    root    74863 Aug 20 09:46 index.js
+-rw-r--r--   1 root    root     3907 Aug 20 09:46 package.json
+drwxr-xr-x   3 root    root     4096 Aug 20 09:46 public
+[root@racknerd-47e65b8 app]#
+[root@racknerd-47e65b8 app]# # Check if there's an index.js file in the root
+[root@racknerd-47e65b8 app]# ls -la /opt/addypin/app-backup-20250820-094629/index.js
+-rw-r--r-- 1 root root 74863 Aug 20 09:46 /opt/addypin/app-backup-20250820-094629/index.js
+[root@racknerd-47e65b8 app]#
+[root@racknerd-47e65b8 app]# # Also check for server directory
+[root@racknerd-47e65b8 app]# ls -la /opt/addypin/app-backup-20250820-094629/server/
+ls: cannot access '/opt/addypin/app-backup-20250820-094629/server/': No such file or directory
+[root@racknerd-47e65b8 app]#
+[root@racknerd-47e65b8 app]# # Check what the systemd service was configured to run
+[root@racknerd-47e65b8 app]# cat /etc/systemd/system/addypin.service
+[Unit]
+Description=AddyPin Location Sharing Service
+After=network.target
+
+[Service]
+Type=simple
+User=addypin
+WorkingDirectory=/opt/addypin/app
+ExecStart=/usr/bin/npx tsx server/index.ts
+Restart=always
+Environment=NODE_ENV=production
+Environment=DATABASE_URL=postgresql://addypin_user:secure_password_123@localhost:5432/addypin
+
+[Install]
+WantedBy=multi-user.target
+[root@racknerd-47e65b8 app]#

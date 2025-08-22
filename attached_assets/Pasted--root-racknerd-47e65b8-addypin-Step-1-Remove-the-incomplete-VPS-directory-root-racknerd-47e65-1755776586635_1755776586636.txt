@@ -1,0 +1,36 @@
+
+[root@racknerd-47e65b8 addypin]# # Step 1: Remove the incomplete VPS directory
+[root@racknerd-47e65b8 addypin]# cd /opt
+[root@racknerd-47e65b8 opt]# rm -rf addypin
+
+[root@racknerd-47e65b8 opt]# 
+[root@racknerd-47e65b8 opt]# # Step 2: Clone your GitHub repository with authentication
+[root@racknerd-47e65b8 opt]# export GITHUB_TOKEN="ghp_MdGpnSFisB7ADAsW0p36gwy2Fop1WF2k8V"
+[root@racknerd-47e65b8 opt]# git clone https://ghp_MdGpnSFisB7ADAsW0p36gwy2Fop1WF2k8V@github.com/addypin/addypin.git addypin
+Cloning into 'addypin'...
+Password for 'https://ghp_MdGpnSFisB7ADAsW0p36gwy2Fop1WF2k8V@github.com': 
+remote: Invalid username or token. Password authentication is not supported for Git operations.
+fatal: Authentication failed for 'https://github.com/addypin/addypin.git/'
+[root@racknerd-47e65b8 opt]# # Step 1: Set up proper GitHub authentication
+[root@racknerd-47e65b8 opt]# git config --global credential.helper store
+[root@racknerd-47e65b8 opt]# echo "https://ghp_MdGpnSFisB7ADAsW0p36gwy2Fop1WF2k8V:@github.com" > ~/.git-credentials
+[root@racknerd-47e65b8 opt]# 
+[root@racknerd-47e65b8 opt]# # Step 2: Clone with correct URL format
+[root@racknerd-47e65b8 opt]# git clone https://github.com/addypin/addypin.git addypin
+fatal: destination path 'addypin' already exists and is not an empty directory.
+[root@racknerd-47e65b8 opt]# 
+[root@racknerd-47e65b8 opt]# # Step 3: Navigate and verify
+[root@racknerd-47e65b8 opt]# cd addypin
+[root@racknerd-47e65b8 addypin]# ls -la
+total 12
+drwxr-xr-x  3 root root 4096 Aug 21 07:42 .
+drwxr-xr-x. 7 root root 4096 Aug 21 07:42 ..
+drwxr-xr-x  2 root root 4096 Aug 21 07:42 addypin-repo
+[root@racknerd-47e65b8 addypin]# 
+[root@racknerd-47e65b8 addypin]# # Step 4: Check if we have the containerized structure
+[root@racknerd-47e65b8 addypin]# ls -la frontend/ backend/ docker-compose.yml 2>/dev/null || echo "Missing containerized files"
+Missing containerized files
+[root@racknerd-47e65b8 addypin]# 
+[root@racknerd-47e65b8 addypin]# # Step 5: Verify frontend main.tsx for Clerk imports
+[root@racknerd-47e65b8 addypin]# cat frontend/src/main.tsx 2>/dev/null | head -5 || echo "Frontend structure different"
+[root@racknerd-47e65b8 addypin]# 

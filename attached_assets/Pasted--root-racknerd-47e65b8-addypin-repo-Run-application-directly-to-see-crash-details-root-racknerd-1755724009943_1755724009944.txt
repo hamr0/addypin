@@ -1,0 +1,21 @@
+[root@racknerd-47e65b8 addypin-repo]# # Run application directly to see crash details
+[root@racknerd-47e65b8 addypin-repo]# cd /opt/addypin/app
+[root@racknerd-47e65b8 app]# source .env
+[root@racknerd-47e65b8 app]# node index.js
+file:///opt/addypin/app/index.js:1
+var z9e=Object.create;var qM=Object.defineProperty;var G9e=Object.getOwnPropertyDescriptor;var Q9e=Object.getOwnPropertyNames;var K9e=Object.getPrototypeOf,Y9e=Object.prototype.hasOwnProperty;var Re=(t=>typeof require<"u"?require:typeof Proxy<"u"?new Proxy(t,{get:(e,r)=>(typeof require<"u"?require:e)[r]}):t)(function(t){if(typeof require<"u")return require.apply(this,arguments);throw Error('Dynamic require of "'+t+'" is not supported')});var fi=(t,e)=>()=>(t&&(e=t(t=0)),e);var j=(t,e)=>()=>(e||t((e={exports:{}}).exports,e),e.exports),Ku=(t,e)=>{for(var r in e)qM(t,r,{get:e[r],enumerable:!0})},J9e=(t,e,r,n)=>{if(e&&typeof e=="object"||typeof e=="function")for(let s of Q9e(e))!Y9e.call(t,s)&&s!==r&&qM(t,s,{get:()=>e[s],enumerable:!(n=G9e(e,s))||n.enumerable});return t};var Is=(t,e,r)=>(r=t!=null?z9e(K9e(t)):{},J9e(e||!t||!t.__esModule?qM(r,"default",{value:t,enumerable:!0}):r,t));var Yl=j((_Pr,Zte)=>{var X9e=Re("path").relative;Zte.exports=nUe;var Z9e=process.cwd();function Jte(t,e){for(var r=t.split(/[ ,]+/),n=String(e).toLowerCase(),s=0;s<r.length;s++){var i=r[s];if(i&&(i==="*"||i.toLowerCase()===n))return!0}return!1}function eUe(t,e,r){var n=Object.getOwnPropertyDescriptor(t,e),s=n.value;return n.get=function(){return s},n.writable&&(n.set=function(a){return s=a}),delete n.value,delete n.writable,Object.defineProperty(t,e,n),n}function tUe(t){for(var e="",r=0;r<t;r++)e+=", arg"+r;return e.substr(2)}function rUe(t){var e=this.name+": "+this.namespace;this.message&&(e+=" deprecated "+this.message);for(var r=0;r<t.length;r++)e+=`
+                                                                                                                                                                                                                                                                                                                                                                                                   ^
+
+Error: Dynamic require of "path" is not supported
+    at file:///opt/addypin/app/index.js:1:388
+    at file:///opt/addypin/app/index.js:1:921
+    at file:///opt/addypin/app/index.js:1:500
+    at file:///opt/addypin/app/index.js:20:18111
+    at file:///opt/addypin/app/index.js:1:500
+    at file:///opt/addypin/app/index.js:63:591
+    at file:///opt/addypin/app/index.js:1:500
+    at file:///opt/addypin/app/index.js:63:1695
+    at file:///opt/addypin/app/index.js:1:500
+    at file:///opt/addypin/app/index.js:1315:10125
+
+Node.js v20.19.4
