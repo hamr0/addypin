@@ -7,12 +7,18 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+// Get API base URL from environment variable or use relative path for development
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
+
 export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  const res = await fetch(url, {
+  // Construct the full URL for production or use relative path for development
+  const fullUrl = url.startsWith('/api') ? `${API_BASE_URL}${url}` : url;
+  
+  const res = await fetch(fullUrl, {
     method,
     headers: data ? { "Content-Type": "application/json" } : {},
     body: data ? JSON.stringify(data) : undefined,
@@ -29,7 +35,11 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey.join("/") as string, {
+    const url = queryKey.join("/") as string;
+    // Construct the full URL for production or use relative path for development
+    const fullUrl = url.startsWith('/api') ? `${API_BASE_URL}${url}` : url;
+    
+    const res = await fetch(fullUrl, {
       credentials: "include",
     });
 
