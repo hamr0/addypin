@@ -18,7 +18,7 @@ jobs:
         timeout 5 nc -zv -w 2 155.94.144.191 22 && echo "✅ Port 22 is reachable" || echo "❌ Port 22 is NOT reachable"
         
         echo "Testing DNS resolution:"
-        nslookup 155.94.144.191
+        nslookup 155.94.144.191 || echo "⚠️ DNS resolution failed (non-critical)"
         
     - name: Setup SSH Key
       run: |
