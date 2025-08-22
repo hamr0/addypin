@@ -1,0 +1,35 @@
+name: Deploy AddyPin to Production
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update && sudo apt-get install -y sshpass
+        npm ci --legacy-peer-deps
+    
+    - name: Build application
+      run: |
+        cd client
+        npm run build
+        ls -la ../dist/
+    
+    - name: Deploy to VPS
+      run: |
+        sshpass -p "${{ secrets.SSH_PASSWORD }}" scp -r -o StrictHostKeyChecking=no dist/* ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}:/opt/addypin/frontend/dist/
+        
+        sshpass -p "${{ secrets.SSH_PASSWORD }}" ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} "
+          cd /opt/addypin && 
+          docker-compose restart frontend &&
+          curl -s https://addypin.com/api/health
+        "
