@@ -2,8 +2,6 @@ import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import * as schema from "../shared/schema";
 
-import * as schema from "@shared/schema";
-
 if (!process.env.DATABASE_URL) {
   throw new Error(
     "DATABASE_URL must be set. Did you forget to provision a database?",
@@ -14,14 +12,6 @@ if (!process.env.DATABASE_URL) {
 const connectionConfig = {
   connectionString: process.env.DATABASE_URL,
   ssl: false
-};
-
-export const pool = new Pool(connectionConfig);
-export const db = drizzle(pool, { schema });
-// Configure connection pool for local PostgreSQL
-const connectionConfig = {
-  connectionString: process.env.DATABASE_URL,
-  ssl: false // Disable SSL for local PostgreSQL in production
 };
 
 export const pool = new Pool(connectionConfig);
