@@ -48,8 +48,8 @@ jobs:
       run: |
         mkdir -p ~/.ssh
         chmod 700 ~/.ssh
-        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
-        chmod 600 ~/.ssh/deploy_key
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/test_key
+        chmod 600 ~/.ssh/test_key
 
     - name: Deploy to VPS
       run: |
@@ -57,14 +57,14 @@ jobs:
         
         # Transfer deployment bundle
         echo "📦 Transferring deployment bundle..."
-        scp -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no addypin-deployment.tar.gz ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}:/opt/addypin/ || {
+        scp -i ~/.ssh/test_key -o StrictHostKeyChecking=no addypin-deployment.tar.gz ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}:/opt/addypin/ || {
           echo "❌ Failed to transfer deployment bundle"
           exit 1
         }
         
         # Deploy and restart services with error handling
         echo "🔄 Deploying on VPS..."
-        ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} "
+        ssh -i ~/.ssh/test_key -o StrictHostKeyChecking=no ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} "
           set -e
           echo '🏠 Current directory: \$(pwd)'
           cd /opt/addypin || { echo '❌ Failed to cd /opt/addypin'; exit 1; }
