@@ -10,6 +10,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Network Connectivity Test
+        run: |
+          echo "=== Testing Network Connectivity ==="
+          echo "GitHub Actions Runner IP:"
+          curl -s ifconfig.me
+          echo ""
+          
+          echo "Testing connection to ${{ secrets.SSH_HOST }}:22"
+          timeout 5 nc -zv -w 2 ${{ secrets.SSH_HOST }} 22 && echo "✅ Port 22 is reachable" || echo "❌ Port 22 is NOT reachable"
+          
+          echo "Testing DNS resolution:"
+          nslookup ${{ secrets.SSH_HOST }}
+          
       - name: Setup SSH and Debug
         run: |
           # Create the .ssh directory and set strict permissions
