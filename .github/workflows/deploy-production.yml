@@ -38,14 +38,14 @@ jobs:
       run: |
         mkdir -p ~/.ssh
         chmod 700 ~/.ssh
-        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/test_key
-        chmod 600 ~/.ssh/test_key
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/key
+        chmod 600 ~/.ssh/key
 
     - name: Deploy to VPS
       run: |
         echo "🚀 Starting deployment..."
-        scp -i ~/.ssh/test_key -o StrictHostKeyChecking=no addypin-deployment.tar.gz ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}:/opt/addypin/
-        ssh -i ~/.ssh/test_key -o StrictHostKeyChecking=no ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} "
+        scp -i ~/.ssh/key -o StrictHostKeyChecking=no addypin-deployment.tar.gz ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}:/opt/addypin/
+        ssh -i ~/.ssh/key -o StrictHostKeyChecking=no ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} "
           cd /opt/addypin
           docker-compose down || echo 'No containers to stop'
           tar -xzf addypin-deployment.tar.gz
