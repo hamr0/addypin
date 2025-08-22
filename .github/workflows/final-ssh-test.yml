@@ -1,0 +1,25 @@
+name: Final SSH Test - Clean
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test_ssh_final:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Network Test
+      run: |
+        echo "🔗 Testing network connectivity..."
+        timeout 5 nc -zv -w 2 155.94.144.191 22 && echo "✅ Port 22 reachable" || echo "❌ Port 22 failed"
+        
+    - name: SSH Test
+      run: |
+        echo "🔑 Setting up SSH key..."
+        mkdir -p ~/.ssh
+        chmod 700 ~/.ssh
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/key
+        chmod 600 ~/.ssh/key
+        
+        echo "🚀 Testing SSH connection..."
+        ssh -o StrictHostKeyChecking=no -i ~/.ssh/key root@155.94.144.191 "echo '✅ SSH SUCCESS: Connected to VPS!' && whoami && hostname"
