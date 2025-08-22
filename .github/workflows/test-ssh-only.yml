@@ -1,0 +1,41 @@
+name: Test SSH Connection Only
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-ssh:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install SSH tools
+      run: sudo apt-get update && sudo apt-get install -y sshpass
+    
+    - name: Test SSH connection
+      run: |
+        echo "Testing SSH connection to VPS..."
+        sshpass -p "${{ secrets.SSH_PASSWORD }}" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} "
+          echo 'SSH connection successful!'
+          pwd
+          whoami
+          df -h | head -5
+          docker --version || echo 'Docker not found'
+          cd /opt/addypin && ls -la || echo 'addypin directory not accessible'
+        "
+    
+    - name: Test file transfer
+      run: |
+        echo "Creating test file..."
+        echo 'This is a test file' > test-deployment.txt
+        
+        echo "Testing SCP file transfer..."
+        sshpass -p "${{ secrets.SSH_PASSWORD }}" scp -o StrictHostKeyChecking=no test-deployment.txt ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}:/tmp/
+        
+        echo "Verifying file was transferred..."
+        sshpass -p "${{ secrets.SSH_PASSWORD }}" ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} "
+          ls -la /tmp/test-deployment.txt
+          cat /tmp/test-deployment.txt
+          rm /tmp/test-deployment.txt
+          echo 'File transfer test completed!'
+        "
