@@ -1,0 +1,31 @@
+name: 🔧 Debug SSH Connection
+
+on:
+  workflow_dispatch: # Allows you to manually trigger this run
+
+jobs:
+  debug-ssh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup SSH and Debug
+        run: |
+          # Create the .ssh directory and set strict permissions
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+
+          # Write the private key from the secret into a file
+          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/private_key
+          chmod 600 ~/.ssh/private_key # KEY STEP: Key must be read-only
+
+          # 👇 DEBUGGING: Let's see what the key looks like (will be masked in logs)
+          echo "--- Head of Private Key ---"
+          head -n 3 ~/.ssh/private_key
+          echo "--- Tail of Private Key ---"
+          tail -n 3 ~/.ssh/private_key
+
+          # 👇 Attempt the connection with VERBOSE output (-vvv)
+          echo "Attempting SSH connection with verbose output..."
+          ssh -vvv -o StrictHostKeyChecking=no -i ~/.ssh/private_key ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} "whoami && echo 'SSH Connection Succeeded!'"
