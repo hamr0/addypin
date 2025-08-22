@@ -10,6 +10,8 @@ Project organization: Keep main folder clean - documentation moved to `/docs` fo
 Documentation strategy: Maintain detailed .md files as development journal and troubleshooting knowledge base for complex setups.
 **Critical Requirement**: Stop reactive troubleshooting and whack-a-mole fixes. Use systematic E2E architectural analysis for infrastructure issues. No more repetitive log checking without holistic problem understanding.
 
+**Current Status (Aug 22, 2025)**: Production API broken with 404 errors on pin creation/editing. CI/CD deployment failing at file transfer step. Need direct VPS fix first, then address CI/CD automation separately.
+
 **Migration Strategy Update**: Implemented clean backend + frontend containerization architecture (January 21, 2025). Separated monolithic structure into independent Docker containers with nginx reverse proxy. This systematic approach solves Docker build issues and provides production-ready scalable architecture. Frontend (React/Nginx) and Backend (Node.js/Express) now deploy independently with proper dependency isolation.
 
 **CI/CD Workflow Update**: Implemented professional GitHub Flow (August 22, 2025). Feature branch development with Pull Request reviews, automated quality checks, and deployment on merge to main. Production fixes deployed automatically to https://addypin.com with comprehensive error handling and API routing corrections.
