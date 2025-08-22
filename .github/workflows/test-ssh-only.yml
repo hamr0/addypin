@@ -12,10 +12,12 @@ jobs:
     - name: Install SSH tools
       run: sudo apt-get update && sudo apt-get install -y sshpass
     
-    - name: Test SSH connection
+    - name: Test SSH connection with key
       run: |
-        echo "Testing SSH connection to VPS..."
-        sshpass -p "${{ secrets.SSH_PASSWORD }}" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} "
+        echo "Testing SSH connection to VPS using SSH key..."
+        echo "${{ secrets.VPS_SSH_KEY }}" > /tmp/ssh_key
+        chmod 600 /tmp/ssh_key
+        ssh -i /tmp/ssh_key -o StrictHostKeyChecking=no -o ConnectTimeout=10 ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} "
           echo 'SSH connection successful!'
           pwd
           whoami
@@ -23,19 +25,23 @@ jobs:
           docker --version || echo 'Docker not found'
           cd /opt/addypin && ls -la || echo 'addypin directory not accessible'
         "
+        rm /tmp/ssh_key
     
-    - name: Test file transfer
+    - name: Test file transfer with key
       run: |
         echo "Creating test file..."
         echo 'This is a test file' > test-deployment.txt
         
-        echo "Testing SCP file transfer..."
-        sshpass -p "${{ secrets.SSH_PASSWORD }}" scp -o StrictHostKeyChecking=no test-deployment.txt ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}:/tmp/
+        echo "Testing SCP file transfer with SSH key..."
+        echo "${{ secrets.VPS_SSH_KEY }}" > /tmp/ssh_key
+        chmod 600 /tmp/ssh_key
+        scp -i /tmp/ssh_key -o StrictHostKeyChecking=no test-deployment.txt ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}:/tmp/
         
         echo "Verifying file was transferred..."
-        sshpass -p "${{ secrets.SSH_PASSWORD }}" ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} "
+        ssh -i /tmp/ssh_key -o StrictHostKeyChecking=no ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} "
           ls -la /tmp/test-deployment.txt
           cat /tmp/test-deployment.txt
           rm /tmp/test-deployment.txt
           echo 'File transfer test completed!'
         "
+        rm /tmp/ssh_key
