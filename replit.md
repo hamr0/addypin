@@ -12,6 +12,8 @@ Documentation strategy: Maintain detailed .md files as development journal and t
 
 **Migration Strategy Update**: Implemented clean backend + frontend containerization architecture (January 21, 2025). Separated monolithic structure into independent Docker containers with nginx reverse proxy. This systematic approach solves Docker build issues and provides production-ready scalable architecture. Frontend (React/Nginx) and Backend (Node.js/Express) now deploy independently with proper dependency isolation.
 
+**CI/CD Workflow Update**: Implemented professional GitHub Flow (August 22, 2025). Feature branch development with Pull Request reviews, automated quality checks, and deployment on merge to main. Production fixes deployed automatically to https://addypin.com with comprehensive error handling and API routing corrections.
+
 ## System Architecture
 
 ### **Production Deployment Architecture (Updated January 2025)**

@@ -1,11 +1,18 @@
 name: Deploy AddyPin to Production
 
 on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+    types: [ closed ]
   workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    # Only deploy when PR is merged to main or direct push to main
+    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
     steps:
     - uses: actions/checkout@v4
     - uses: actions/setup-node@v4
