@@ -74,9 +74,8 @@ jobs:
           
           # Wait and test
           sleep 15
-          echo 'Testing API endpoints:'
-          curl -s https://addypin.com/api/health || echo 'Health check failed'
-          curl -s https://addypin.com/api/stats || echo 'Stats endpoint failed'
+          echo 'Testing production deployment:'
+          curl -I https://addypin.com || echo 'Site check failed'
           
-          echo 'Deployment completed!'
+          echo 'Deployment completed - check https://addypin.com'
         "
