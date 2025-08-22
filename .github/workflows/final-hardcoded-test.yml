@@ -1,0 +1,37 @@
+name: Final Hardcoded SSH Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test_direct_connection:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Direct SSH Test (No Secrets)
+      run: |
+        echo "=== HARDCODED VALUES TEST ==="
+        echo "Target IP: 155.94.144.191"
+        echo "Username: root"
+        
+        # Create SSH key directly in code (temporary)
+        mkdir -p ~/.ssh
+        chmod 700 ~/.ssh
+        
+        cat > ~/.ssh/test_key << 'EOF'
+        -----BEGIN OPENSSH PRIVATE KEY-----
+        b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
+        QyNTUxOQAAACDMJzW4x60UY95+1rMz5NqsOYF+LAFyvYElb0cFeJExRAAAAKBP/4sUT/+L
+        FAAAAAtzc2gtZWQyNTUxOQAAACDMJzW4x60UY95+1rMz5NqsOYF+LAFyvYElb0cFeJExRA
+        AAAEAdXPjhdmqzUgE7QMH6E8xBdIu6PstIHpjc1bF6ytcDS8wnNbjHrRRj3n7WszPk2qw5
+        gX4sAXK9gSVvRwV4kTFEAAAAHGdpdGh1Yi1hY3Rpb25zLWRlcGxveS1ub3Bhc3MB
+        -----END OPENSSH PRIVATE KEY-----
+        EOF
+        
+        chmod 600 ~/.ssh/test_key
+        
+        echo "GitHub Runner IP:"
+        curl -s ifconfig.me
+        
+        echo "Testing direct connection..."
+        ssh -vvv -o StrictHostKeyChecking=no -i ~/.ssh/test_key root@155.94.144.191 "echo 'SUCCESS: Connected to correct server'; hostname; whoami"
