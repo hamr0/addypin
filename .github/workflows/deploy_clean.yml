@@ -75,34 +75,29 @@ jobs:
           curl -f https://addypin.com/api/health || exit 1
           echo "Deployment successful"
 
-      - name: Checkout code
-        uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
 
-      - name: Install dependencies
-        run: npm ci
+    - name: Install dependencies
+      run: npm ci
 
-      - name: Run build
-        run: npm run build
+    - name: Run build
+      run: npm run build
 
-      - name: Run basic validation
-        run: |
-          # Check if server files exist
-          test -f server/index.ts
-          test -f package.json
-          # Check if client build succeeded
-          test -d dist || test -d build || echo "No dist directory found"
+    - name: Run basic validation
+      run: |
+        # Check if server files exist
+        test -f server/index.ts
+        test -f package.json
+        # Check if client build succeeded
+        test -d dist || test -d build || echo "No dist directory found"
 
-  deploy:
-    # This job only runs on a push to main (after a PR is merged)
-    if: github.event_name == 'push'
-    runs-on: ubuntu-latest
-
-  deploy:
+  deploy_to_vps:
     runs-on: ubuntu-latest
     
     steps:
