@@ -47,7 +47,7 @@ jobs:
           
           # Clone using token authentication  
           echo 'Cloning repository with authentication...'
-          git clone https://${{ secrets.GITHUB_TOKEN }}@github.com/amrhas82/addypin.git addypin-repo
+          git clone https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/amrhas82/addypin.git addypin-repo
           
           # Build and deploy
           cd addypin-repo
