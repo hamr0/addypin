@@ -19,13 +19,18 @@ RUN npx vite build && \
     npx esbuild server/index.ts \
       --platform=node \
       --bundle \
-      --format=cjs \
+      --format=esm \
       --outdir=dist \
       --external:pg-native \
       --external:@react-email/render \
       --external:lightningcss \
       --external:@babel/preset-typescript \
       --external:resend \
+      --external:path \
+      --external:fs \
+      --external:crypto \
+      --external:url \
+      --external:util \
       --minify
 
 # Tell Docker the port to expose
