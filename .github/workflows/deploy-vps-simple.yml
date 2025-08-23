@@ -64,11 +64,14 @@ jobs:
           echo 'Installing production dependencies...'
           cd ../app
           npm install --only=production pg
+          # Make sure systemd service uses correct port
+          sed -i 's/PORT=3000/PORT=5000/g' /etc/systemd/system/addypin.service 2>/dev/null || true
+          systemctl daemon-reload
           chown -R addypin:addypin /opt/addypin/app
           echo 'Starting AddyPin service...'
           systemctl start addypin
           sleep 3
-          curl -f http://localhost:3000/api/health && echo '✅ Deployment complete!' || echo '⚠️ Check logs: journalctl -u addypin -n 20'
+          curl -f http://localhost:5000/api/stats && echo '✅ Deployment complete!' || echo '⚠️ Check logs: journalctl -u addypin -n 20'
         "
         
     - name: Health Check
