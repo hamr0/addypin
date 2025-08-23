@@ -55,7 +55,7 @@ jobs:
           echo 'Building React client...'
           npx vite build
           echo 'Building Node.js server...'
-          npx esbuild server/index.ts --platform=node --bundle --format=esm --outdir=dist --external:pg --external:pg-native
+          npx esbuild server/index.ts --platform=node --bundle --format=esm --outdir=dist --external:pg --external:pg-native --external:lightningcss --external:@babel/preset-typescript
           echo 'Deploying files...'
           mkdir -p ../app
           rm -rf ../app/*
