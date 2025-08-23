@@ -20,7 +20,7 @@ jobs:
     - name: Build application for staging
       run: |
         cd frontend
-        npm ci --legacy-peer-deps
+        npm install --legacy-peer-deps
         # Use staging environment variables
         VITE_API_BASE_URL=https://staging.addypin.com npm run build
         

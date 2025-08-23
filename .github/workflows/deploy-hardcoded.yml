@@ -16,7 +16,7 @@ jobs:
     - name: Build application
       run: |
         cd frontend
-        npm ci --legacy-peer-deps
+        npm install --legacy-peer-deps
         VITE_API_BASE_URL=https://addypin.com npm run build
         
     - name: Create deployment package
