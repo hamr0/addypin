@@ -1,6 +1,7 @@
 #!/bin/bash
 
-# VPS Docker Cleanup Script
+# VPS Docker Cleanup Script  
+# Enhanced with deployment process integration
 # Adapted from Kubernetes best practices for Docker Compose environment
 
 set -e
