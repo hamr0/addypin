@@ -1,4 +1,4 @@
-name: 🎯 Simple VPS Deployment (Proven Working Method)
+name: "🎯 Simple VPS Deployment (Proven Working Method)"
 
 on:
   workflow_dispatch:
