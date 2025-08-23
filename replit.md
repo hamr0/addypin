@@ -1,92 +1,45 @@
-# addypin - Compressed replit.md
+# Overview
 
-## Overview
-addypin is a modern location sharing service that generates short, memorable links for geographic coordinates. It allows users to pin locations on an interactive map and share them via short URLs (e.g., `ABC123.addypin.com`) or email addresses (e.g., `ABC123@addypin.com`). The application provides seamless redirection to 13+ popular mapping services and includes comprehensive analytics tracking. The business vision is to provide a simple, cost-effective, and robust location sharing solution.
+AddyPin is a lightweight, open-source location sharing service that generates short, memorable links for GPS coordinates. Users can create pins by dragging and dropping on an interactive map, then share locations via web links (`ABC123.addypin.com`) or email-style addresses. The service supports 13+ map applications including Google Maps, Apple Maps, Waze, and HERE WeGo, with real-time analytics tracking usage and engagement.
 
 ## User Preferences
+
 Preferred communication style: Simple, everyday language.
-**Command clarity requirements**: Always specify WHO (you/me), WHERE (VPS/Replit), what to REPLACE (exact tokens/keys), and special instructions.
-Project organization: Keep main folder clean - documentation moved to `/docs` folder.
-Documentation strategy: Maintain detailed .md files as development journal and troubleshooting knowledge base for complex setups.
-**Critical Requirement**: Stop reactive troubleshooting and whack-a-mole fixes. Use systematic E2E architectural analysis for infrastructure issues. No more repetitive log checking without holistic problem understanding.
-
-**Current Status (Aug 22, 2025)**: Production API broken with 404 errors on pin creation/editing. CI/CD deployment failing at file transfer step. Need direct VPS fix first, then address CI/CD automation separately.
-
-**Migration Strategy Update**: Implemented clean backend + frontend containerization architecture (January 21, 2025). Separated monolithic structure into independent Docker containers with nginx reverse proxy. This systematic approach solves Docker build issues and provides production-ready scalable architecture. Frontend (React/Nginx) and Backend (Node.js/Express) now deploy independently with proper dependency isolation.
-
-**CI/CD Workflow Update**: Implemented professional GitHub Flow (August 22, 2025). Feature branch development with Pull Request reviews, automated quality checks, and deployment on merge to main. Production fixes deployed automatically to https://addypin.com with comprehensive error handling and API routing corrections.
 
 ## System Architecture
 
-### **Production Deployment Architecture (Updated January 2025)**
-- **Containerized Services**: Separate Docker containers for frontend and backend
-- **Frontend Container**: React app served by Nginx with optimized static file handling
-- **Backend Container**: Node.js Express API with PostgreSQL connections
-- **Reverse Proxy**: Nginx handles routing, SSL termination, and load balancing
-- **Database**: PostgreSQL container with persistent volume storage
-- **Service Orchestration**: Docker Compose manages container lifecycle and networking
+### Frontend Architecture
+- **Framework**: React with TypeScript using Vite as the build tool
+- **UI Library**: Shadcn/ui components with Radix UI primitives
+- **Styling**: Tailwind CSS with custom design tokens
+- **Maps**: Leaflet with OpenStreetMap for interactive map functionality
+- **State Management**: TanStack React Query for server state management
+- **Deployment**: Static build served via Nginx in containerized environment
 
-## Development Architecture
+### Backend Architecture
+- **Runtime**: Node.js with Express server
+- **Language**: TypeScript with ESM modules
+- **API Design**: RESTful endpoints for pin creation, retrieval, and analytics
+- **Architecture Pattern**: Monolithic structure with separate client/server directories
+- **Development**: Hot reloading via Vite in development mode
+- **Production**: Compiled JavaScript served from single Express instance
 
-### UI/UX Decisions
-- **Styling**: Tailwind CSS with shadcn/ui for a consistent, modern UI.
-- **Interactive Map**: Leaflet.js provides interactive map functionality with draggable pins.
-- **Responsive Design**: Optimized for mobile, tablet, and desktop.
-- **Logo Design**: Traditional pin replacing the "P" in AddyPin.
-- **User Flow**: Open pin creation without login, optional email storage for permanence, and OTP-based editing for existing pins.
-- **Privacy**: No recent pins displayed, analytics are privacy-focused (GDPR compliant).
+### Data Storage
+- **Database**: PostgreSQL with Drizzle ORM
+- **Schema**: Optimized for pins (coordinates, shortcodes, metadata) and analytics
+- **Connection**: @neondatabase/serverless for cloud database connectivity
+- **Migrations**: Drizzle Kit for database schema management
 
-### Technical Implementations
-- **Frontend**: React with TypeScript, using Vite as the build tool.
-- **State Management**: TanStack Query (React Query) for server state management and caching.
-- **Routing**: Wouter for lightweight client-side routing.
-- **Backend**: Node.js with Express.js framework, written in TypeScript with ES modules.
-- **API Design**: RESTful API with error handling and logging.
-- **Authentication**: Hybrid approach with open creation and OTP verification for editing. Pins without email auto-delete after 72 hours.
-- **DDoS Protection**: Multi-layer defense including IP rate limiting (5 pins/day per IP), email limits (5 per email), and advanced bot detection with behavioral analysis.
-- **Performance Optimization**: Server-side caching (30 minutes) and client-side optimization (60 minutes) reduce API calls significantly. Smart cache invalidation is implemented.
-- **Country Detection**: Comprehensive support for 195+ countries with hierarchical detection.
+### Authentication & Authorization
+- **Provider**: Clerk authentication service integration
+- **Strategy**: JWT-based authentication with user sessions
+- **Access Control**: User-based pin ownership and management
 
-### Feature Specifications
-- **Shortcodes**: 6-character auto-generated shortcodes (ABC123 format).
-- **Dual Format Support**: Web links (`ABC123.addypin.com`) and email format (`ABC123@addypin.com`).
-- **Interactive Redirect Page**: Includes map view and editing functionality.
-- **Real-time Statistics**: Dashboard showing pins created, links clicked, and active countries.
-- **Analytics Tracking**: Comprehensive analytics with daily reports, capturing OS, browser, countries, time spent, pins created, and link clicks.
-- **Map App Integration**: Integrates with 13+ map apps (Google Maps, Apple Maps, Waze, etc.).
+### External Dependencies
+- **Email Service**: SendGrid for email-based location sharing
+- **Map Data**: OpenStreetMap for base map tiles and geocoding
+- **Analytics**: Custom analytics tracking for pin usage and click metrics
+- **Hosting**: Designed for VPS deployment with Docker containerization
+- **CI/CD**: GitHub Actions for automated deployment pipeline
 
-### System Design Choices
-- **Database**: PostgreSQL using Drizzle ORM for type-safe operations.
-- **Schema**: Dedicated schemas for Pins, Analytics, Daily Stats, and Users.
-- **Build System**: Vite for frontend, ESBuild for production builds.
-- **Environment Management**: Utilizes environment variables (e.g., `DATABASE_URL`, `RESEND_API_KEY`).
-- **Infrastructure**: Relies on a PostgreSQL database, nginx reverse proxy, and SSL certificates.
-
-## External Dependencies
-
-### Third-Party Services
-- **Database Hosting**: Neon Database for serverless PostgreSQL hosting.
-- **Geolocation**: Browser's native geolocation API.
-- **Email Service**: Resend for professional OTP delivery.
-- **Analytics**: Umami self-hosted analytics.
-
-### Key Libraries & Tools
-- **UI Components**: Radix UI primitives.
-- **Form Handling**: React Hook Form with Zod validation.
-- **Date Handling**: date-fns.
-- **Maps Integration**: Leaflet.js.
-
-### Map Service Integrations
-- Google Maps
-- Apple Maps
-- Waze
-- HERE WeGo
-- MapQuest
-- Maps.me
-- OpenStreetMap
-- Bing Maps
-- TomTom
-- Citymapper
-- OsmAnd
-- Sygic Maps
-- Badger Maps
+The application follows a modern full-stack architecture with clear separation between frontend and backend concerns, emphasizing performance, scalability, and ease of deployment across different environments.
