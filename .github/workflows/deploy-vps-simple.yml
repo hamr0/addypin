@@ -61,6 +61,8 @@ jobs:
           rm -rf ../app/*
           cp -r dist/* ../app/
           cp package.json ../app/
+          echo 'Setting proper file ownership...'
+          chown -R addypin:addypin /opt/addypin/app
           echo 'Installing production dependencies...'
           cd ../app
           npm install --only=production
@@ -87,7 +89,6 @@ jobs:
           WantedBy=multi-user.target
           EOF
           systemctl daemon-reload
-          chown -R addypin:addypin /opt/addypin/app
           echo 'Starting AddyPin service...'
           systemctl start addypin
           sleep 3
