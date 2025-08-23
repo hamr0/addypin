@@ -34,8 +34,10 @@ jobs:
           echo '🚀 Running proven deployment script...'
           if [ -f deploy.sh ]; then
             chmod +x deploy.sh
-            # Fix deploy.sh to use public repo (no token needed)
-            sed -i 's|https://\${GITHUB_PERSONAL_ACCESS_TOKEN}@github.com/amrhas82/addypin.git|https://github.com/amrhas82/addypin.git|g' deploy.sh
+            # Fix ALL git clone commands to use public repo (no auth needed)
+            sed -i 's|git clone https://.*@github.com/amrhas82/addypin.git|git clone https://github.com/amrhas82/addypin.git|g' deploy.sh
+            sed -i 's|git clone https://github.com/amrhas82/addypin.git.*|git clone https://github.com/amrhas82/addypin.git addypin-repo|g' deploy.sh
+            echo "Fixed deploy.sh git clone commands"
             ./deploy.sh
           else
             echo '⚠️ deploy.sh not found - manual deployment needed'
