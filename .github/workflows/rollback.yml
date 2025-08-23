@@ -1,0 +1,95 @@
+name: 🔄 Emergency Rollback
+
+on:
+  workflow_dispatch:
+    inputs:
+      rollback_reason:
+        description: 'Reason for rollback'
+        required: true
+        default: 'Emergency rollback due to deployment issues'
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Setup SSH
+      run: |
+        mkdir -p ~/.ssh
+        chmod 700 ~/.ssh
+        # Same hardcoded SSH key as deployment
+        echo "LS0tLS1CRUdJTiBPUEVOU1NIIFBSSVZBVEUgS0VZLS0tLS0KYjNCbGJuTnphQzFyWlhrdGRqRUFBQUFBQkc1dmJtVUFBQUFFYm05dVpRQUFBQUFBQUFBQkFBQUFNd0FBQUF0emMyZ3RaVwpReU5UVXhPUUFBQUNETUp6VzR4NjBVWTk1KzFyTXo1TnFzT1lGK0xBRnl2WUVsYjBjRmVKRXhSQUFBQUtCUC80c1VULytMCkZBQUFBQXR6YzJndFpXUXlOVFV4T1FBQUFDRE1Kelc0eDYwVVk5NSsxck16NU5xc09ZRitMQUZ5dllFbGIwY0ZlSkV4UkEKQUFBRUFkWFBqaGRtcXpVZ0U3UU1INkU4eEJkSXU2UHN0SUhwamMxYkY2eXRjRFM4d25OYmpIclJSajNuN1dzelBrMnF3NQpnWDRzQVhLOWdTVnZSd1Y0a1RGRUFBQUFIR2RwZEdoMVlpMWhZM1JwYjI1ekxXUmxjR3h2ZVMxdWIzQmhjM01CCi0tLS0tRU5EIE9QRU5TU0ggUFJJVkFURSBLRVktLS0tLQo=" | base64 -d > ~/.ssh/key
+        chmod 600 ~/.ssh/key
+        echo "✅ SSH key setup for rollback"
+        
+    - name: Emergency Rollback
+      run: |
+        echo "🚨 INITIATING EMERGENCY ROLLBACK"
+        echo "📝 Reason: ${{ github.event.inputs.rollback_reason }}"
+        echo "👤 Triggered by: ${{ github.actor }}"
+        echo "⏰ Time: $(date)"
+        
+        ssh -i ~/.ssh/key -o StrictHostKeyChecking=no root@155.94.144.191 "
+          set -e
+          cd /opt/addypin
+          
+          echo '🛑 Stopping current services...'
+          docker-compose down || true
+          
+          echo '🔄 Rolling back to previous version...'
+          # Check if backup exists
+          if [ -f deployment-backup.tar.gz ]; then
+            echo '📦 Restoring from backup...'
+            tar -xzf deployment-backup.tar.gz
+            cp -r backup/* .
+          else
+            echo '⚠️ No backup found, using git reset...'
+            git reset --hard HEAD~1
+            git clean -fd
+          fi
+          
+          echo '🔨 Rebuilding containers...'
+          docker-compose build --no-cache
+          
+          echo '🚀 Starting rolled-back services...'
+          docker-compose up -d
+          
+          echo '⏳ Waiting for services...'
+          sleep 30
+          
+          echo '📊 Checking rollback status...'
+          docker-compose ps
+          
+          echo '✅ Rollback complete!'
+        "
+        
+    - name: Rollback Health Check
+      run: |
+        echo "🏥 Validating rollback..."
+        for i in {1..3}; do
+          if curl -f -s https://addypin.com/api/stats > /dev/null; then
+            echo "✅ Rollback successful - API responding"
+            break
+          else
+            echo "⏳ Checking rollback status... (attempt $i/3)"
+            sleep 15
+          fi
+          if [ $i -eq 3 ]; then
+            echo "❌ Rollback validation failed"
+            exit 1
+          fi
+        done
+        
+    - name: Rollback Report
+      if: always()
+      run: |
+        if [ "${{ job.status }}" = "success" ]; then
+          echo "🎯 ROLLBACK SUCCESSFUL!"
+          echo "✅ System restored to previous working state"
+          echo "📝 Reason: ${{ github.event.inputs.rollback_reason }}"
+          echo "🌐 Website: https://addypin.com"
+          echo "⚠️ Please investigate the original deployment issue"
+        else
+          echo "🚨 ROLLBACK FAILED!"
+          echo "❌ Manual intervention required"
+          echo "🆘 Contact system administrator immediately"
+        fi
