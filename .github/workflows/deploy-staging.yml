@@ -37,6 +37,7 @@ jobs:
         cp frontend/nginx.conf deploy/frontend/
         cp backend/Dockerfile deploy/backend/
         cp docker-compose.yml deploy/
+        cp -r scripts deploy/
         tar -czf staging-deployment.tar.gz deploy/
         
     - name: Setup SSH for staging
@@ -70,6 +71,10 @@ jobs:
           # Modify docker-compose for staging ports
           sed 's/80:80/8080:80/g' docker-compose.yml > docker-compose-staging.yml
           sed -i 's/443:443/8443:443/g' docker-compose-staging.yml
+          
+          echo '🧹 Cleaning up old Docker images...'
+          chmod +x scripts/docker-cleanup.sh
+          ./scripts/docker-cleanup.sh --deployment
           
           echo '🔨 Building staging containers...'
           docker-compose -f docker-compose-staging.yml build --no-cache

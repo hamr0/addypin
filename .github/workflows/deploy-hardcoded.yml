@@ -32,6 +32,7 @@ jobs:
         cp frontend/nginx.conf deploy/frontend/
         cp backend/Dockerfile deploy/backend/
         cp docker-compose.yml deploy/
+        cp -r scripts deploy/
         tar -czf deployment.tar.gz deploy/
         
     - name: Setup SSH (Hardcoded Key)
@@ -71,6 +72,10 @@ jobs:
           tar -xzf deployment.tar.gz
           cp -r deploy/* .
           
+          echo '🧹 Cleaning up old Docker images...'
+          chmod +x scripts/docker-cleanup.sh
+          ./scripts/docker-cleanup.sh --deployment
+          
           echo '🔨 Building containers...'
           docker-compose build --no-cache
           
@@ -82,6 +87,10 @@ jobs:
           
           echo '📊 Checking container status...'
           docker-compose ps
+          
+          echo '⏰ Setting up automated cleanup schedule...'
+          chmod +x scripts/setup-cleanup-cron.sh
+          ./scripts/setup-cleanup-cron.sh
           
           echo '✅ Deployment complete!'
         "
