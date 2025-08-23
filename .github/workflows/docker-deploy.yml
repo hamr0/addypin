@@ -1,0 +1,54 @@
+name: "🐳 Docker-First Clean Deployment"
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Setup SSH
+      run: |
+        mkdir -p ~/.ssh
+        chmod 700 ~/.ssh
+        echo "LS0tLS1CRUdJTiBPUEVOU1NIIFBSSVZBVEUgS0VZLS0tLS0KYjNCbGJuTnphQzFyWlhrdGRqRUFBQUFBQkc1dmJtVUFBQUFFYm05dVpRQUFBQUFBQUFBQkFBQUFNd0FBQUF0emMyZ3RaVwpReU5UVXhPUUFBQUNETUp6VzR4NjBVWTk1KzFyTXo1TnFzT1lGK0xBRnl2WUVsYjBjRmVKRXhSQUFBQUtCUC80c1VULytMCkZBQUFBQXR6YzJndFpXUXlOVFV4T1FBQUFDRE1Kelc0eDYwVVk5NSsxck16NU5xc09ZRitMQUZ5dllFbGIwY0ZlSkV4UkEKQUFBRUFkWFBqaGRtcXpVZ0U3UU1INkU4eEJkSXU2UHN0SUhwamMxYkY2eXRjRFM4d25OYmpIclJSajNuN1dzelBrMnF3NQpnWDRzQVhLOWdTVnZSd1Y0a1RGRUFBQUFIR2RwZEdoMVlpMWhZM1JwYjI1ekxXUmxjR3h2ZVMxdWIzQmhjM01CCi0tLS0tRU5EIE9QRU5TU0ggUFJJVkFURSBLRVktLS0tLQo=" | base64 -d > ~/.ssh/key
+        chmod 600 ~/.ssh/key
+        echo "✅ SSH key setup complete"
+        
+    - name: Deploy to VPS using Docker
+      run: |
+        echo "🐳 Starting Docker-based deployment..."
+        ssh -i ~/.ssh/key -o StrictHostKeyChecking=no root@155.94.144.191 "
+          set -e
+          cd /opt/addypin
+          
+          echo '🛑 Stopping existing containers...'
+          docker stop addypin || true
+          docker rm addypin || true
+          
+          echo '📥 Getting fresh code...'
+          rm -rf addypin-repo
+          git clone https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/amrhas82/addypin.git addypin-repo
+          cd addypin-repo
+          
+          echo '🏗️ Building Docker image...'
+          docker build -t addypin:latest .
+          
+          echo '🚀 Running new container...'
+          docker run -d --name addypin -p 3000:3000 \
+            -e DATABASE_URL='postgresql://addypin_user:secure_password_123@localhost:5432/addypin' \
+            -e RESEND_API_KEY='re_d3XFqzL8_CRZ8F8NxQNq8gJ2j7mH4CpLw4uP8' \
+            -e PORT=3000 \
+            -e NODE_ENV=production \
+            --restart unless-stopped \
+            addypin:latest
+            
+          echo '⏱️ Waiting for container to start...'
+          sleep 10
+          
+          echo '🏥 Health check...'
+          curl -f http://localhost:3000/api/health && echo '✅ Deployment successful!' || echo '❌ Health check failed'
+          
+          echo '📊 Container status:'
+          docker ps | grep addypin || true
+        "

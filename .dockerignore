@@ -1,0 +1,13 @@
+node_modules
+npm-debug.log
+.git
+.gitignore
+README.md
+docs/
+attached_assets/
+.env
+.env.local
+.vscode/
+*.log
+dist/
+*.tar.gz
