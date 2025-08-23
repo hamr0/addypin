@@ -64,14 +64,42 @@ jobs:
           echo 'Installing production dependencies...'
           cd ../app
           npm install --only=production pg
-          # Make sure systemd service uses correct port
-          sed -i 's/PORT=3000/PORT=5000/g' /etc/systemd/system/addypin.service 2>/dev/null || true
+          # Make sure systemd service uses correct configuration
+          cat > /etc/systemd/system/addypin.service << EOF
+[Unit]
+Description=AddyPin Location Sharing Service
+After=network.target
+
+[Service]
+Type=simple
+User=addypin
+WorkingDirectory=/opt/addypin/app
+ExecStart=/usr/bin/node index.js
+Environment=NODE_ENV=production
+Environment=PORT=5000
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+EOF
           systemctl daemon-reload
           chown -R addypin:addypin /opt/addypin/app
           echo 'Starting AddyPin service...'
           systemctl start addypin
           sleep 3
-          curl -f http://localhost:5000/api/stats && echo '✅ Deployment complete!' || echo '⚠️ Check logs: journalctl -u addypin -n 20'
+          echo 'Checking service status...'
+          systemctl status addypin --no-pager || true
+          echo 'Checking service logs...'
+          journalctl -u addypin -n 10 --no-pager || true
+          echo 'Testing health check...'
+          curl -f http://localhost:5000/api/stats && echo '✅ Deployment complete!' || {
+            echo '⚠️ Service failed to start, checking logs:'
+            journalctl -u addypin -n 20 --no-pager
+            echo 'Checking if port 5000 is in use:'
+            netstat -tlnp | grep :5000 || true
+            exit 1
+          }
         "
         
     - name: Health Check
