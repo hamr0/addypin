@@ -30,6 +30,7 @@ function Router() {
 function App() {
   // Initialize Umami analytics
   useUmami();
+  // CI/CD Test - Build 2025.08.23-11:30
 
   return (
     <QueryClientProvider client={queryClient}>
