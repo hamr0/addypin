@@ -19,7 +19,7 @@ RUN npx vite build && \
     npx esbuild server/index.ts \
       --platform=node \
       --bundle \
-      --format=esm \
+      --format=cjs \
       --outdir=dist \
       --external:pg-native \
       --external:@react-email/render \
