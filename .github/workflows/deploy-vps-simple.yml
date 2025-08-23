@@ -18,31 +18,28 @@ jobs:
     - name: Deploy to VPS
       run: |
         echo "🚀 Starting VPS deployment using proven method..."
-        ssh -i ~/.ssh/key -o StrictHostKeyChecking=no root@155.94.144.191 << 'SSH_COMMANDS'
-        
-        set -e
-        cd /opt/addypin
-        
-        echo "📋 Pre-deployment status..."
-        systemctl status addypin --no-pager || true
-        
-        echo "🧹 Docker cleanup (if applicable)..."
-        if [ -f scripts/docker-cleanup.sh ]; then
-          chmod +x scripts/docker-cleanup.sh
-          ./scripts/docker-cleanup.sh --deployment || true
-        fi
-        
-        echo "🚀 Running deployment..."
-        if [ -f deploy.sh ]; then
-          chmod +x deploy.sh
-          export GITHUB_PERSONAL_ACCESS_TOKEN="${{ secrets.GITHUB_TOKEN }}"
-          ./deploy.sh
-        else
-          echo "⚠️ deploy.sh not found - manual deployment needed"
-          exit 1
-        fi
-        
-        SSH_COMMANDS
+        ssh -i ~/.ssh/key -o StrictHostKeyChecking=no root@155.94.144.191 "
+          set -e
+          cd /opt/addypin
+          
+          echo '📋 Pre-deployment status...'
+          systemctl status addypin --no-pager || true
+          
+          echo '🧹 Docker cleanup (if applicable)...'
+          if [ -f scripts/docker-cleanup.sh ]; then
+            chmod +x scripts/docker-cleanup.sh
+            ./scripts/docker-cleanup.sh --deployment || true
+          fi
+          
+          echo '🚀 Running deployment...'
+          if [ -f deploy.sh ]; then
+            chmod +x deploy.sh
+            GITHUB_PERSONAL_ACCESS_TOKEN='${{ secrets.GITHUB_TOKEN }}' ./deploy.sh
+          else
+            echo '⚠️ deploy.sh not found - manual deployment needed'
+            exit 1
+          fi
+        "
         
     - name: Health Check
       run: |
