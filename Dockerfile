@@ -18,20 +18,10 @@ COPY . .
 RUN npx vite build && \
     npx esbuild server/index.ts \
       --platform=node \
+      --packages=external \
       --bundle \
       --format=esm \
-      --outdir=dist \
-      --external:pg-native \
-      --external:@react-email/render \
-      --external:lightningcss \
-      --external:@babel/preset-typescript \
-      --external:resend \
-      --external:path \
-      --external:fs \
-      --external:crypto \
-      --external:url \
-      --external:util \
-      --minify
+      --outdir=dist
 
 # Tell Docker the port to expose
 EXPOSE 3000
