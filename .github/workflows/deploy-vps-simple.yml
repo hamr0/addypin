@@ -18,28 +18,51 @@ jobs:
     - name: Deploy to VPS
       run: |
         echo "🚀 Starting VPS deployment using proven method..."
-        ssh -i ~/.ssh/key -o StrictHostKeyChecking=no root@155.94.144.191 "
+        ssh -i ~/.ssh/key -o StrictHostKeyChecking=no root@155.94.144.191 '
           set -e
           cd /opt/addypin
           
-          echo '📋 Pre-deployment status...'
+          echo "📋 Pre-deployment status..."
           systemctl status addypin --no-pager || true
           
-          echo '🧹 Docker cleanup (if applicable)...'
+          echo "🧹 Docker cleanup (if applicable)..."
           if [ -f scripts/docker-cleanup.sh ]; then
             chmod +x scripts/docker-cleanup.sh
             ./scripts/docker-cleanup.sh --deployment || true
           fi
           
-          echo '🚀 Running deployment...'
-          if [ -f deploy.sh ]; then
-            chmod +x deploy.sh
-            GITHUB_PERSONAL_ACCESS_TOKEN='${{ secrets.GITHUB_TOKEN }}' ./deploy.sh
-          else
-            echo '⚠️ deploy.sh not found - manual deployment needed'
-            exit 1
-          fi
-        "
+          echo "🚀 Running deployment..."
+          
+          # Remove any existing repo to start fresh
+          rm -rf addypin-repo
+          
+          # Clone using SSH instead of HTTPS (no token needed)
+          echo "Cloning repository via SSH..."
+          git clone git@github.com:amrhas82/addypin.git addypin-repo || {
+            echo "SSH clone failed, trying public clone..."
+            git clone https://github.com/amrhas82/addypin.git addypin-repo
+          }
+          
+          cd addypin-repo
+          npm install
+          echo "Building React client..."
+          npx vite build
+          echo "Building Node.js server..."
+          npx esbuild server/index.ts --platform=node --bundle --format=esm --outdir=dist --external:pg-native --minify
+          echo "Deploying files..."
+          mkdir -p ../app
+          rm -rf ../app/*
+          cp -r dist/* ../app/
+          cp package.json ../app/
+          echo "Installing production dependencies..."
+          cd ../app
+          npm install --only=production pg
+          chown -R addypin:addypin /opt/addypin/app
+          echo "Starting AddyPin service..."
+          systemctl start addypin
+          sleep 3
+          curl -f http://localhost:3000/api/health && echo "✅ Deployment complete!" || echo "⚠️ Check logs: journalctl -u addypin -n 20"
+        '
         
     - name: Health Check
       run: |
