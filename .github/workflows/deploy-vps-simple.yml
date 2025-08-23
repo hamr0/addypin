@@ -31,16 +31,44 @@ jobs:
             ./scripts/docker-cleanup.sh --deployment || true
           fi
           
-          echo '🚀 Running proven deployment script...'
-          if [ -f deploy.sh ]; then
-            chmod +x deploy.sh
-            # Export GitHub token for authentication
-            export GITHUB_PERSONAL_ACCESS_TOKEN='${{ secrets.GITHUB_TOKEN }}'
-            ./deploy.sh
-          else
-            echo '⚠️ deploy.sh not found - manual deployment needed'
-            exit 1
+          echo '🚀 Running embedded deployment (bypass deploy.sh auth issues)...'
+          
+          # Stop service
+          systemctl stop addypin || true
+          
+          # Create backup
+          if [ -d app ]; then
+            cp -r app app-backup-\$(date +%Y%m%d-%H%M%S)
+            echo 'Backup created'
           fi
+          
+          # Remove existing repo
+          rm -rf addypin-repo
+          
+          # Clone using token authentication  
+          echo 'Cloning repository with authentication...'
+          git clone https://${{ secrets.GITHUB_TOKEN }}@github.com/amrhas82/addypin.git addypin-repo
+          
+          # Build and deploy
+          cd addypin-repo
+          npm install
+          echo 'Building React client...'
+          npx vite build
+          echo 'Building Node.js server...'
+          npx esbuild server/index.ts --platform=node --bundle --format=esm --outdir=dist --external:pg-native --minify
+          echo 'Deploying files...'
+          mkdir -p ../app
+          rm -rf ../app/*
+          cp -r dist/* ../app/
+          cp package.json ../app/
+          echo 'Installing production dependencies...'
+          cd ../app
+          npm install --only=production pg
+          chown -R addypin:addypin /opt/addypin/app
+          echo 'Starting AddyPin service...'
+          systemctl start addypin
+          sleep 3
+          curl -f http://localhost:3000/api/health && echo '✅ Deployment complete!' || echo '⚠️ Check logs: journalctl -u addypin -n 20'
         "
         
     - name: Health Check
