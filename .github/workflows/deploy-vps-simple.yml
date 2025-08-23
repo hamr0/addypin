@@ -21,70 +21,70 @@ jobs:
     - name: Trigger VPS Deployment
       run: |
         echo "🚀 Triggering proven VPS deployment process..."
-        ssh -i ~/.ssh/key -o StrictHostKeyChecking=no root@155.94.144.191 "
+        ssh -i ~/.ssh/key -o StrictHostKeyChecking=no root@155.94.144.191 '
           set -e
           cd /opt/addypin
           
-          echo '📋 Pre-deployment status check...'
+          echo "📋 Pre-deployment status check..."
           systemctl status addypin --no-pager || true
           
-          echo '🧹 Running Docker cleanup (if applicable)...'
+          echo "🧹 Running Docker cleanup (if applicable)..."
           if [ -f scripts/docker-cleanup.sh ]; then
             chmod +x scripts/docker-cleanup.sh
             ./scripts/docker-cleanup.sh --deployment || true
           fi
           
-          echo '🚀 Running proven deployment script...'
+          echo "🚀 Running proven deployment script..."
           if [ -f deploy.sh ]; then
             chmod +x deploy.sh
-            export GITHUB_PERSONAL_ACCESS_TOKEN='${{ secrets.GITHUB_TOKEN }}'
+            export GITHUB_PERSONAL_ACCESS_TOKEN="${{ secrets.GITHUB_TOKEN }}"
             ./deploy.sh
           else
-            echo 'Creating deployment script from proven working process...'
-            cat > deploy.sh << 'DEPLOY_EOF'
+            echo "Creating deployment script from proven working process..."
+            cat > deploy.sh << '\''DEPLOY_EOF'\''
 #!/bin/bash
 set -e
-echo \"🚀 Starting AddyPin deployment from GitHub...\"
+echo "🚀 Starting AddyPin deployment from GitHub..."
 cd /opt/addypin
-echo \"Stopping AddyPin service...\"
+echo "Stopping AddyPin service..."
 systemctl stop addypin
-echo \"Creating backup...\"
-if [ -d \"app\" ]; then
-    cp -r app app-backup-\$(date +%Y%m%d-%H%M%S)
+echo "Creating backup..."
+if [ -d "app" ]; then
+    cp -r app app-backup-$(date +%Y%m%d-%H%M%S)
 fi
-if [ ! -d \"addypin-repo\" ]; then
-    echo \"Cloning repository...\"
-    git clone https://\${GITHUB_PERSONAL_ACCESS_TOKEN}@github.com/amrhas82/addypin.git addypin-repo
+if [ ! -d "addypin-repo" ]; then
+    echo "Cloning repository..."
+    git clone https://${GITHUB_PERSONAL_ACCESS_TOKEN}@github.com/amrhas82/addypin.git addypin-repo
 else
-    echo \"Updating repository...\"
+    echo "Updating repository..."
     cd addypin-repo && git pull origin main && cd ..
 fi
-echo \"Building application...\"
+echo "Building application..."
 cd addypin-repo
 npm install
-echo \"Building React client...\"
+echo "Building React client..."
 npx vite build
-echo \"Building Node.js server...\"
+echo "Building Node.js server..."
 npx esbuild server/index.ts --platform=node --bundle --format=esm --outdir=dist --external:pg-native --minify
-echo \"Deploying files...\"
+echo "Deploying files..."
 mkdir -p ../app
 rm -rf ../app/*
 cp -r dist/* ../app/
 cp package.json ../app/
-echo \"Installing production dependencies...\"
+echo "Installing production dependencies..."
 cd ../app
 npm install --only=production pg
 chown -R addypin:addypin /opt/addypin/app
-echo \"Starting AddyPin service...\"
+echo "Starting AddyPin service..."
 systemctl start addypin
 sleep 3
-curl -f http://localhost:3000/api/health && echo \"✅ Deployment complete!\" || echo \"⚠️ Check logs: journalctl -u addypin -n 20\"
+curl -f http://localhost:3000/api/health && echo "✅ Deployment complete!" || echo "⚠️ Check logs: journalctl -u addypin -n 20"
 DEPLOY_EOF
             chmod +x deploy.sh
-            export GITHUB_PERSONAL_ACCESS_TOKEN='${{ secrets.GITHUB_TOKEN }}'
+            export GITHUB_PERSONAL_ACCESS_TOKEN="${{ secrets.GITHUB_TOKEN }}"
             ./deploy.sh
           fi
-        "
+        '
         
     - name: Health Check
       run: |
