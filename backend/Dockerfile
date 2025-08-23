@@ -7,8 +7,8 @@ RUN apk add --no-cache python3 make g++ git
 # Set working directory
 WORKDIR /app
 
-# Copy package files (copied by workflow)
-COPY package*.json ./
+# Copy package file (from backend/)
+COPY package.json ./
 
 # Install all dependencies (including dev dependencies for build)
 RUN npm ci --legacy-peer-deps --no-audit
@@ -31,8 +31,8 @@ RUN addgroup -g 1001 -S nodejs && adduser -S backend -u 1001
 # Set working directory
 WORKDIR /app
 
-# Copy package files (copied by workflow)
-COPY package*.json ./
+# Copy package file (from backend/)
+COPY package.json ./
 
 # Install only production dependencies
 RUN npm ci --only=production --legacy-peer-deps --no-audit && npm cache clean --force

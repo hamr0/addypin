@@ -19,19 +19,20 @@ jobs:
     
     - name: Build application for staging
       run: |
+        cd frontend
         npm ci --legacy-peer-deps
-        cd client
         # Use staging environment variables
         VITE_API_BASE_URL=https://staging.addypin.com npm run build
         
     - name: Create staging deployment package
       run: |
         mkdir -p deploy/frontend deploy/backend
-        cp -r dist/* deploy/frontend/
-        cp -r server deploy/backend/
+        cp -r frontend/dist/* deploy/frontend/
+        cp -r backend/src deploy/backend/
         cp -r shared deploy/backend/
-        cp package*.json deploy/backend/
-        cp tsconfig*.json deploy/backend/
+        cp frontend/package.json deploy/frontend/
+        cp backend/package.json deploy/backend/
+        cp backend/tsconfig.json deploy/backend/
         cp frontend/Dockerfile deploy/frontend/
         cp frontend/nginx.conf deploy/frontend/
         cp backend/Dockerfile deploy/backend/
