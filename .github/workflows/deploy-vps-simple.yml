@@ -11,84 +11,44 @@ jobs:
       run: |
         mkdir -p ~/.ssh
         chmod 700 ~/.ssh
-        
-        # Hardcoded SSH private key (proven working)
         echo "LS0tLS1CRUdJTiBPUEVOU1NIIFBSSVZBVEUgS0VZLS0tLS0KYjNCbGJuTnphQzFyWlhrdGRqRUFBQUFBQkc1dmJtVUFBQUFFYm05dVpRQUFBQUFBQUFBQkFBQUFNd0FBQUF0emMyZ3RaVwpReU5UVXhPUUFBQUNETUp6VzR4NjBVWTk1KzFyTXo1TnFzT1lGK0xBRnl2WUVsYjBjRmVKRXhSQUFBQUtCUC80c1VULytMCkZBQUFBQXR6YzJndFpXUXlOVFV4T1FBQUFDRE1Kelc0eDYwVVk5NSsxck16NU5xc09ZRitMQUZ5dllFbGIwY0ZlSkV4UkEKQUFBRUFkWFBqaGRtcXpVZ0U3UU1INkU4eEJkSXU2UHN0SUhwamMxYkY2eXRjRFM4d25OYmpIclJSajNuN1dzelBrMnF3NQpnWDRzQVhLOWdTVnZSd1Y0a1RGRUFBQUFIR2RwZEdoMVlpMWhZM1JwYjI1ekxXUmxjR3h2ZVMxdWIzQmhjM01CCi0tLS0tRU5EIE9QRU5TU0ggUFJJVkFURSBLRVktLS0tLQo=" | base64 -d > ~/.ssh/key
         chmod 600 ~/.ssh/key
-        
         echo "✅ SSH key setup complete"
         
-    - name: Trigger VPS Deployment
+    - name: Deploy to VPS
       run: |
-        echo "🚀 Triggering proven VPS deployment process..."
-        ssh -i ~/.ssh/key -o StrictHostKeyChecking=no root@155.94.144.191 '
-          set -e
-          cd /opt/addypin
-          
-          echo "📋 Pre-deployment status check..."
-          systemctl status addypin --no-pager || true
-          
-          echo "🧹 Running Docker cleanup (if applicable)..."
-          if [ -f scripts/docker-cleanup.sh ]; then
-            chmod +x scripts/docker-cleanup.sh
-            ./scripts/docker-cleanup.sh --deployment || true
-          fi
-          
-          echo "🚀 Running proven deployment script..."
-          if [ -f deploy.sh ]; then
-            chmod +x deploy.sh
-            export GITHUB_PERSONAL_ACCESS_TOKEN="${{ secrets.GITHUB_TOKEN }}"
-            ./deploy.sh
-          else
-            echo "Creating deployment script from proven working process..."
-            cat > deploy.sh << '\''DEPLOY_EOF'\''
-#!/bin/bash
-set -e
-echo "🚀 Starting AddyPin deployment from GitHub..."
-cd /opt/addypin
-echo "Stopping AddyPin service..."
-systemctl stop addypin
-echo "Creating backup..."
-if [ -d "app" ]; then
-    cp -r app app-backup-$(date +%Y%m%d-%H%M%S)
-fi
-if [ ! -d "addypin-repo" ]; then
-    echo "Cloning repository..."
-    git clone https://${GITHUB_PERSONAL_ACCESS_TOKEN}@github.com/amrhas82/addypin.git addypin-repo
-else
-    echo "Updating repository..."
-    cd addypin-repo && git pull origin main && cd ..
-fi
-echo "Building application..."
-cd addypin-repo
-npm install
-echo "Building React client..."
-npx vite build
-echo "Building Node.js server..."
-npx esbuild server/index.ts --platform=node --bundle --format=esm --outdir=dist --external:pg-native --minify
-echo "Deploying files..."
-mkdir -p ../app
-rm -rf ../app/*
-cp -r dist/* ../app/
-cp package.json ../app/
-echo "Installing production dependencies..."
-cd ../app
-npm install --only=production pg
-chown -R addypin:addypin /opt/addypin/app
-echo "Starting AddyPin service..."
-systemctl start addypin
-sleep 3
-curl -f http://localhost:3000/api/health && echo "✅ Deployment complete!" || echo "⚠️ Check logs: journalctl -u addypin -n 20"
-DEPLOY_EOF
-            chmod +x deploy.sh
-            export GITHUB_PERSONAL_ACCESS_TOKEN="${{ secrets.GITHUB_TOKEN }}"
-            ./deploy.sh
-          fi
-        '
+        echo "🚀 Starting VPS deployment using proven method..."
+        ssh -i ~/.ssh/key -o StrictHostKeyChecking=no root@155.94.144.191 << 'SSH_COMMANDS'
+        
+        set -e
+        cd /opt/addypin
+        
+        echo "📋 Pre-deployment status..."
+        systemctl status addypin --no-pager || true
+        
+        echo "🧹 Docker cleanup (if applicable)..."
+        if [ -f scripts/docker-cleanup.sh ]; then
+          chmod +x scripts/docker-cleanup.sh
+          ./scripts/docker-cleanup.sh --deployment || true
+        fi
+        
+        echo "🚀 Running deployment..."
+        if [ -f deploy.sh ]; then
+          chmod +x deploy.sh
+          export GITHUB_PERSONAL_ACCESS_TOKEN="${{ secrets.GITHUB_TOKEN }}"
+          ./deploy.sh
+        else
+          echo "⚠️ deploy.sh not found - manual deployment needed"
+          exit 1
+        fi
+        
+        SSH_COMMANDS
         
     - name: Health Check
       run: |
         echo "🏥 Testing deployed application..."
+        sleep 10
+        
         for i in {1..5}; do
           if curl -f -s https://addypin.com/api/stats > /dev/null; then
             echo "✅ API is responding (attempt $i)"
@@ -111,7 +71,7 @@ DEPLOY_EOF
           exit 1
         fi
         
-    - name: Deployment Report
+    - name: Deployment Summary
       if: always()
       run: |
         if [ "${{ job.status }}" = "success" ]; then
@@ -121,7 +81,7 @@ DEPLOY_EOF
           echo "✅ Simple backup/restore process"
           echo "✅ systemd service management"
           echo "🌐 Website: https://addypin.com"
-          echo "🔧 Method: Simple VPS script (no GitHub Actions building)"
+          echo "🔧 Method: Simple VPS script (no complex building)"
         else
           echo "🚨 VPS DEPLOYMENT FAILED!"
           echo "❌ Check VPS logs: ssh root@155.94.144.191 'journalctl -u addypin -n 20'"
