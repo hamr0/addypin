@@ -53,7 +53,7 @@ jobs:
           cd addypin-repo
           npm install
           echo 'Building React client...'
-          npx vite build
+          NODE_ENV=development npx vite build
           echo 'Building Node.js server...'
           npx esbuild server/index.ts --platform=node --bundle --format=esm --outdir=dist --external:pg-native --minify
           echo 'Deploying files...'
