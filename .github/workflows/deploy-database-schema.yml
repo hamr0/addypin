@@ -1,0 +1,193 @@
+name: Deploy Database Schema to Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      force_deploy:
+        description: 'Force deployment even if risky'
+        required: false
+        default: 'false'
+        type: boolean
+  push:
+    paths:
+      - 'shared/schema.ts'
+      - 'drizzle.config.ts'
+    branches:
+      - main
+
+jobs:
+  deploy-schema:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Generate schema migration
+        run: |
+          echo "Creating database schema deployment script..."
+          
+          # Extract schema to SQL
+          cat > deploy-schema.sql << 'EOF'
+          -- AddyPin Database Schema Deployment
+          -- Generated from shared/schema.ts
+          
+          -- Create users table
+          CREATE TABLE IF NOT EXISTS users (
+              id character varying DEFAULT gen_random_uuid() NOT NULL,
+              username text NOT NULL,
+              password text NOT NULL,
+              CONSTRAINT users_pkey PRIMARY KEY (id),
+              CONSTRAINT users_username_unique UNIQUE (username)
+          );
+          
+          -- Create pins table  
+          CREATE TABLE IF NOT EXISTS pins (
+              id character varying DEFAULT gen_random_uuid() NOT NULL,
+              shortcode character varying(6) NOT NULL,
+              latitude numeric(10,8) NOT NULL,
+              longitude numeric(11,8) NOT NULL,
+              created_at timestamp without time zone DEFAULT now() NOT NULL,
+              user_email text,
+              is_active boolean DEFAULT true NOT NULL,
+              user_id character varying,
+              created_by character varying,
+              expires_at timestamp without time zone,
+              CONSTRAINT pins_pkey PRIMARY KEY (id),
+              CONSTRAINT pins_shortcode_unique UNIQUE (shortcode)
+          );
+          
+          -- Create analytics table
+          CREATE TABLE IF NOT EXISTS analytics (
+              id character varying DEFAULT gen_random_uuid() NOT NULL,
+              pin_id character varying,
+              event_type text NOT NULL,
+              user_agent text,
+              ip_address text,
+              country text,
+              browser text,
+              os text,
+              timestamp timestamp without time zone DEFAULT now() NOT NULL,
+              metadata jsonb,
+              session_id character varying,
+              CONSTRAINT analytics_pkey PRIMARY KEY (id),
+              CONSTRAINT analytics_pin_id_fkey FOREIGN KEY (pin_id) REFERENCES pins(id)
+          );
+          
+          -- Create daily_stats table
+          CREATE TABLE IF NOT EXISTS daily_stats (
+              id character varying DEFAULT gen_random_uuid() NOT NULL,
+              date text NOT NULL,
+              pins_created integer DEFAULT 0 NOT NULL,
+              links_clicked integer DEFAULT 0 NOT NULL,
+              emails_sent integer DEFAULT 0 NOT NULL,
+              unique_countries integer DEFAULT 0 NOT NULL,
+              daily_users integer DEFAULT 0 NOT NULL,
+              registered_users integer DEFAULT 0 NOT NULL,
+              updated_at timestamp without time zone DEFAULT now() NOT NULL,
+              CONSTRAINT daily_stats_pkey PRIMARY KEY (id)
+          );
+          
+          -- Create otp_codes table
+          CREATE TABLE IF NOT EXISTS otp_codes (
+              id character varying DEFAULT gen_random_uuid() NOT NULL,
+              email character varying(255) NOT NULL,
+              code character varying(6) NOT NULL,
+              expires_at timestamp without time zone NOT NULL,
+              used boolean DEFAULT false NOT NULL,
+              created_at timestamp without time zone DEFAULT now() NOT NULL,
+              CONSTRAINT otp_codes_pkey PRIMARY KEY (id)
+          );
+          
+          -- Add indexes for performance
+          CREATE INDEX IF NOT EXISTS idx_pins_shortcode ON pins(shortcode);
+          CREATE INDEX IF NOT EXISTS idx_analytics_pin_id ON analytics(pin_id);
+          CREATE INDEX IF NOT EXISTS idx_analytics_timestamp ON analytics(timestamp);
+          CREATE INDEX IF NOT EXISTS idx_daily_stats_date ON daily_stats(date);
+          CREATE INDEX IF NOT EXISTS idx_otp_codes_email_code ON otp_codes(email, code);
+          CREATE INDEX IF NOT EXISTS idx_otp_codes_expires_at ON otp_codes(expires_at);
+          
+          EOF
+          
+          echo "✅ Schema SQL generated successfully"
+      
+      - name: Deploy to Production VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: root
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script_stop: true
+          script: |
+            set -e
+            
+            echo "🚀 Starting AddyPin Database Schema Deployment"
+            
+            # Navigate to project directory
+            cd /opt/addypin/addypin-repo
+            
+            # Pull latest changes
+            git pull origin main
+            
+            # Deploy database schema
+            echo "📊 Deploying database schema..."
+            PGPASSWORD="secure_password_123" psql -h 172.17.0.1 -U addypin_user -d addypin -f deploy-schema.sql
+            
+            if [ $? -eq 0 ]; then
+                echo "✅ Database schema deployed successfully"
+            else
+                echo "❌ Database schema deployment failed"
+                exit 1
+            fi
+            
+            # Verify tables exist
+            echo "🔍 Verifying database tables..."
+            PGPASSWORD="secure_password_123" psql -h 172.17.0.1 -U addypin_user -d addypin -c "\dt"
+            
+            # Restart container with proper environment variables
+            echo "🔄 Restarting AddyPin container with environment variables..."
+            
+            # Stop and remove existing container
+            docker stop addypin || true
+            docker rm addypin || true
+            
+            # Start container with ALL required environment variables
+            docker run -d \
+              --name addypin \
+              --restart unless-stopped \
+              -p 3000:3000 \
+              -e DATABASE_URL="postgresql://addypin_user:secure_password_123@172.17.0.1:5432/addypin" \
+              -e RESEND_API_KEY="${{ secrets.RESEND_API_KEY }}" \
+              -e UMAMI_APP_SECRET="${{ secrets.UMAMI_APP_SECRET }}" \
+              -e UMAMI_HASH_SALT="${{ secrets.UMAMI_HASH_SALT }}" \
+              -e GOOGLE_MAPS_API_KEY="${{ secrets.GOOGLE_MAPS_API_KEY }}" \
+              -e NODE_ENV="production" \
+              addypin:latest
+            
+            # Wait for container to start
+            sleep 10
+            
+            # Verify health check
+            echo "🧪 Testing health check..."
+            if curl -f http://localhost:3000/api/health; then
+                echo "🎉 SUCCESS! AddyPin is now fully operational"
+                
+                # Test external access
+                echo "🌐 Testing external access..."
+                curl -f https://addypin.com || echo "⚠️ External access may need DNS propagation"
+            else
+                echo "❌ Health check failed - checking logs..."
+                docker logs addypin --tail=20
+                exit 1
+            fi
+            
+            echo "✅ Database deployment completed successfully!"
