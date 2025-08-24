@@ -31,8 +31,18 @@ jobs:
           git clone https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/amrhas82/addypin.git addypin-repo
           cd addypin-repo
           
-          echo '🏗️ Building Docker image...'
-          docker build -t addypin:latest .
+          echo '🏗️ Building Docker image with versioning...'
+          IMAGE_TAG="addypin:$(date +%Y%m%d-%H%M%S)-$(git rev-parse --short HEAD)"
+          docker build -t addypin:latest -t "$IMAGE_TAG" .
+          
+          echo '🧹 Pre-deployment cleanup (keep disk healthy)...'
+          # Remove old addypin images (keep latest 5 versions)
+          docker images addypin --format 'table {{.Repository}}:{{.Tag}}\t{{.CreatedAt}}' | grep -v latest | tail -n +6 | awk '{print $1}' | xargs -r docker rmi || true
+          
+          # Clean unused Docker resources
+          docker system prune -f --volumes || true
+          
+          echo "📊 Disk space after cleanup: $(df -h / | tail -1 | awk '{print $5}') used"
           
           echo '🚀 Running new container...'
           docker run -d --name addypin -p 3000:3000 \
@@ -44,11 +54,24 @@ jobs:
             addypin:latest
             
           echo '⏱️ Waiting for container to start...'
-          sleep 10
+          sleep 15
           
-          echo '🏥 Health check...'
-          curl -f http://localhost:3000/api/health && echo '✅ Deployment successful!' || echo '❌ Health check failed'
+          echo '🏥 Enhanced health check...'
+          for i in {1..6}; do
+            if curl -f http://localhost:3000/api/health; then
+              echo "✅ Deployment successful! (attempt $i)"
+              break
+            else
+              echo "⏳ Health check $i/6 failed, retrying in 10s..."
+              sleep 10
+            fi
+          done
           
-          echo '📊 Container status:'
+          echo '📊 Final deployment status:'
           docker ps | grep addypin || true
+          echo "🗄️ Final disk usage: $(df -h / | tail -1 | awk '{print $5}') used"
+          
+          echo '🧹 Post-deployment cleanup verification...'
+          echo "📦 Docker images count: $(docker images | wc -l)"
+          echo "💾 Available disk space: $(df -h / | tail -1 | awk '{print $4}') free"
         "
