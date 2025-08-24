@@ -40,6 +40,93 @@ function invalidateStatsCache() {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Enhanced health endpoint with dependency checks
+  app.get("/api/health", async (req, res) => {
+    const healthcheck = {
+      status: "healthy",
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      version: "1.0.0",
+      environment: process.env.NODE_ENV,
+      checks: [] as Array<{name: string, status: string, responseTime?: number, error?: string}>
+    };
+
+    // Check PostgreSQL Database
+    try {
+      const dbStart = Date.now();
+      await db.select().from(pins).limit(1);
+      const dbTime = Date.now() - dbStart;
+      healthcheck.checks.push({ 
+        name: "postgresql", 
+        status: "healthy", 
+        responseTime: dbTime 
+      });
+    } catch (error) {
+      healthcheck.checks.push({ 
+        name: "postgresql", 
+        status: "unhealthy", 
+        error: error instanceof Error ? error.message : "Database connection failed"
+      });
+      healthcheck.status = "unhealthy";
+    }
+
+    // Check memory usage
+    const memUsage = process.memoryUsage();
+    const memUsageMB = Math.round(memUsage.heapUsed / 1024 / 1024);
+    healthcheck.checks.push({ 
+      name: "memory", 
+      status: memUsageMB < 400 ? "healthy" : "warning", 
+      responseTime: memUsageMB 
+    });
+
+    // Return appropriate status code
+    const statusCode = healthcheck.status === "healthy" ? 200 : 503;
+    res.status(statusCode).json(healthcheck);
+  });
+
+  // System status endpoint for monitoring
+  app.get("/api/health/system", async (req, res) => {
+    try {
+      const systemInfo = {
+        status: "healthy",
+        timestamp: new Date().toISOString(),
+        system: {
+          nodeVersion: process.version,
+          platform: process.platform,
+          arch: process.arch,
+          uptime: process.uptime(),
+          memory: {
+            used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+            total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
+            rss: Math.round(process.memoryUsage().rss / 1024 / 1024)
+          },
+          cpu: process.cpuUsage()
+        },
+        database: "checking...",
+        environment: process.env.NODE_ENV
+      };
+
+      // Quick database ping
+      try {
+        const dbStart = Date.now();
+        await db.select().from(pins).limit(1);
+        const dbTime = Date.now() - dbStart;
+        systemInfo.database = `healthy (${dbTime}ms)`;
+      } catch (error) {
+        systemInfo.database = "unhealthy";
+        systemInfo.status = "degraded";
+      }
+
+      res.json(systemInfo);
+    } catch (error) {
+      res.status(500).json({ 
+        status: "error", 
+        message: "System check failed",
+        timestamp: new Date().toISOString()
+      });
+    }
+  });
+
   // Apply comprehensive protection to all routes
   app.use('/api', ddosProtectionMiddleware);
   app.use('/api', generalLimiter);

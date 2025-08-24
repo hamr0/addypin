@@ -26,5 +26,9 @@ RUN npx vite build && \
 # Tell Docker the port to expose
 EXPOSE 3000
 
+# Add Docker healthcheck with comprehensive monitoring
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1
+
 # Define the command to run the app
 CMD ["node", "dist/index.js"]
