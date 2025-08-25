@@ -147,19 +147,8 @@ export default function MapSection({ coordinates, onCoordinatesChange, generated
       maxZoom: 19,
     }).addTo(map);
 
-    // Custom upright pin icon
-    const customIcon = L.divIcon({
-      className: 'custom-pin',
-      html: `<div class="w-6 h-6 bg-addypin-cyan border-2 border-white shadow-lg relative" style="border-radius: 50% 50% 50% 0; transform: rotate(-45deg);">
-        <div class="w-2 h-2 bg-white rounded-full absolute top-1 left-1"></div>
-      </div>`,
-      iconSize: [24, 24],
-      iconAnchor: [12, 24],
-    });
-
     const marker = L.marker([initialLat, initialLng], {
       draggable: true,
-      icon: customIcon,
     }).addTo(map);
 
     // Set initial coordinates
