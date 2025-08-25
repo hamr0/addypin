@@ -29,7 +29,7 @@ export function QuickStats() {
         <div className="stats-card rounded-lg p-2">
           <div className="flex items-center">
             <div className="w-6 h-6 flex items-center justify-center mr-2">
-              <span className="text-lg">📊</span>
+              <span className="text-lg">📌</span>
             </div>
             <div>
               <p className="text-xs font-medium text-addypin-medium">Total</p>
