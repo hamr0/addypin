@@ -46,8 +46,11 @@ jobs:
           
           echo '🚀 Running new container...'
           docker run -d --name addypin -p 3000:3000 \
-            -e DATABASE_URL='postgresql://addypin_user:secure_password_123@localhost:5432/addypin' \
-            -e RESEND_API_KEY='re_d3XFqzL8_CRZ8F8NxQNq8gJ2j7mH4CpLw4uP8' \
+            -e DATABASE_URL='postgresql://addypin_user:secure_password_123@172.17.0.1:5432/addypin' \
+            -e RESEND_API_KEY="$(grep RESEND_API_KEY /opt/addypin/.env | cut -d'=' -f2)" \
+            -e UMAMI_APP_SECRET="$(grep UMAMI_APP_SECRET /opt/addypin/.env | cut -d'=' -f2)" \
+            -e UMAMI_HASH_SALT="$(grep UMAMI_HASH_SALT /opt/addypin/.env | cut -d'=' -f2)" \
+            -e GOOGLE_MAPS_API_KEY="$(grep GOOGLE_MAPS_API_KEY /opt/addypin/.env | cut -d'=' -f2)" \
             -e PORT=3000 \
             -e NODE_ENV=production \
             --restart unless-stopped \
