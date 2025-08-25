@@ -71,6 +71,17 @@ jobs:
           echo \"⏱️ Waiting for container to start...\"
           sleep 15
           
+          echo \"🧪 Checking database schema...\"
+          TABLE_COUNT=\$(psql 'postgresql://addypin_user:secure_password_123@172.17.0.1:5432/addypin' -tAc \"SELECT count(*) FROM information_schema.tables WHERE table_schema='public'\")
+          echo \"Found \$TABLE_COUNT tables in public schema\"
+          if [ \"\$TABLE_COUNT\" -eq \"0\" ]; then
+            echo \"❌ No tables found. Running db:push to create schema...\"
+            cd addypin-repo && npm run db:push
+            echo \"✅ Database schema created successfully\"
+          else
+            echo \"✅ Schema already exists. Skipping db:push.\"
+          fi
+          
           echo \"🏥 Enhanced health check...\"
           for i in {1..6}; do
             if curl -f http://localhost:3000/api/health; then
