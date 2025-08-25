@@ -40,6 +40,8 @@ function invalidateStatsCache() {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  console.log("🚀 Starting route registration...");
+  
   // Enhanced health endpoint with dependency checks
   app.get("/api/health", async (req, res) => {
     const healthcheck = {
@@ -83,6 +85,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const statusCode = healthcheck.status === "healthy" ? 200 : 503;
     res.status(statusCode).json(healthcheck);
   });
+  
+  console.log("✅ Basic health endpoint registered");
 
   // System status endpoint for monitoring
   app.get("/api/health/system", async (req, res) => {
@@ -126,10 +130,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+  
+  console.log("✅ System health endpoint registered");
 
+  console.log("✅ About to apply middleware...");
+  
   // Apply comprehensive protection to all routes
   app.use('/api', ddosProtectionMiddleware);
   app.use('/api', generalLimiter);
+  
+  console.log("✅ Middleware applied successfully");
 
   // Generate shortcode helper
   function generateShortcode(): string {
@@ -141,6 +151,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return code;
   }
 
+  console.log("✅ About to register pin creation endpoint...");
+  
   // Create new pin (open access with comprehensive protection)
   app.post("/api/pins", 
     antibotMiddleware, 
@@ -823,6 +835,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  console.log("✅ All routes registered successfully! Creating HTTP server...");
+  
   const httpServer = createServer(app);
+  
+  console.log("✅ HTTP server created, returning to main...");
   return httpServer;
 }
