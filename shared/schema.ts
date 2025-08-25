@@ -73,6 +73,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
 
 export const insertPinSchema = createInsertSchema(pins).omit({
   id: true,
+  shortcode: true,
   createdAt: true,
   isActive: true,
 });

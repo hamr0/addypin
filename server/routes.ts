@@ -192,7 +192,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             message: "🎯 You already have an addypin at these exact coordinates! Use your existing one or choose a slightly different location.",
             code: "DUPLICATE_COORDINATES",
             existingShortcode: duplicatePin[0].shortcode,
-            hint: `Your existing addypin: ${duplicatePin[0].shortcode}.addypin.com`
+            hint: `Your existing addypin: ${duplicatePin[0].shortcode}${process.env.NODE_ENV === 'development' ? ` at ${req.get('host') || 'localhost:5000'}` : '.addypin.com'}`
           });
         }
       }
@@ -241,10 +241,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Log security info
       console.log(`Pin created: ${pin.shortcode} from IP: ${req.ip || '127.0.0.1'}, registered: ${!!validatedData.createdBy}`);
 
+      // Get base domain based on environment
+      const isDevelopment = process.env.NODE_ENV === 'development';
+      const baseUrl = isDevelopment ? 
+        `${req.protocol}://${req.get('host')}` : 
+        'https://addypin.com';
+      const baseDomain = isDevelopment ? 
+        req.get('host') || 'localhost:5000' : 
+        'addypin.com';
+
       res.status(201).json({
         pin,
-        webLink: `${pin.shortcode}.addypin.com`,
-        emailLink: `${pin.shortcode}@addypin.com`,
+        webLink: isDevelopment ? 
+          `${baseUrl}/${pin.shortcode}` : 
+          `${pin.shortcode}.addypin.com`,
+        emailLink: `${pin.shortcode}@${baseDomain}`,
         message: validatedData.createdBy 
           ? "addypin created successfully! It's saved permanently."
           : "addypin created successfully! It will be deleted in 72 hours unless you add an email."
