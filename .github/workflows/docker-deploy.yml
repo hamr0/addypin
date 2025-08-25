@@ -74,19 +74,11 @@ jobs:
           
           echo \"📊 Disk space after cleanup: \$(df -h / | tail -1 | awk '{print \$5}') used\"
           
-          echo \"🗄️ Starting PostgreSQL database...\"
+          echo \"🗄️ Cleaning up any conflicting PostgreSQL containers...\"
           docker stop addypin-postgres 2>/dev/null || true
           docker rm addypin-postgres 2>/dev/null || true
-          docker run -d --name addypin-postgres \\
-            -e POSTGRES_USER=addypin_user \\
-            -e POSTGRES_PASSWORD=secure_password_123 \\
-            -e POSTGRES_DB=addypin \\
-            -p 5432:5432 \\
-            --restart unless-stopped \\
-            postgres:13
           
-          echo \"⏱️ Waiting for database to initialize...\"
-          sleep 10
+          echo \"🔌 Using external PostgreSQL at 172.17.0.1:5432\"
           
           echo \"🚀 Running new container...\"
           docker run -d --name addypin -p 3000:3000 \\
@@ -110,13 +102,13 @@ jobs:
           echo \"📋 Package version check:\"
           docker exec addypin node -e \"console.log('Package version:', require('./package.json').version)\" || true
           
-          echo \"🧪 Testing database connectivity...\"
-          for i in {1..5}; do
-            if docker exec addypin-postgres pg_isready -U addypin_user -d addypin; then
-              echo \"✅ Database connection successful on attempt \$i\"
+          echo \"🧪 Testing external database connectivity...\"
+          for i in {1..3}; do
+            if timeout 10s psql 'postgresql://addypin_user:secure_password_123@172.17.0.1:5432/addypin' -c 'SELECT 1;' >/dev/null 2>&1; then
+              echo \"✅ External database connection successful on attempt \$i\"
               break
             else
-              echo \"⏳ Database connection attempt \$i/5 failed, retrying in 5s...\"
+              echo \"⏳ Database connection attempt \$i/3 failed, retrying in 5s...\"
               sleep 5
             fi
           done
