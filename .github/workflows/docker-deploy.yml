@@ -38,6 +38,8 @@ jobs:
           echo \"🛑 Stopping existing containers...\"
           docker stop addypin || true
           docker rm addypin || true
+          docker container prune -f || true
+          echo \"✅ Container cleanup complete\"
           
           echo \"📥 Getting fresh code...\"
           rm -rf addypin-repo
