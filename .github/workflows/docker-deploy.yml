@@ -18,63 +18,60 @@ jobs:
     - name: Deploy to VPS using Docker
       run: |
         echo "🐳 Starting Docker-based deployment..."
-        ssh -i ~/.ssh/key -o StrictHostKeyChecking=no root@155.94.144.191 '
+        ssh -i ~/.ssh/key -o StrictHostKeyChecking=no root@155.94.144.191 "
           set -e
           cd /opt/addypin
           
-          echo '🛑 Stopping existing containers...'
+          echo \"🛑 Stopping existing containers...\"
           docker stop addypin || true
           docker rm addypin || true
           
-          echo '📥 Getting fresh code...'
+          echo \"📥 Getting fresh code...\"
           rm -rf addypin-repo
           git clone https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/amrhas82/addypin.git addypin-repo
           cd addypin-repo
           
-          echo '🏗️ Building Docker image with versioning...'
-          IMAGE_TAG="addypin:$(date +%Y%m%d-%H%M%S)-$(git rev-parse --short HEAD)"
-          docker build -t addypin:latest -t "$IMAGE_TAG" .
+          echo \"🏗️ Building Docker image with versioning...\"
+          IMAGE_TAG=\"addypin:\$(date +%Y%m%d-%H%M%S)-\$(git rev-parse --short HEAD)\"
+          docker build -t addypin:latest -t \"\$IMAGE_TAG\" .
           
-          echo '🧹 Pre-deployment cleanup (keep disk healthy)...'
-          # Remove old addypin images (keep latest 5 versions)
-          docker images addypin --format 'table {{.Repository}}:{{.Tag}}\t{{.CreatedAt}}' | grep -v latest | tail -n +6 | awk '{print $1}' | xargs -r docker rmi || true
-          
-          # Clean unused Docker resources
+          echo \"🧹 Pre-deployment cleanup keep disk healthy...\"
+          docker images addypin --format 'table {{.Repository}}:{{.Tag}}\t{{.CreatedAt}}' | grep -v latest | tail -n +6 | awk '{print \$1}' | xargs -r docker rmi || true
           docker system prune -f --volumes || true
           
-          echo "📊 Disk space after cleanup: $(df -h / | tail -1 | awk '{print $5}') used"
+          echo \"📊 Disk space after cleanup: \$(df -h / | tail -1 | awk '{print \$5}') used\"
           
-          echo '🚀 Running new container...'
-          docker run -d --name addypin -p 3000:3000 \
-            -e DATABASE_URL='postgresql://addypin_user:secure_password_123@172.17.0.1:5432/addypin' \
-            -e RESEND_API_KEY="$(grep RESEND_API_KEY /opt/addypin/.env | cut -d'=' -f2)" \
-            -e UMAMI_APP_SECRET="$(grep UMAMI_APP_SECRET /opt/addypin/.env | cut -d'=' -f2)" \
-            -e UMAMI_HASH_SALT="$(grep UMAMI_HASH_SALT /opt/addypin/.env | cut -d'=' -f2)" \
-            -e GOOGLE_MAPS_API_KEY="$(grep GOOGLE_MAPS_API_KEY /opt/addypin/.env | cut -d'=' -f2)" \
-            -e PORT=3000 \
-            -e NODE_ENV=production \
-            --restart unless-stopped \
+          echo \"🚀 Running new container...\"
+          docker run -d --name addypin -p 3000:3000 \\
+            -e DATABASE_URL='postgresql://addypin_user:secure_password_123@172.17.0.1:5432/addypin' \\
+            -e RESEND_API_KEY=\"\$(grep RESEND_API_KEY /opt/addypin/.env | cut -d'=' -f2)\" \\
+            -e UMAMI_APP_SECRET=\"\$(grep UMAMI_APP_SECRET /opt/addypin/.env | cut -d'=' -f2)\" \\
+            -e UMAMI_HASH_SALT=\"\$(grep UMAMI_HASH_SALT /opt/addypin/.env | cut -d'=' -f2)\" \\
+            -e GOOGLE_MAPS_API_KEY=\"\$(grep GOOGLE_MAPS_API_KEY /opt/addypin/.env | cut -d'=' -f2)\" \\
+            -e PORT=3000 \\
+            -e NODE_ENV=production \\
+            --restart unless-stopped \\
             addypin:latest
             
-          echo '⏱️ Waiting for container to start...'
+          echo \"⏱️ Waiting for container to start...\"
           sleep 15
           
-          echo '🏥 Enhanced health check...'
+          echo \"🏥 Enhanced health check...\"
           for i in {1..6}; do
             if curl -f http://localhost:3000/api/health; then
-              echo "✅ Deployment successful! (attempt $i)"
+              echo \"✅ Deployment successful attempt \$i\"
               break
             else
-              echo "⏳ Health check $i/6 failed, retrying in 10s..."
+              echo \"⏳ Health check \$i/6 failed, retrying in 10s...\"
               sleep 10
             fi
           done
           
-          echo '📊 Final deployment status:'
+          echo \"📊 Final deployment status:\"
           docker ps | grep addypin || true
-          echo "🗄️ Final disk usage: $(df -h / | tail -1 | awk '"'"'{print $5}'"'"') used"
+          echo \"🗄️ Final disk usage: \$(df -h / | tail -1 | awk '{print \$5}') used\"
           
-          echo "🧹 Post-deployment cleanup verification..."
-          echo "📦 Docker images count: $(docker images | wc -l)"
-          echo "💾 Available disk space: $(df -h / | tail -1 | awk '"'"'{print $4}'"'"') free"
-        '
+          echo \"🧹 Post-deployment cleanup verification...\"
+          echo \"📦 Docker images count: \$(docker images | wc -l)\"
+          echo \"💾 Available disk space: \$(df -h / | tail -1 | awk '{print \$4}') free\"
+        "
