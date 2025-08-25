@@ -14,8 +14,8 @@ export function QuickStats() {
       <div className="grid grid-cols-2 gap-2">
         <div className="stats-card rounded-lg p-2">
           <div className="flex items-center">
-            <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center mr-2">
-              <span className="text-xs">🎯</span>
+            <div className="w-6 h-6 flex items-center justify-center mr-2">
+              <span className="text-lg">🎯</span>
             </div>
             <div>
               <p className="text-xs font-medium text-addypin-medium">Pinned</p>
@@ -28,8 +28,8 @@ export function QuickStats() {
 
         <div className="stats-card rounded-lg p-2">
           <div className="flex items-center">
-            <div className="w-6 h-6 bg-gray-100 rounded-md flex items-center justify-center mr-2">
-              <Map className="w-3 h-3 text-gray-600" />
+            <div className="w-6 h-6 flex items-center justify-center mr-2">
+              <span className="text-lg">📊</span>
             </div>
             <div>
               <p className="text-xs font-medium text-addypin-medium">Total</p>
@@ -56,8 +56,8 @@ export function QuickStats() {
 
         <div className="stats-card rounded-lg p-2">
           <div className="flex items-center">
-            <div className="w-6 h-6 bg-blue-100 rounded-md flex items-center justify-center mr-2">
-              <Globe className="w-3 h-3 text-blue-600" />
+            <div className="w-6 h-6 flex items-center justify-center mr-2">
+              <span className="text-lg">🌍</span>
             </div>
             <div>
               <p className="text-xs font-medium text-addypin-medium">Countries</p>
