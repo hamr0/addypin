@@ -1,6 +1,6 @@
 # Overview
 
-AddyPin is a lightweight, open-source location sharing service that generates short, memorable links for GPS coordinates. Users can create pins by dragging and dropping on an interactive map, then share locations via web links or email-style addresses. The service supports 13+ map applications including Google Maps, Apple Maps, Waze, and HERE WeGo, with real-time analytics tracking usage and engagement. The project's ambition is to provide a fully operational and robust location sharing solution with a bulletproof automated deployment pipeline.
+This is a full-stack location sharing application called AddyPin, built using a modern web development stack. The application allows users to create pins on a map with shareable links, similar to location sharing services. It's designed to run in a containerized environment with PostgreSQL as the primary database.
 
 # User Preferences
 
@@ -9,71 +9,71 @@ Preferred communication style: Simple, everyday language.
 # System Architecture
 
 ## Frontend Architecture
-- **Framework**: React with TypeScript using Vite
-- **UI Library**: Shadcn/ui components with Radix UI primitives
-- **Styling**: Tailwind CSS with custom design tokens
-- **Maps**: Leaflet with OpenStreetMap
-- **State Management**: TanStack React Query
+- **Framework**: React with TypeScript using Vite as the build tool
+- **UI Components**: Extensive use of Radix UI components for accessibility and consistency
+- **Styling**: Tailwind CSS with shadcn/ui component library for design system
+- **State Management**: TanStack Query for server state management
+- **Authentication**: Clerk for user authentication (though may be optional based on configuration)
+- **Build Tool**: Vite with custom configuration for development and production builds
 
 ## Backend Architecture
-- **Runtime**: Node.js 20.x with Express server (version locked via .nvmrc)
-- **Language**: TypeScript with ESM modules
-- **API Design**: RESTful endpoints
-- **Architecture Pattern**: Monolithic with separate client/server directories
+- **Runtime**: Node.js with TypeScript using ESM modules
+- **Framework**: Express.js for API server
+- **Database ORM**: Drizzle ORM with PostgreSQL dialect
+- **Database Migrations**: Drizzle Kit for schema management
+- **Development**: Uses tsx for TypeScript execution in development
+- **Production**: Builds to optimized JavaScript bundle using esbuild
 
-## Data Storage
-- **Database**: PostgreSQL with Drizzle ORM
-- **Schema**: Optimized for pins (coordinates, shortcodes, metadata) and analytics
-- **Connection**: @neondatabase/serverless for cloud connectivity
-- **Migrations**: Drizzle Kit
+## Database Design
+- **Primary Database**: PostgreSQL with UUID-based primary keys
+- **Schema Management**: Centralized in `shared/schema.ts` using Drizzle ORM
+- **Key Tables**: 
+  - Users table for authentication
+  - Pins table for location data with latitude/longitude coordinates
+- **Extensions**: Uses pgcrypto extension for UUID generation
 
-## Authentication & Authorization
-- **Provider**: Clerk authentication service
-- **Strategy**: JWT-based authentication with user sessions
-- **Access Control**: User-based pin ownership and management
+## Development Environment
+- **Monorepo Structure**: Client and server code in separate directories with shared schema
+- **Path Aliases**: Configured for clean imports (@/, @shared/, @assets/)
+- **Hot Reload**: Vite dev server with HMR for frontend development
+- **Type Safety**: Full TypeScript coverage across frontend, backend, and shared code
 
-## CI/CD and Infrastructure
-- **Deployment Method**: Docker-first containerized deployment with systematic validation
-- **Root Cause Analysis**: Eliminated dependency drift issues in CI/CD
-- **Validation Strategy**: Node.js version locking and dependency integrity checks before build
-- **Container Management**: Enhanced cleanup with `docker container prune`
-- **Deployment Pipeline**: GitHub Actions → Validation → Docker Build → VPS Container Deploy
-- **Hosting**: RackNerd VPS with Docker support
-- **Reverse Proxy**: Nginx with Let's Encrypt SSL
-- **Monitoring**: Custom health checks
-
-## File Structure
-```
-addypin/
-├── client/src/           # React frontend
-│   ├── components/
-│   ├── pages/
-│   ├── lib/
-│   └── hooks/
-├── server/              # Express.js backend
-│   ├── routes.ts
-│   ├── db.ts
-│   └── services/
-├── shared/
-│   └── schema.ts
-└── scripts/
-```
-
-## Database Schema
-```typescript
-Tables:
-├── users
-├── pins
-├── analytics
-├── daily_stats
-└── otp_codes
-```
+## Production Architecture
+- **Containerization**: Docker-based deployment with multi-stage builds
+- **Static Serving**: Production frontend built as static assets served by nginx
+- **Process Management**: Single Node.js process serving both API and static files
+- **Port Configuration**: Configurable port (defaults to 5000) for unified serving
 
 # External Dependencies
 
-- **Email Service**: Resend (for transactional emails and OTP)
-- **Map Data**: OpenStreetMap (for base map tiles and geocoding)
-- **Authentication**: Clerk (for user management and JWT)
-- **Analytics**: Custom implementation with Umami tracking
-- **VPS Hosting**: RackNerd
-- **CI/CD**: GitHub Actions
+## Core Infrastructure
+- **Database**: PostgreSQL (Neon serverless or local instance)
+- **Container Runtime**: Docker for application packaging and deployment
+- **Web Server**: nginx for static file serving in production
+
+## Authentication & Communication
+- **Clerk**: User authentication service (optional based on configuration)
+- **Email Services**: 
+  - SendGrid for transactional email
+  - Resend as alternative email provider
+  - React Email for email template rendering
+
+## Development Tools
+- **Package Manager**: npm with lock file for dependency consistency
+- **Build Tools**: 
+  - Vite for frontend bundling
+  - esbuild for backend bundling
+  - PostCSS for CSS processing
+- **Code Quality**: TypeScript for type safety across the entire stack
+
+## Third-Party Libraries
+- **UI Framework**: Extensive Radix UI component ecosystem
+- **Styling**: Tailwind CSS with typography plugin
+- **Forms**: React Hook Form with Zod validation resolvers
+- **Maps**: Leaflet for interactive mapping functionality
+- **State Management**: TanStack React Query for API state management
+
+## Development Environment
+- **Replit Integration**: Special Vite plugins for Replit development environment
+- **Error Handling**: Runtime error modal for development debugging
+- **Hot Reload**: Cartographer plugin for enhanced development experience
