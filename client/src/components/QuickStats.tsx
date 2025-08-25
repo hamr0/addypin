@@ -15,7 +15,7 @@ export function QuickStats() {
         <div className="stats-card rounded-lg p-2">
           <div className="flex items-center">
             <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center mr-2">
-              <span className="text-xs font-bold text-white">P</span>
+              <span className="text-xs">🎯</span>
             </div>
             <div>
               <p className="text-xs font-medium text-addypin-medium">Pinned</p>
