@@ -18,7 +18,7 @@ jobs:
     - name: Deploy to VPS using Docker
       run: |
         echo "🐳 Starting Docker-based deployment..."
-        ssh -i ~/.ssh/key -o StrictHostKeyChecking=no root@155.94.144.191 "
+        ssh -i ~/.ssh/key -o StrictHostKeyChecking=no root@155.94.144.191 '
           set -e
           cd /opt/addypin
           
@@ -72,9 +72,9 @@ jobs:
           
           echo '📊 Final deployment status:'
           docker ps | grep addypin || true
-          echo "🗄️ Final disk usage: $(df -h / | tail -1 | awk '{print $5}') used"
+          echo "🗄️ Final disk usage: $(df -h / | tail -1 | awk '"'"'{print $5}'"'"') used"
           
-          echo '🧹 Post-deployment cleanup verification...'
+          echo "🧹 Post-deployment cleanup verification..."
           echo "📦 Docker images count: $(docker images | wc -l)"
-          echo "💾 Available disk space: $(df -h / | tail -1 | awk '{print $4}') free"
-        "
+          echo "💾 Available disk space: $(df -h / | tail -1 | awk '"'"'{print $4}'"'"') free"
+        '
