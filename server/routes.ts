@@ -154,13 +154,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   console.log("✅ About to register pin creation endpoint...");
   
   // Create new pin (open access with comprehensive protection)
-  app.post("/api/pins", 
-    antibotMiddleware, 
-    timingAnalysisMiddleware,
-    honeypotMiddleware,
-    pinCreationLimiter, 
-    dailyPinLimiter, 
-    async (req, res) => {
+    app.post("/api/pins", 
+      antibotMiddleware, 
+      timingAnalysisMiddleware,
+      honeypotMiddleware,
+      pinCreationLimiter, 
+      dailyPinLimiter, 
+      async (req, res) => {
     try {
       const validatedData = insertPinSchema.parse(req.body);
       

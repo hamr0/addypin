@@ -52,6 +52,22 @@ jobs:
           IMAGE_TAG=\"addypin:\$(date +%Y%m%d-%H%M%S)-\$(git rev-parse --short HEAD)\"
           docker build --no-cache -t addypin:latest -t \"\$IMAGE_TAG\" .
           
+          echo \"🔍 Verifying built image contains enhanced logging...\"
+          docker run --rm -t addypin:latest sh -c \"
+            echo '=== Checking if enhanced logging exists ==='
+            if grep -q 'Starting route registration' /app/dist/index.js; then
+              echo '✅ Enhanced logging FOUND in built image'
+            else
+              echo '❌ Enhanced logging MISSING from built image'
+              echo '=== File contents sample ==='
+              head -20 /app/dist/index.js
+            fi
+            echo '=== Build info ==='
+            echo 'Node version:' && node --version
+            echo 'Files in /app:' && ls -la /app/
+            echo 'Files in /app/dist:' && ls -la /app/dist/
+          \"
+          
           echo \"🧹 Pre-deployment cleanup keep disk healthy...\"
           docker images addypin --format 'table {{.Repository}}:{{.Tag}}\t{{.CreatedAt}}' | grep -v latest | tail -n +6 | awk '{print \$1}' | xargs -r docker rmi || true
           docker system prune -f --volumes || true
