@@ -43,12 +43,14 @@ jobs:
           
           echo \"📥 Getting fresh code...\"
           rm -rf addypin-repo
-          git clone https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/amrhas82/addypin.git addypin-repo
+          git clone --branch main https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/amrhas82/addypin.git addypin-repo
           cd addypin-repo
+          echo \"📌 Latest commit:\"
+          git log -1 --oneline
           
           echo \"🏗️ Building Docker image with versioning...\"
           IMAGE_TAG=\"addypin:\$(date +%Y%m%d-%H%M%S)-\$(git rev-parse --short HEAD)\"
-          docker build -t addypin:latest -t \"\$IMAGE_TAG\" .
+          docker build --no-cache -t addypin:latest -t \"\$IMAGE_TAG\" .
           
           echo \"🧹 Pre-deployment cleanup keep disk healthy...\"
           docker images addypin --format 'table {{.Repository}}:{{.Tag}}\t{{.CreatedAt}}' | grep -v latest | tail -n +6 | awk '{print \$1}' | xargs -r docker rmi || true
@@ -96,6 +98,9 @@ jobs:
               sleep 10
             fi
           done
+          
+          echo \"📦 Deployed version:\"
+          curl -s http://localhost:3000/api/version || echo \"⚠️ Version endpoint not available\"
           
           echo \"📊 Final deployment status:\"
           docker ps | grep addypin || true
