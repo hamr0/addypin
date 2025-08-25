@@ -73,6 +73,13 @@ jobs:
           echo \"⏱️ Waiting for container to start...\"
           sleep 15
           
+          echo \"🔍 Container diagnostic information:\"
+          docker logs addypin --tail 50 || true
+          echo \"📁 Build artifacts check:\"
+          docker exec addypin ls -la dist/ || true
+          echo \"📋 Package version check:\"
+          docker exec addypin node -e \"console.log('Package version:', require('./package.json').version)\" || true
+          
           echo \"🧪 Checking database schema...\"
           TABLE_COUNT=\$(timeout 30 psql 'postgresql://addypin_user:secure_password_123@172.17.0.1:5432/addypin' -tAc \"SELECT count(*) FROM information_schema.tables WHERE table_schema='public'\" 2>/dev/null || echo \"0\")
           echo \"Found \$TABLE_COUNT tables in public schema\"
