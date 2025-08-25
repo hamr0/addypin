@@ -74,6 +74,20 @@ jobs:
           
           echo \"📊 Disk space after cleanup: \$(df -h / | tail -1 | awk '{print \$5}') used\"
           
+          echo \"🗄️ Starting PostgreSQL database...\"
+          docker stop addypin-postgres 2>/dev/null || true
+          docker rm addypin-postgres 2>/dev/null || true
+          docker run -d --name addypin-postgres \\
+            -e POSTGRES_USER=addypin_user \\
+            -e POSTGRES_PASSWORD=secure_password_123 \\
+            -e POSTGRES_DB=addypin \\
+            -p 5432:5432 \\
+            --restart unless-stopped \\
+            postgres:13
+          
+          echo \"⏱️ Waiting for database to initialize...\"
+          sleep 10
+          
           echo \"🚀 Running new container...\"
           docker run -d --name addypin -p 3000:3000 \\
             -e DATABASE_URL='postgresql://addypin_user:secure_password_123@172.17.0.1:5432/addypin' \\
@@ -95,6 +109,17 @@ jobs:
           docker exec addypin ls -la dist/ || true
           echo \"📋 Package version check:\"
           docker exec addypin node -e \"console.log('Package version:', require('./package.json').version)\" || true
+          
+          echo \"🧪 Testing database connectivity...\"
+          for i in {1..5}; do
+            if docker exec addypin-postgres pg_isready -U addypin_user -d addypin; then
+              echo \"✅ Database connection successful on attempt \$i\"
+              break
+            else
+              echo \"⏳ Database connection attempt \$i/5 failed, retrying in 5s...\"
+              sleep 5
+            fi
+          done
           
           echo \"🧪 Checking database schema...\"
           TABLE_COUNT=\$(timeout 30 psql 'postgresql://addypin_user:secure_password_123@172.17.0.1:5432/addypin' -tAc \"SELECT count(*) FROM information_schema.tables WHERE table_schema='public'\" 2>/dev/null || echo \"0\")
