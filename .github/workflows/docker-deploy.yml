@@ -81,12 +81,23 @@ jobs:
           echo \"🔌 Using external PostgreSQL at 172.17.0.1:5432\"
           
           echo \"🚀 Running new container...\"
+          # Load environment variables from .env.production
+          if [ -f /opt/addypin/.env.production ]; then
+            echo \"📋 Loading environment variables from .env.production\"
+            source /opt/addypin/.env.production
+          else
+            echo \"⚠️ .env.production not found, using .env fallback\"
+            source /opt/addypin/.env
+          fi
+          
           docker run -d --name addypin -p 3000:3000 \\
             -e DATABASE_URL='postgresql://addypin_user:secure_password_123@172.17.0.1:5432/addypin' \\
-            -e RESEND_API_KEY=\"\$(grep RESEND_API_KEY /opt/addypin/.env | cut -d'=' -f2)\" \\
-            -e UMAMI_APP_SECRET=\"\$(grep UMAMI_APP_SECRET /opt/addypin/.env | cut -d'=' -f2)\" \\
-            -e UMAMI_HASH_SALT=\"\$(grep UMAMI_HASH_SALT /opt/addypin/.env | cut -d'=' -f2)\" \\
-            -e GOOGLE_MAPS_API_KEY=\"\$(grep GOOGLE_MAPS_API_KEY /opt/addypin/.env | cut -d'=' -f2)\" \\
+            -e RESEND_API_KEY=\"\$RESEND_API_KEY\" \\
+            -e UMAMI_APP_SECRET=\"\$UMAMI_APP_SECRET\" \\
+            -e UMAMI_HASH_SALT=\"\$UMAMI_HASH_SALT\" \\
+            -e UMAMI_API_URL=\"\$UMAMI_API_URL\" \\
+            -e UMAMI_WEBSITE_ID=\"\$UMAMI_WEBSITE_ID\" \\
+            -e GOOGLE_MAPS_API_KEY=\"\$GOOGLE_MAPS_API_KEY\" \\
             -e PORT=3000 \\
             -e NODE_ENV=production \\
             --restart unless-stopped \\
@@ -122,22 +133,58 @@ jobs:
           fi
           if [ \"\$TABLE_COUNT\" -eq \"0\" ] 2>/dev/null; then
             echo \"❌ No tables found. Running db:push to create schema...\"
-            cd addypin-repo && npm run db:push
+            npm install
+            npm run db:push
             echo \"✅ Database schema created successfully\"
           else
             echo \"✅ Schema already exists (\$TABLE_COUNT tables). Skipping db:push.\"
           fi
           
-          echo \"🏥 Enhanced health check...\"
+          echo \"🏥 Enhanced health check with diagnostics...\"
           for i in {1..6}; do
-            if curl -f http://localhost:3000/api/health; then
-              echo \"✅ Deployment successful attempt \$i\"
+            echo \"🔍 Health check attempt \$i/6...\"
+            
+            # Check if container is running
+            if ! docker ps | grep -q \"addypin.*Up\"; then
+              echo \"❌ Container is not running\"
+              docker logs addypin --tail 20
+              echo \"⏳ Retrying in 10s...\"
+              sleep 10
+              continue
+            fi
+            
+            # Check HTTP health endpoint
+            HTTP_CODE=\$(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/api/health 2>/dev/null || echo \"000\")
+            echo \"📡 HTTP response code: \$HTTP_CODE\"
+            
+            if [ \"\$HTTP_CODE\" = \"200\" ]; then
+              echo \"✅ Health check passed! Application is healthy\"
+              
+              # Additional verification - test database connectivity through API
+              echo \"🧪 Testing database connectivity through API...\"
+              if curl -s http://localhost:3000/api/stats | grep -q \"pinsCreated\"; then
+                echo \"✅ Database connectivity confirmed through API\"
+              else  
+                echo \"⚠️ API responding but database might have issues\"
+              fi
               break
             else
-              echo \"⏳ Health check \$i/6 failed, retrying in 10s...\"
+              echo \"❌ Health check failed - HTTP \$HTTP_CODE\"
+              echo \"🔍 Container logs (last 10 lines):\"
+              docker logs addypin --tail 10
+              echo \"⏳ Retrying in 10s...\"
               sleep 10
             fi
           done
+          
+          # Final status check
+          if [ \$i -eq 6 ]; then
+            echo \"❌ Deployment failed after 6 attempts\"
+            echo \"🔍 Final diagnostics:\"
+            docker ps | grep addypin || echo \"Container not found\"
+            docker logs addypin --tail 30
+            exit 1
+          fi
           
           echo \"📦 Deployed version:\"
           curl -s http://localhost:3000/api/version || echo \"⚠️ Version endpoint not available\"
