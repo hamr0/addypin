@@ -72,14 +72,18 @@ jobs:
           sleep 15
           
           echo \"🧪 Checking database schema...\"
-          TABLE_COUNT=\$(psql 'postgresql://addypin_user:secure_password_123@172.17.0.1:5432/addypin' -tAc \"SELECT count(*) FROM information_schema.tables WHERE table_schema='public'\")
+          TABLE_COUNT=\$(timeout 30 psql 'postgresql://addypin_user:secure_password_123@172.17.0.1:5432/addypin' -tAc \"SELECT count(*) FROM information_schema.tables WHERE table_schema='public'\" 2>/dev/null || echo \"0\")
           echo \"Found \$TABLE_COUNT tables in public schema\"
-          if [ \"\$TABLE_COUNT\" -eq \"0\" ]; then
+          if [ -z \"\$TABLE_COUNT\" ]; then
+            echo \"⚠️ Database connection failed. Assuming empty schema.\"
+            TABLE_COUNT=0
+          fi
+          if [ \"\$TABLE_COUNT\" -eq \"0\" ] 2>/dev/null; then
             echo \"❌ No tables found. Running db:push to create schema...\"
             cd addypin-repo && npm run db:push
             echo \"✅ Database schema created successfully\"
           else
-            echo \"✅ Schema already exists. Skipping db:push.\"
+            echo \"✅ Schema already exists (\$TABLE_COUNT tables). Skipping db:push.\"
           fi
           
           echo \"🏥 Enhanced health check...\"
