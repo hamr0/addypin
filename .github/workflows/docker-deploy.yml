@@ -77,13 +77,9 @@ jobs:
           echo "✅ Dockerfile found"
           
           echo "🛑 Stopping existing container..."
-          if docker ps | grep -q "addypin[^-]"; then
-            docker stop addypin
-            docker rm -f addypin
-            echo "✅ Old container removed"
-          else
-            echo "✅ No existing container to stop"
-          fi
+          docker stop addypin 2>/dev/null || echo "No container addypin to stop"
+          docker rm -f addypin 2>/dev/null || echo "No container addypin to remove"
+          echo "✅ Container cleanup completed"
           
           echo "🔨 Building Docker image..."
           if docker build -t addypin:latest .; then
