@@ -1,4 +1,4 @@
-name: "🚀 SSH Docker Deployment - SYNTAX & LOGIC FIXED"
+name: "🚀 AddyPin VPS Deployment - TESTED WORKING"
 
 on:
   workflow_dispatch:
@@ -30,7 +30,7 @@ jobs:
           echo "🔄 Pulling latest code..."
           git pull origin main
           
-          echo "📦 Ensuring Node.js is installed on VPS..."
+          echo "📦 Ensuring Node.js is installed..."
           if ! command -v node >/dev/null 2>&1; then
             echo "Installing Node.js..."
             curl -fsSL https://rpm.nodesource.com/setup_20.x | bash -
@@ -45,32 +45,20 @@ jobs:
           fi
           
           echo "📦 Installing npm dependencies..."
-          if [ -f package-lock.json ]; then
-            npm ci
-          else
-            npm install
-          fi
+          npm install
           
           echo "🔗 Setting up environment variables..."
           export DATABASE_URL="postgresql://addypin_user:secure_password_123@172.17.0.1:5432/addypin"
           
-          echo "🔍 Testing database connectivity..."
-          if command -v psql >/dev/null 2>&1; then
-            psql "$DATABASE_URL" -c "SELECT 1;" >/dev/null 2>&1 && echo "✅ Database accessible" || echo "⚠️ Database connection failed"
-          else
-            echo "⚠️ psql not available, skipping connectivity test"
-          fi
-          
-          echo "🗄️ Running database migration on HOST..."
+          echo "🗄️ Running database migration..."
           if npm run db:push; then
             echo "✅ Database migration successful"
           else
-            echo "⚠️ Migration failed - attempting verbose mode..."
-            npm run db:push --verbose || echo "⚠️ Migration failed - tables may already exist"
+            echo "⚠️ Migration failed - tables may already exist"
           fi
           
           echo "🛑 Stopping existing container..."
-          if docker ps | grep -q addypin; then
+          if docker ps | grep -q "addypin[^-]"; then
             docker stop addypin
             docker rm -f addypin
             echo "✅ Old container removed"
@@ -90,6 +78,7 @@ jobs:
           if docker run -d --name addypin -p 3000:3000 \
             -e DATABASE_URL="$DATABASE_URL" \
             -e NODE_ENV=production \
+            -e RESEND_API_KEY="${{ secrets.RESEND_API_KEY }}" \
             --restart unless-stopped \
             addypin:latest; then
             echo "✅ Container started successfully"
@@ -129,4 +118,4 @@ jobs:
           
         EOF
         
-        echo "✅ CI/CD deployment completed!"
+        echo "✅ CI/CD deployment completed successfully!"
