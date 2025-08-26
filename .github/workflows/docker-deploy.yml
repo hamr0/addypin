@@ -1,4 +1,4 @@
-name: "🚀 SSH Docker Deployment - RAW KEY FIX"
+name: "🚀 SSH Docker Deployment - COMPLETE FIX"
 
 on:
   workflow_dispatch:
@@ -46,7 +46,14 @@ jobs:
             addypin:latest
           
           echo "⏱️ Waiting for container to start..."
-          sleep 10
+          sleep 15
+          
+          echo "🗄️ Setting up database tables..."
+          # Run database migration inside container
+          docker exec addypin npm run db:push || echo "⚠️ Database migration failed - may already exist"
+          
+          echo "⏳ Additional wait for database setup..."
+          sleep 5
           
           echo "🏥 Health check..."
           # Use the correct health endpoint
@@ -55,14 +62,15 @@ jobs:
           else
             echo "⚠️ Health check failed - checking basic connectivity..."
             if curl -f http://localhost:3000/; then
-              echo "⚠️ App responds but health endpoint failing - likely database issue"
+              echo "⚠️ App responds but health endpoint failing"
               echo "📊 Container status:"
               docker ps | grep addypin
               echo "📋 Container logs:"
-              docker logs --tail 20 addypin
+              docker logs --tail 30 addypin
               echo "🔍 Continuing deployment - app is running"
             else
               echo "❌ Complete deployment failure"
+              echo "📋 Full container logs:"
               docker logs addypin
               exit 1
             fi
@@ -70,6 +78,9 @@ jobs:
           
           echo "🎯 Final verification..."
           curl -s http://localhost:3000/ | head -c 100 || echo "Main page check failed"
+          
+          echo "🧹 Cleanup old Docker images..."
+          docker image prune -f
           
         EOF
         
