@@ -2,6 +2,14 @@ name: "🐳 Docker-First Clean Deployment"
 
 on:
   workflow_dispatch:
+  push:
+    branches: [ main ]
+
+env:
+  SSH_HOST: 155.94.144.191
+  APP_DIR: /opt/addypin
+  REPO_NAME: addypin-repo
+  DB_URL: postgresql://addypin_user:${{ secrets.VPS_DATABASE_PASSWORD }}@172.17.0.1:5432/addypin
 
 jobs:
   deploy:
@@ -15,7 +23,8 @@ jobs:
       with:
         node-version-file: '.nvmrc'
         cache: 'npm'
-    - name: 🔍 Validate lock file
+        
+    - name: Validate lock file
       run: |
         npm install --package-lock-only
         echo "✅ Lock file is in sync"
@@ -24,193 +33,104 @@ jobs:
       run: |
         mkdir -p ~/.ssh
         chmod 700 ~/.ssh
-        echo "LS0tLS1CRUdJTiBPUEVOU1NIIFBSSVZBVEUgS0VZLS0tLS0KYjNCbGJuTnphQzFyWlhrdGRqRUFBQUFBQkc1dmJtVUFBQUFFYm05dVpRQUFBQUFBQUFBQkFBQUFNd0FBQUF0emMyZ3RaVwpReU5UVXhPUUFBQUNETUp6VzR4NjBVWTk1KzFyTXo1TnFzT1lGK0xBRnl2WUVsYjBjRmVKRXhSQUFBQUtCUC80c1VULytMCkZBQUFBQXR6YzJndFpXUXlOVFV4T1FBQUFDRE1Kelc0eDYwVVk5NSsxck16NU5xc09ZRitMQUZ5dllFbGIwY0ZlSkV4UkEKQUFBRUFkWFBqaGRtcXpVZ0U3UU1INkU4eEJkSXU2UHN0SUhwamMxYkY2eXRjRFM4d25OYmpIclJSajNuN1dzelBrMnF3NQpnWDRzQVhLOWdTVnZSd1Y0a1RGRUFBQUFIR2RwZEdoMVlpMWhZM1JwYjI1ekxXUmxjR3h2ZVMxdWIzQmhjM01CCi0tLS0tRU5EIE9QRU5TU0ggUFJJVkFURSBLRVktLS0tLQo=" | base64 -d > ~/.ssh/key
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" | base64 -d > ~/.ssh/key
         chmod 600 ~/.ssh/key
         echo "✅ SSH key setup complete"
         
-    - name: Deploy to VPS using Docker
+    - name: Create deployment script
       run: |
-        echo "🐳 Starting Docker-based deployment..."
-        ssh -i ~/.ssh/key -o StrictHostKeyChecking=no root@155.94.144.191 "
-          set -e
-          cd /opt/addypin
-          
-          echo \"🛑 Stopping existing containers...\"
-          docker stop addypin || true
-          docker rm addypin || true
-          docker container prune -f || true
-          echo \"✅ Container cleanup complete\"
-          
-          echo \"📥 Getting fresh code...\"
-          rm -rf addypin-repo
-          git clone --branch main https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/amrhas82/addypin.git addypin-repo
-          cd addypin-repo
-          echo \"📌 Latest commit:\"
-          git log -1 --oneline
-          
-          echo \"🏗️ Building Docker image with versioning...\"
-          IMAGE_TAG=\"addypin:\$(date +%Y%m%d-%H%M%S)-\$(git rev-parse --short HEAD)\"
-          docker build --no-cache -t addypin:latest -t \"\$IMAGE_TAG\" .
-          
-          echo \"🔍 Verifying built image contains enhanced logging...\"
-          docker run --rm -t addypin:latest sh -c \"
-            echo '=== Checking if enhanced logging exists ==='
-            if grep -q 'Starting route registration' /app/dist/index.js; then
-              echo '✅ Enhanced logging FOUND in built image'
-            else
-              echo '❌ Enhanced logging MISSING from built image'
-              echo '=== File contents sample ==='
-              head -20 /app/dist/index.js
-            fi
-            echo '=== Build info ==='
-            echo 'Node version:' && node --version
-            echo 'Files in /app:' && ls -la /app/
-            echo 'Files in /app/dist:' && ls -la /app/dist/
-          \"
-          
-          echo \"🧹 Pre-deployment cleanup keep disk healthy...\"
-          docker images addypin --format 'table {{.Repository}}:{{.Tag}}\t{{.CreatedAt}}' | grep -v latest | tail -n +6 | awk '{print \$1}' | xargs -r docker rmi || true
-          docker system prune -f --volumes || true
-          
-          echo \"📊 Disk space after cleanup: \$(df -h / | tail -1 | awk '{print \$5}') used\"
-          
-          echo \"🗄️ Cleaning up any conflicting PostgreSQL containers...\"
-          docker stop addypin-postgres 2>/dev/null || true
-          docker rm addypin-postgres 2>/dev/null || true
-          
-          echo \"🔌 Using external PostgreSQL at 172.17.0.1:5432\"
-          
-          echo \"🚀 Running new container...\"
-          # Load environment variables from .env.production
-          if [ -f /opt/addypin/.env.production ]; then
-            echo \"📋 Loading environment variables from .env.production\"
-            source /opt/addypin/.env.production
-          else
-            echo \"⚠️ .env.production not found, using .env fallback\"
-            source /opt/addypin/.env
-          fi
-          
-          docker run -d --name addypin -p 3000:3000 \\
-            -e DATABASE_URL='postgresql://addypin_user:secure_password_123@172.17.0.1:5432/addypin' \\
-            -e RESEND_API_KEY=\"\$RESEND_API_KEY\" \\
-            -e UMAMI_APP_SECRET=\"\$UMAMI_APP_SECRET\" \\
-            -e UMAMI_HASH_SALT=\"\$UMAMI_HASH_SALT\" \\
-            -e UMAMI_API_URL=\"\$UMAMI_API_URL\" \\
-            -e UMAMI_WEBSITE_ID=\"\$UMAMI_WEBSITE_ID\" \\
-            -e GOOGLE_MAPS_API_KEY=\"\$GOOGLE_MAPS_API_KEY\" \\
-            -e PORT=3000 \\
-            -e NODE_ENV=production \\
-            --restart unless-stopped \\
-            addypin:latest
-            
-          echo \"⏱️ Waiting for container to start...\"
-          sleep 15
-          
-          echo \"🔍 Container diagnostic information:\"
-          docker logs addypin --tail 50 || true
-          echo \"📁 Build artifacts check:\"
-          docker exec addypin ls -la dist/ || true
-          echo \"📋 Package version check:\"
-          docker exec addypin node -e \"console.log('Package version:', require('./package.json').version)\" || true
-          
-          echo \"🧪 Testing external database connectivity...\"
-          for i in {1..3}; do
-            if timeout 10s psql 'postgresql://addypin_user:secure_password_123@172.17.0.1:5432/addypin' -c 'SELECT 1;' >/dev/null 2>&1; then
-              echo \"✅ External database connection successful on attempt \$i\"
-              break
-            else
-              echo \"⏳ Database connection attempt \$i/3 failed, retrying in 5s...\"
-              sleep 5
-            fi
-          done
-          
-          echo \"📦 Application deployment complete. Database operations will be handled via VPS SSH.\"
-          
-          echo \"🏥 Enhanced health check with diagnostics...\"
-          for i in {1..6}; do
-            echo \"🔍 Health check attempt \$i/6...\"
-            
-            # Check if container is running
-            if ! docker ps | grep -q \"addypin.*Up\"; then
-              echo \"❌ Container is not running\"
-              docker logs addypin --tail 20
-              echo \"⏳ Retrying in 10s...\"
-              sleep 10
-              continue
-            fi
-            
-            # Check HTTP health endpoint
-            HTTP_CODE=\$(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/api/health 2>/dev/null || echo \"000\")
-            echo \"📡 HTTP response code: \$HTTP_CODE\"
-            
-            if [ \"\$HTTP_CODE\" = \"200\" ]; then
-              echo \"✅ Health check passed! Application is healthy\"
-              
-              # Additional verification - test database connectivity through API
-              echo \"🧪 Testing database connectivity through API...\"
-              if curl -s http://localhost:3000/api/stats | grep -q \"pinsCreated\"; then
-                echo \"✅ Database connectivity confirmed through API\"
-              else  
-                echo \"⚠️ API responding but database might have issues\"
-              fi
-              break
-            else
-              echo \"❌ Health check failed - HTTP \$HTTP_CODE\"
-              echo \"🔍 Container logs (last 10 lines):\"
-              docker logs addypin --tail 10
-              echo \"⏳ Retrying in 10s...\"
-              sleep 10
-            fi
-          done
-          
-          # Final status check
-          if [ \$i -eq 6 ]; then
-            echo \"❌ Deployment failed after 6 attempts\"
-            echo \"🔍 Final diagnostics:\"
-            docker ps | grep addypin || echo \"Container not found\"
-            docker logs addypin --tail 30
+        cat > deploy.sh << 'EOF'
+        #!/bin/bash
+        set -e
+
+        # Setup SSH command with proper options
+        SSH_CMD="ssh -i ~/.ssh/key -o StrictHostKeyChecking=no -o BatchMode=yes"
+
+        # Function to run commands on remote server
+        run_remote() {
+            $SSH_CMD root@$SSH_HOST "$@"
+        }
+
+        # Function to handle errors
+        error_handler() {
+            echo "❌ Deployment failed!"
             exit 1
-          fi
-          
-          # Database migration on VPS (local execution)
-          echo \"🗄️ Running database schema migration on VPS...\"
-          
-          # Check if database has tables first
-          TABLE_COUNT=\$(psql 'postgresql://addypin_user:secure_password_123@172.17.0.1:5432/addypin' -tAc \"SELECT count(*) FROM information_schema.tables WHERE table_schema='public'\" 2>/dev/null || echo \"0\")
-          echo \"Current table count: \$TABLE_COUNT\"
-          
-          if [ \"\$TABLE_COUNT\" -eq \"0\" ] 2>/dev/null; then
-            echo \"❌ No database tables found. Running schema migration...\"
+        }
+
+        # Set trap to catch errors
+        trap error_handler ERR
+
+        # Deploy to VPS
+        echo "📥 Deploying code..."
+        run_remote "
+            set -e
+            cd $APP_DIR
             
-            # Change to application directory and run migration
-            cd /opt/addypin/addypin-repo
-            echo \"📁 Working directory: \$(pwd)\"
+            # Cleanup existing deployment
+            echo '🛑 Stopping existing containers...'
+            docker stop addypin || true
+            docker rm -f addypin || true
             
-            # Set DATABASE_URL and run migration
-            export DATABASE_URL='postgresql://addypin_user:secure_password_123@172.17.0.1:5432/addypin'
-            echo \"🚀 Running npm run db:push...\"
+            # Get latest code
+            rm -rf $REPO_NAME
+            git clone --branch main https://github.com/amrhas82/addypin.git $REPO_NAME
+            cd $REPO_NAME
+            
+            # Build Docker image
+            echo '🏗️ Building Docker image...'
+            IMAGE_TAG=\"addypin:\$(date +%Y%m%d-%H%M%S)-\$(git rev-parse --short HEAD)\"
+            docker build --no-cache -t addypin:latest -t \"\$IMAGE_TAG\" .
+            
+            # Run database migration BEFORE starting app
+            echo '🗄️ Running database migration...'
+            export DATABASE_URL=\"$DB_URL\"
+            npm install --production=false
             npm run db:push --force
             
-            # Verify migration success
-            FINAL_COUNT=\$(psql 'postgresql://addypin_user:secure_password_123@172.17.0.1:5432/addypin' -tAc \"SELECT count(*) FROM information_schema.tables WHERE table_schema='public'\" 2>/dev/null || echo \"0\")
-            if [ \"\$FINAL_COUNT\" -gt \"0\" ]; then
-              echo \"✅ Database schema migration successful! (\$FINAL_COUNT tables created)\"
-            else
-              echo \"❌ Database schema migration failed\"
-              exit 1
-            fi
-          else
-            echo \"✅ Database schema already exists (\$TABLE_COUNT tables). Skipping migration.\"
-          fi
-          
-          echo \"📦 Deployed version:\"
-          curl -s http://localhost:3000/api/version || echo \"⚠️ Version endpoint not available\"
-          
-          echo \"📊 Final deployment status:\"
-          docker ps | grep addypin || true
-          echo \"🗄️ Final disk usage: \$(df -h / | tail -1 | awk '{print \$5}') used\"
-          
-          echo \"🧹 Post-deployment cleanup verification...\"
-          echo \"📦 Docker images count: \$(docker images | wc -l)\"
-          echo \"💾 Available disk space: \$(df -h / | tail -1 | awk '{print \$4}') free\"
+            # Start container
+            echo '🚀 Starting container...'
+            docker run -d --name addypin -p 3000:3000 \
+                -e DATABASE_URL=\"$DB_URL\" \
+                -e RESEND_API_KEY=\"$RESEND_API_KEY\" \
+                -e GOOGLE_MAPS_API_KEY=\"$GOOGLE_MAPS_API_KEY\" \
+                -e UMAMI_APP_SECRET=\"$UMAMI_APP_SECRET\" \
+                -e UMAMI_HASH_SALT=\"$UMAMI_HASH_SALT\" \
+                -e NODE_ENV=production \
+                -e PORT=3000 \
+                --restart unless-stopped \
+                addypin:latest
+                
+            # Health check
+            echo '🏥 Performing health check...'
+            sleep 15
+            for i in {1..6}; do
+                echo \"Health check attempt \$i/6...\"
+                if curl -f http://localhost:3000/api/health; then
+                    echo '✅ Health check passed!'
+                    break
+                elif [ \$i -eq 6 ]; then
+                    echo '❌ Health check failed after 6 attempts'
+                    docker logs addypin --tail 20
+                    exit 1
+                else
+                    echo 'Retrying in 10s...'
+                    sleep 10
+                fi
+            done
         "
+
+        echo "✅ Deployment successful!"
+        EOF
+        chmod +x deploy.sh
+        
+    - name: Deploy to VPS
+      run: ./deploy.sh
+      env:
+        SSH_HOST: ${{ env.SSH_HOST }}
+        APP_DIR: ${{ env.APP_DIR }}
+        REPO_NAME: ${{ env.REPO_NAME }}
+        DB_URL: ${{ env.DB_URL }}
+        RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+        GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+        UMAMI_APP_SECRET: ${{ secrets.UMAMI_APP_SECRET }}
+        UMAMI_HASH_SALT: ${{ secrets.UMAMI_HASH_SALT }}
