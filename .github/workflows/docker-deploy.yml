@@ -1,4 +1,4 @@
-name: "🐳 Docker-First Clean Deployment"
+name: "🚀 SSH Docker Deployment"
 
 on:
   workflow_dispatch:
@@ -12,42 +12,48 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       
-    - name: Deploy via VPS webhook
+    - name: Setup SSH key
       run: |
-        echo "🎯 Triggering VPS Docker deployment..."
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" | base64 -d > ~/.ssh/deploy_key
+        chmod 600 ~/.ssh/deploy_key
+        ssh-keyscan -H 155.94.144.191 >> ~/.ssh/known_hosts
         
-        # Create deployment payload
-        PAYLOAD=$(cat << EOF
-        {
-          "token": "${{ secrets.PERSONAL_ACCESS_TOKEN }}",
-          "commit": "${{ github.sha }}",
-          "branch": "main",
-          "trigger": "github_push"
-        }
+    - name: Deploy to VPS
+      run: |
+        echo "🚀 Starting deployment to VPS..."
+        
+        ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no root@155.94.144.191 << 'EOF'
+          set -e
+          echo "📍 Connected to VPS successfully"
+          
+          cd /opt/addypin/addypin-repo
+          echo "🔄 Pulling latest code..."
+          git pull origin main
+          
+          echo "🛑 Stopping existing container..."
+          docker stop addypin || true
+          docker rm -f addypin || true
+          
+          echo "🔨 Building Docker image..."
+          docker build -t addypin:latest .
+          
+          echo "🚀 Starting new container..."
+          docker run -d --name addypin -p 3000:3000 \
+            -e DATABASE_URL="postgresql://addypin_user:secure_password_123@172.17.0.1:5432/addypin" \
+            -e NODE_ENV=production \
+            --restart unless-stopped \
+            addypin:latest
+          
+          echo "🏥 Health check..."
+          sleep 5
+          if curl -f http://localhost:3000/health; then
+            echo "✅ Deployment successful!"
+          else
+            echo "❌ Health check failed"
+            docker logs addypin
+            exit 1
+          fi
         EOF
-        )
         
-        # Trigger VPS deployment via simple HTTP call
-        curl -X POST \
-          -H "Content-Type: application/json" \
-          -H "Authorization: Bearer ${{ secrets.PERSONAL_ACCESS_TOKEN }}" \
-          -d "$PAYLOAD" \
-          "http://155.94.144.191:9000/deploy" \
-          --connect-timeout 10 \
-          --max-time 30 \
-          || echo "⚠️ Direct webhook failed - using fallback method"
-        
-        # Fallback: Simple trigger file method
-        echo "📝 Creating deployment trigger..."
-        echo "${{ github.sha }}" > deploy-trigger.txt
-        
-        # Upload trigger via GitHub API (VPS polls this)
-        curl -X PUT \
-          -H "Authorization: token ${{ secrets.PERSONAL_ACCESS_TOKEN }}" \
-          -H "Content-Type: application/json" \
-          -d '{"message":"Trigger deployment","content":"'"$(base64 -w 0 deploy-trigger.txt)"'"}' \
-          "https://api.github.com/repos/amrhas82/addypin/contents/trigger-deploy.txt" \
-          || echo "⚠️ Trigger upload failed"
-        
-        echo "✅ Deployment initiated - VPS will pull and deploy with Docker"
-        echo "📖 VPS runs: cd /opt/addypin/addypin-repo && git pull && docker build & run"
+        echo "✅ CI/CD deployment completed successfully!"
