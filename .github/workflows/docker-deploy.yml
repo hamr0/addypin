@@ -1,4 +1,4 @@
-name: "🚀 SSH Docker Deployment - OPTION A: HOST MIGRATION"
+name: "🚀 SSH Docker Deployment - COMPREHENSIVE FIX"
 
 on:
   workflow_dispatch:
@@ -17,7 +17,6 @@ jobs:
         mkdir -p ~/.ssh
         echo "${{ secrets.SSH_PRIVATE_KEY }}" | base64 -d > ~/.ssh/deploy_key
         chmod 600 ~/.ssh/deploy_key
-        ssh-keyscan -H 155.94.144.191 >> ~/.ssh/known_hosts
         
     - name: Deploy to VPS
       run: |
@@ -27,6 +26,9 @@ jobs:
           set -e
           echo "📍 Connected to VPS successfully"
           
+          # Set database URL as variable
+          export DATABASE_URL="postgresql://addypin_user:secure_password_123@172.17.0.1:5432/addypin"
+          
           cd /opt/addypin/addypin-repo
           echo "🔄 Pulling latest code..."
           git pull origin main
@@ -35,35 +37,49 @@ jobs:
           if ! command -v node &> /dev/null; then
             echo "Installing Node.js..."
             curl -fsSL https://rpm.nodesource.com/setup_20.x | bash -
-            yum install -y nodejs
+            # Use dnf (modern package manager) with fallback to yum
+            dnf install -y nodejs || yum install -y nodejs
+            echo "✅ Node.js installed: $(node --version)"
+          else
+            echo "✅ Node.js already installed: $(node --version)"
           fi
           
           echo "📦 Installing npm dependencies..."
-          npm install
+          # First install production deps only (faster)
+          npm ci --only=production || npm install --only=production
+          # Then install dev deps for migration
+          npm install --only=dev drizzle-kit
           
-          echo "🗄️ Running database migration on HOST (before container)..."
-          export DATABASE_URL="postgresql://addypin_user:secure_password_123@172.17.0.1:5432/addypin"
-          npm run db:push || echo "⚠️ Migration failed - tables may already exist"
+          echo "🗄️ Running database migration on HOST..."
+          npm run db:push || {
+            echo "⚠️ Migration failed - checking error..."
+            npm run db:push --verbose || echo "⚠️ Migration failed - tables may already exist"
+          }
           
           echo "🛑 Stopping existing container..."
-          docker stop addypin || true
-          docker rm -f addypin || true
+          docker stop addypin 2>/dev/null || echo "No container to stop"
+          docker rm -f addypin 2>/dev/null || echo "No container to remove"
           
           echo "🔨 Building Docker image..."
-          docker build -t addypin:latest .
+          docker build -t addypin:latest . || {
+            echo "❌ Docker build failed"
+            exit 1
+          }
           
           echo "🚀 Starting new container..."
           docker run -d --name addypin -p 3000:3000 \
-            -e DATABASE_URL="postgresql://addypin_user:secure_password_123@172.17.0.1:5432/addypin" \
+            -e DATABASE_URL="$DATABASE_URL" \
             -e NODE_ENV=production \
             --restart unless-stopped \
-            addypin:latest
+            addypin:latest || {
+            echo "❌ Container start failed"
+            exit 1
+          }
           
           echo "⏱️ Waiting for container to start..."
           sleep 15
           
           echo "🏥 Health check..."
-          # Use the correct health endpoint
           if curl -f http://localhost:3000/api/health; then
             echo "✅ Health check passed!"
           else
