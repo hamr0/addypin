@@ -49,6 +49,14 @@ jobs:
           export DATABASE_URL="postgresql://addypin_user:secure_password_123@172.17.0.1:5432/addypin"
           echo "✅ Using existing PostgreSQL at 172.17.0.1:5432"
           
+          echo "🔍 Verifying PostgreSQL connection..."
+          if PGPASSWORD=secure_password_123 psql -h 172.17.0.1 -U addypin_user -d addypin -c "SELECT 1;" >/dev/null 2>&1; then
+            echo "✅ PostgreSQL verification passed"
+          else
+            echo "❌ PostgreSQL connection failed"
+            exit 1
+          fi
+          
           echo "🗄️ Running database migration..."
           if npm run db:push; then
             echo "✅ Database migration successful"
