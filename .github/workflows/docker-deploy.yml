@@ -1,4 +1,4 @@
-name: "🚀 SSH Docker Deployment - COMPLETE FIX"
+name: "🚀 SSH Docker Deployment - OPTION A: HOST MIGRATION"
 
 on:
   workflow_dispatch:
@@ -31,6 +31,10 @@ jobs:
           echo "🔄 Pulling latest code..."
           git pull origin main
           
+          echo "🗄️ Running database migration on HOST (before container)..."
+          export DATABASE_URL="postgresql://addypin_user:secure_password_123@172.17.0.1:5432/addypin"
+          npm run db:push || echo "⚠️ Migration failed - tables may already exist"
+          
           echo "🛑 Stopping existing container..."
           docker stop addypin || true
           docker rm -f addypin || true
@@ -47,13 +51,6 @@ jobs:
           
           echo "⏱️ Waiting for container to start..."
           sleep 15
-          
-          echo "🗄️ Setting up database tables..."
-          # Run database migration inside container
-          docker exec addypin npm run db:push || echo "⚠️ Database migration failed - may already exist"
-          
-          echo "⏳ Additional wait for database setup..."
-          sleep 5
           
           echo "🏥 Health check..."
           # Use the correct health endpoint
