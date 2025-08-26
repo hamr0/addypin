@@ -76,10 +76,10 @@ jobs:
           fi
           echo "✅ Dockerfile found"
           
-          echo "🛑 Stopping existing container..."
-          docker stop addypin 2>/dev/null || echo "No container addypin to stop"
-          docker rm -f addypin 2>/dev/null || echo "No container addypin to remove"
-          echo "✅ Container cleanup completed"
+          echo "🛑 Stopping containers using port 3000..."
+          docker ps -q --filter "publish=3000" | xargs -r docker stop || echo "No containers using port 3000"
+          docker ps -a -q --filter "publish=3000" | xargs -r docker rm || echo "No stopped containers to remove"
+          echo "✅ Port 3000 cleanup completed"
           
           echo "🔨 Building Docker image..."
           if docker build -t addypin:latest .; then
