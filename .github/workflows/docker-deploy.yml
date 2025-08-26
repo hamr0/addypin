@@ -12,19 +12,42 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       
-    - name: Trigger VPS deployment via webhook
+    - name: Deploy via VPS webhook
       run: |
-        echo "🎯 Using proven VPS-local deployment method"
-        echo "📚 Based on working solution from scripts/vps-deploy-enhanced.sh"
-        echo "✅ Deployment will be handled locally on VPS where database exists"
-        echo "🔗 Triggering VPS deployment..."
+        echo "🎯 Triggering VPS Docker deployment..."
         
-        # Create a simple webhook call or API trigger
-        # The VPS will pull and deploy locally using the proven script
-        curl -X POST "http://155.94.144.191:8080/deploy" \
+        # Create deployment payload
+        PAYLOAD=$(cat << EOF
+        {
+          "token": "${{ secrets.PERSONAL_ACCESS_TOKEN }}",
+          "commit": "${{ github.sha }}",
+          "branch": "main",
+          "trigger": "github_push"
+        }
+        EOF
+        )
+        
+        # Trigger VPS deployment via simple HTTP call
+        curl -X POST \
+          -H "Content-Type: application/json" \
           -H "Authorization: Bearer ${{ secrets.PERSONAL_ACCESS_TOKEN }}" \
-          -d '{"trigger": "github_push", "commit": "${{ github.sha }}"}' \
-          || echo "⚠️ Webhook failed - manual deployment required"
+          -d "$PAYLOAD" \
+          "http://155.94.144.191:9000/deploy" \
+          --connect-timeout 10 \
+          --max-time 30 \
+          || echo "⚠️ Direct webhook failed - using fallback method"
         
-        echo "✅ Deployment trigger sent successfully!"
-        echo "📖 VPS will run: /opt/addypin/scripts/vps-deploy-enhanced.sh"
+        # Fallback: Simple trigger file method
+        echo "📝 Creating deployment trigger..."
+        echo "${{ github.sha }}" > deploy-trigger.txt
+        
+        # Upload trigger via GitHub API (VPS polls this)
+        curl -X PUT \
+          -H "Authorization: token ${{ secrets.PERSONAL_ACCESS_TOKEN }}" \
+          -H "Content-Type: application/json" \
+          -d '{"message":"Trigger deployment","content":"'"$(base64 -w 0 deploy-trigger.txt)"'"}' \
+          "https://api.github.com/repos/amrhas82/addypin/contents/trigger-deploy.txt" \
+          || echo "⚠️ Trigger upload failed"
+        
+        echo "✅ Deployment initiated - VPS will pull and deploy with Docker"
+        echo "📖 VPS runs: cd /opt/addypin/addypin-repo && git pull && docker build & run"
