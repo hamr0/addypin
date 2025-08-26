@@ -124,53 +124,7 @@ jobs:
             fi
           done
           
-          echo \"🧪 Verifying database connectivity before schema migration...\"
-          
-          # Test database connection with retries
-          for attempt in {1..3}; do
-            if psql 'postgresql://addypin_user:secure_password_123@172.17.0.1:5432/addypin' -c 'SELECT 1;' >/dev/null 2>&1; then
-              echo \"✅ Database connectivity confirmed on attempt \$attempt\"
-              break
-            else
-              echo \"⏳ Database connection attempt \$attempt/3 failed, retrying in 5s...\"
-              sleep 5
-              if [ \$attempt -eq 3 ]; then
-                echo \"❌ Database connection failed after 3 attempts. Deployment aborted.\"
-                exit 1
-              fi
-            fi
-          done
-          
-          echo \"🧪 Checking database schema...\"
-          TABLE_COUNT=\$(psql 'postgresql://addypin_user:secure_password_123@172.17.0.1:5432/addypin' -tAc \"SELECT count(*) FROM information_schema.tables WHERE table_schema='public'\" 2>/dev/null || echo \"0\")
-          echo \"Found \$TABLE_COUNT tables in public schema\"
-          
-          if [ \"\$TABLE_COUNT\" -eq \"0\" ] 2>/dev/null; then
-            echo \"❌ No tables found. Running db:push to create schema...\"
-            
-            # Change to the correct directory and install dependencies
-            cd addypin-repo
-            echo \"📁 Current directory: \$(pwd)\"
-            echo \"📋 Installing dependencies for schema migration...\"
-            npm install --production=false
-            
-            # Export DATABASE_URL for drizzle-kit
-            export DATABASE_URL='postgresql://addypin_user:secure_password_123@172.17.0.1:5432/addypin'
-            echo \"🚀 Running database schema migration...\"
-            npm run db:push
-            
-            # Verify schema was created
-            FINAL_TABLE_COUNT=\$(psql 'postgresql://addypin_user:secure_password_123@172.17.0.1:5432/addypin' -tAc \"SELECT count(*) FROM information_schema.tables WHERE table_schema='public'\" 2>/dev/null || echo \"0\")
-            if [ \"\$FINAL_TABLE_COUNT\" -gt \"0\" ]; then
-              echo \"✅ Database schema created successfully (\$FINAL_TABLE_COUNT tables)\"
-            else
-              echo \"❌ Schema migration failed - no tables created\"
-              exit 1
-            fi
-            cd ..
-          else
-            echo \"✅ Schema already exists (\$TABLE_COUNT tables). Skipping db:push.\"
-          fi
+          echo \"📦 Application deployment complete. Database operations will be handled via VPS SSH.\"
           
           echo \"🏥 Enhanced health check with diagnostics...\"
           for i in {1..6}; do
@@ -216,6 +170,37 @@ jobs:
             docker ps | grep addypin || echo \"Container not found\"
             docker logs addypin --tail 30
             exit 1
+          fi
+          
+          # Database migration on VPS (local execution)
+          echo \"🗄️ Running database schema migration on VPS...\"
+          
+          # Check if database has tables first
+          TABLE_COUNT=\$(psql 'postgresql://addypin_user:secure_password_123@172.17.0.1:5432/addypin' -tAc \"SELECT count(*) FROM information_schema.tables WHERE table_schema='public'\" 2>/dev/null || echo \"0\")
+          echo \"Current table count: \$TABLE_COUNT\"
+          
+          if [ \"\$TABLE_COUNT\" -eq \"0\" ] 2>/dev/null; then
+            echo \"❌ No database tables found. Running schema migration...\"
+            
+            # Change to application directory and run migration
+            cd /opt/addypin/addypin-repo
+            echo \"📁 Working directory: \$(pwd)\"
+            
+            # Set DATABASE_URL and run migration
+            export DATABASE_URL='postgresql://addypin_user:secure_password_123@172.17.0.1:5432/addypin'
+            echo \"🚀 Running npm run db:push...\"
+            npm run db:push --force
+            
+            # Verify migration success
+            FINAL_COUNT=\$(psql 'postgresql://addypin_user:secure_password_123@172.17.0.1:5432/addypin' -tAc \"SELECT count(*) FROM information_schema.tables WHERE table_schema='public'\" 2>/dev/null || echo \"0\")
+            if [ \"\$FINAL_COUNT\" -gt \"0\" ]; then
+              echo \"✅ Database schema migration successful! (\$FINAL_COUNT tables created)\"
+            else
+              echo \"❌ Database schema migration failed\"
+              exit 1
+            fi
+          else
+            echo \"✅ Database schema already exists (\$TABLE_COUNT tables). Skipping migration.\"
           fi
           
           echo \"📦 Deployed version:\"
