@@ -17,6 +17,8 @@ jobs:
         chmod 600 ~/.ssh/deploy_key
         
     - name: Deploy to VPS
+      env:
+        RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
       run: |
         echo "🚀 Starting deployment to VPS..."
         
@@ -92,7 +94,7 @@ jobs:
           if docker run -d --name addypin -p 3000:3000 \
             -e DATABASE_URL="$DATABASE_URL" \
             -e NODE_ENV=production \
-            -e RESEND_API_KEY="${{ secrets.RESEND_API_KEY }}" \
+            -e RESEND_API_KEY="$RESEND_API_KEY" \
             --restart unless-stopped \
             addypin:latest; then
             echo "✅ Container started successfully"
