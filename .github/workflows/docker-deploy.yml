@@ -1,4 +1,4 @@
-name: "🚀 SSH Docker Deployment - COMPREHENSIVE FIX"
+name: "🚀 SSH Docker Deployment - SYNTAX & LOGIC FIXED"
 
 on:
   workflow_dispatch:
@@ -26,84 +26,106 @@ jobs:
           set -e
           echo "📍 Connected to VPS successfully"
           
-          # Set database URL as variable
-          export DATABASE_URL="postgresql://addypin_user:secure_password_123@172.17.0.1:5432/addypin"
-          
           cd /opt/addypin/addypin-repo
           echo "🔄 Pulling latest code..."
           git pull origin main
           
           echo "📦 Ensuring Node.js is installed on VPS..."
-          if ! command -v node &> /dev/null; then
+          if ! command -v node >/dev/null 2>&1; then
             echo "Installing Node.js..."
             curl -fsSL https://rpm.nodesource.com/setup_20.x | bash -
-            # Use dnf (modern package manager) with fallback to yum
-            dnf install -y nodejs || yum install -y nodejs
+            if command -v dnf >/dev/null 2>&1; then
+              dnf install -y nodejs
+            else
+              yum install -y nodejs
+            fi
             echo "✅ Node.js installed: $(node --version)"
           else
             echo "✅ Node.js already installed: $(node --version)"
           fi
           
           echo "📦 Installing npm dependencies..."
-          # First install production deps only (faster)
-          npm ci --only=production || npm install --only=production
-          # Then install dev deps for migration
-          npm install --only=dev drizzle-kit
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install
+          fi
+          
+          echo "🔗 Setting up environment variables..."
+          export DATABASE_URL="postgresql://addypin_user:secure_password_123@172.17.0.1:5432/addypin"
+          
+          echo "🔍 Testing database connectivity..."
+          if command -v psql >/dev/null 2>&1; then
+            psql "$DATABASE_URL" -c "SELECT 1;" >/dev/null 2>&1 && echo "✅ Database accessible" || echo "⚠️ Database connection failed"
+          else
+            echo "⚠️ psql not available, skipping connectivity test"
+          fi
           
           echo "🗄️ Running database migration on HOST..."
-          npm run db:push || {
-            echo "⚠️ Migration failed - checking error..."
+          if npm run db:push; then
+            echo "✅ Database migration successful"
+          else
+            echo "⚠️ Migration failed - attempting verbose mode..."
             npm run db:push --verbose || echo "⚠️ Migration failed - tables may already exist"
-          }
+          fi
           
           echo "🛑 Stopping existing container..."
-          docker stop addypin 2>/dev/null || echo "No container to stop"
-          docker rm -f addypin 2>/dev/null || echo "No container to remove"
+          if docker ps | grep -q addypin; then
+            docker stop addypin
+            docker rm -f addypin
+            echo "✅ Old container removed"
+          else
+            echo "✅ No existing container to stop"
+          fi
           
           echo "🔨 Building Docker image..."
-          docker build -t addypin:latest . || {
+          if docker build -t addypin:latest .; then
+            echo "✅ Docker build successful"
+          else
             echo "❌ Docker build failed"
             exit 1
-          }
+          fi
           
           echo "🚀 Starting new container..."
-          docker run -d --name addypin -p 3000:3000 \
+          if docker run -d --name addypin -p 3000:3000 \
             -e DATABASE_URL="$DATABASE_URL" \
             -e NODE_ENV=production \
             --restart unless-stopped \
-            addypin:latest || {
+            addypin:latest; then
+            echo "✅ Container started successfully"
+          else
             echo "❌ Container start failed"
             exit 1
-          }
+          fi
           
           echo "⏱️ Waiting for container to start..."
           sleep 15
           
           echo "🏥 Health check..."
-          if curl -f http://localhost:3000/api/health; then
+          if curl -f http://localhost:3000/api/health >/dev/null 2>&1; then
             echo "✅ Health check passed!"
           else
             echo "⚠️ Health check failed - checking basic connectivity..."
-            if curl -f http://localhost:3000/; then
+            if curl -f http://localhost:3000/ >/dev/null 2>&1; then
               echo "⚠️ App responds but health endpoint failing"
               echo "📊 Container status:"
-              docker ps | grep addypin
+              docker ps | grep addypin || echo "Container not found"
               echo "📋 Container logs:"
-              docker logs --tail 30 addypin
+              docker logs --tail 30 addypin 2>/dev/null || echo "No logs available"
               echo "🔍 Continuing deployment - app is running"
             else
               echo "❌ Complete deployment failure"
               echo "📋 Full container logs:"
-              docker logs addypin
+              docker logs addypin 2>/dev/null || echo "No logs available"
               exit 1
             fi
           fi
           
           echo "🎯 Final verification..."
-          curl -s http://localhost:3000/ | head -c 100 || echo "Main page check failed"
+          curl -s http://localhost:3000/ | head -c 100 2>/dev/null || echo "Main page check failed"
           
           echo "🧹 Cleanup old Docker images..."
-          docker image prune -f
+          docker image prune -f >/dev/null 2>&1 || echo "Image cleanup completed"
           
         EOF
         
