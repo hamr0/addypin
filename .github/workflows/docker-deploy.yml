@@ -64,6 +64,13 @@ jobs:
             echo "⚠️ Migration failed - tables may already exist"
           fi
           
+          echo "📋 Validating Dockerfile..."
+          if [ ! -f Dockerfile ]; then
+            echo "❌ Dockerfile not found"
+            exit 1
+          fi
+          echo "✅ Dockerfile found"
+          
           echo "🛑 Stopping existing container..."
           if docker ps | grep -q "addypin[^-]"; then
             docker stop addypin
