@@ -19,16 +19,19 @@ jobs:
     - name: Deploy to VPS
       env:
         RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+        PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
       run: |
         echo "🚀 Starting deployment to VPS..."
         
-        ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no root@155.94.144.191 << 'EOF'
+        ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no root@155.94.144.191 << EOF
+          export RESEND_API_KEY="$RESEND_API_KEY"
+          export PERSONAL_ACCESS_TOKEN="$PERSONAL_ACCESS_TOKEN"
           set -e
           echo "📍 Connected to VPS successfully"
           
           cd /opt/addypin/addypin-repo
           echo "🔄 Pulling latest code..."
-          git pull https://${{ secrets.PERSONAL_ACCESS_TOKEN }}@github.com/amrhas82/addypin.git main
+          git pull https://\$PERSONAL_ACCESS_TOKEN@github.com/amrhas82/addypin.git main
           
           echo "📦 Ensuring Node.js is installed..."
           if ! command -v node >/dev/null 2>&1; then
@@ -94,7 +97,7 @@ jobs:
           if docker run -d --name addypin -p 3000:3000 \
             -e DATABASE_URL="$DATABASE_URL" \
             -e NODE_ENV=production \
-            -e RESEND_API_KEY="$RESEND_API_KEY" \
+            -e RESEND_API_KEY="\$RESEND_API_KEY" \
             --restart unless-stopped \
             addypin:latest; then
             echo "✅ Container started successfully"
