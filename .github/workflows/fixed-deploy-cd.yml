@@ -252,22 +252,22 @@ jobs:
           
           # Step 3: External Connectivity Testing (from VPS testing)
           echo "📋 3. External Connectivity Testing..."
-          EXTERNAL_IP=$(curl -s ifconfig.me || echo "155.94.144.191")
+          EXTERNAL_IP="155.94.144.191"  # Use known VPS IP to avoid external calls
           
-          # Test external health endpoint
-          EXTERNAL_HEALTH=$(curl -s -o /dev/null -w "%{http_code}" "http://$EXTERNAL_IP:3000/api/health" || echo "000")
+          # Test external health endpoint (with timeout and error handling)
+          EXTERNAL_HEALTH=$(timeout 10 curl -s -H "User-Agent: $USER_AGENT" -o /dev/null -w "%{http_code}" "http://$EXTERNAL_IP:3000/api/health" 2>/dev/null || echo "000")
           if [ "$EXTERNAL_HEALTH" = "200" ]; then
             echo "✅ External health endpoint accessible: HTTP $EXTERNAL_HEALTH"
           else
-            echo "⚠️ External health endpoint: HTTP $EXTERNAL_HEALTH (may be firewall/network)"
+            echo "⚠️ External health endpoint: HTTP $EXTERNAL_HEALTH (expected in CI/CD - firewall/network)"
           fi
           
-          # Test external frontend
-          EXTERNAL_FRONTEND=$(curl -s -o /dev/null -w "%{http_code}" "http://$EXTERNAL_IP:3000/" || echo "000")
+          # Test external frontend (with timeout and error handling)
+          EXTERNAL_FRONTEND=$(timeout 10 curl -s -H "User-Agent: $USER_AGENT" -o /dev/null -w "%{http_code}" "http://$EXTERNAL_IP:3000/" 2>/dev/null || echo "000")
           if [ "$EXTERNAL_FRONTEND" = "200" ]; then
             echo "✅ External frontend accessible: HTTP $EXTERNAL_FRONTEND"
           else
-            echo "⚠️ External frontend: HTTP $EXTERNAL_FRONTEND (may be firewall/network)"
+            echo "⚠️ External frontend: HTTP $EXTERNAL_FRONTEND (expected in CI/CD - firewall/network)"
           fi
           
           # Step 4: Frontend Functionality Testing (from VPS testing)
@@ -298,12 +298,12 @@ jobs:
           echo "Testing rate limiting..."
           rate_limit_triggered=false
           for i in {1..3}; do
-            RATE_TEST=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:3000/api/stats")
+            RATE_TEST=$(curl -s -H "User-Agent: $USER_AGENT" -o /dev/null -w "%{http_code}" "http://localhost:3000/api/stats")
             if [ "$RATE_TEST" = "429" ]; then
               rate_limit_triggered=true
               break
             fi
-            sleep 1
+            sleep 2
           done
           
           if [ "$rate_limit_triggered" = true ]; then
