@@ -180,6 +180,13 @@ jobs:
           echo "================================================="
           echo "Running all verified test blocks from VPS testing..."
           
+          echo "🔍 DEBUG: Docker environment before Step 5/5..."
+          docker --version
+          docker ps -a
+          docker ps --filter "name=addypin"
+          echo "Current user: $(whoami)"
+          echo "Docker group: $(groups)"
+          
           # Step 1: Container Environment Verification (from VPS testing)
           echo "📋 1. Container Environment Verification..."
           CONTAINER_ID=$(docker ps -q --filter "name=addypin" | head -1)
