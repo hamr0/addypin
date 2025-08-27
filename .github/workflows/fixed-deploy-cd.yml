@@ -23,7 +23,7 @@ jobs:
       run: |
         echo "🚀 Starting deployment to VPS..."
         
-        ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no root@155.94.144.191 << 'EOF'
+        ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no root@155.94.144.191 << EOF
           export RESEND_API_KEY="$RESEND_API_KEY"
           export PERSONAL_ACCESS_TOKEN="$PERSONAL_ACCESS_TOKEN"
           set -e
@@ -31,7 +31,7 @@ jobs:
           
           cd /opt/addypin/addypin-repo
           echo "🔄 Pulling latest code..."
-          git pull https://$PERSONAL_ACCESS_TOKEN@github.com/amrhas82/addypin.git main
+          git pull https://\$PERSONAL_ACCESS_TOKEN@github.com/amrhas82/addypin.git main
           
           echo "📦 Ensuring Node.js is installed..."
           if ! command -v node >/dev/null 2>&1; then
