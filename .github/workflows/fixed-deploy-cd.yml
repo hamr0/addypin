@@ -106,7 +106,7 @@ jobs:
           
           echo "🚀 Starting new container..."
           if docker run -d --name addypin -p 3000:3000 \
-            -e DATABASE_URL="$DATABASE_URL" \
+            -e DATABASE_URL="postgresql://addypin_user:secure_password_123@172.17.0.1:5432/addypin" \
             -e NODE_ENV=production \
             -e RESEND_API_KEY="$RESEND_API_KEY" \
             --restart unless-stopped \
