@@ -147,19 +147,12 @@ jobs:
             sleep 5
           done
           
+          # Combined health check logic with scope-safe verification flag
+          VERIFICATION_READY=false
+          
           if [ "$health_check_passed" = true ]; then
             echo "✅ Health check passed!"
-            
-            echo "🎯 Final verification..."
-            if curl -s http://localhost:3000/ | head -c 100 2>/dev/null; then
-              echo "✅ Main page is accessible"
-            else
-              echo "⚠️ Main page check failed, but container is running"
-            fi
-            
-            echo "⏱️ Waiting for container to fully initialize..."
-            sleep 15
-            
+            VERIFICATION_READY=true
           else
             echo "⚠️ Health check failed - checking basic connectivity..."
             if curl -f http://localhost:3000/ >/dev/null 2>&1; then
@@ -176,17 +169,7 @@ jobs:
               echo "🔄 Retrying health check after wait..."
               if curl -f http://localhost:3000/api/health >/dev/null 2>&1; then
                 echo "✅ Health check now passed after extra wait!"
-                health_check_passed=true
-                
-                echo "🎯 Final verification..."
-                if curl -s http://localhost:3000/ | head -c 100 2>/dev/null; then
-                  echo "✅ Main page is accessible"
-                else
-                  echo "⚠️ Main page check failed, but container is running"
-                fi
-                
-                echo "⏱️ Waiting for container to fully initialize..."
-                sleep 15
+                VERIFICATION_READY=true
               else
                 echo "❌ Health check still failing after extended wait"
                 exit 1
@@ -199,8 +182,24 @@ jobs:
             fi
           fi
           
-          # Only run Step 5/5 if health check ultimately passed
-          if [ "$health_check_passed" = true ]; then
+          # Final verification and setup before comprehensive testing
+          if [ "$VERIFICATION_READY" = true ]; then
+            echo "🎯 Final verification..."
+            if curl -s http://localhost:3000/ | head -c 100 2>/dev/null; then
+              echo "✅ Main page is accessible"
+            else
+              echo "⚠️ Main page check failed, but container is running"
+            fi
+            
+            echo "⏱️ Waiting for container to fully initialize..."
+            sleep 15
+          else
+            echo "⚠️ Verification not ready - exiting"
+            exit 1
+          fi
+          
+          # Only run Step 5/5 if verification is ready
+          if [ "$VERIFICATION_READY" = true ]; then
             echo "🧪 STEP 5/5: COMPREHENSIVE FUNCTIONAL VERIFICATION"
             echo "================================================="
             echo "Running all verified test blocks from VPS testing..."
