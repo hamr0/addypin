@@ -23,13 +23,16 @@ jobs:
       run: |
         echo "🚀 Starting deployment to VPS..."
         
+        # Pre-build GitHub URL with token substitution
+        GITHUB_URL="https://$PERSONAL_ACCESS_TOKEN@github.com/amrhas82/addypin.git"
+        
         ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no root@155.94.144.191 << EOF
           set -e
           echo "📍 Connected to VPS successfully"
           
           cd /opt/addypin/addypin-repo
           echo "🔄 Pulling latest code..."
-          git pull https://$PERSONAL_ACCESS_TOKEN@github.com/amrhas82/addypin.git main
+          git pull $GITHUB_URL main
           
           echo "📦 Ensuring Node.js is installed..."
           if ! command -v node >/dev/null 2>&1; then
