@@ -147,12 +147,12 @@ jobs:
             sleep 5
           done
           
-          # Combined health check logic with scope-safe verification flag
-          VERIFICATION_READY=false
+          # Combined health check logic with flag file method (shell-agnostic)
+          rm -f /tmp/verification_ready
           
           if [ "$health_check_passed" = true ]; then
             echo "✅ Health check passed!"
-            VERIFICATION_READY=true
+            touch /tmp/verification_ready
           else
             echo "⚠️ Health check failed - checking basic connectivity..."
             if curl -f http://localhost:3000/ >/dev/null 2>&1; then
@@ -169,7 +169,7 @@ jobs:
               echo "🔄 Retrying health check after wait..."
               if curl -f http://localhost:3000/api/health >/dev/null 2>&1; then
                 echo "✅ Health check now passed after extra wait!"
-                VERIFICATION_READY=true
+                touch /tmp/verification_ready
               else
                 echo "❌ Health check still failing after extended wait"
                 exit 1
@@ -183,7 +183,7 @@ jobs:
           fi
           
           # Final verification and setup before comprehensive testing
-          if [ "$VERIFICATION_READY" = true ]; then
+          if [ -f /tmp/verification_ready ]; then
             echo "🎯 Final verification..."
             if curl -s http://localhost:3000/ | head -c 100 2>/dev/null; then
               echo "✅ Main page is accessible"
@@ -213,7 +213,7 @@ jobs:
           fi
           
           # Only run Step 5/5 if verification is ready
-          if [ "$VERIFICATION_READY" = true ]; then
+          if [ -f /tmp/verification_ready ]; then
             echo "🧪 STEP 5/5: COMPREHENSIVE FUNCTIONAL VERIFICATION"
             echo "================================================="
             echo "Running all verified test blocks from VPS testing..."
@@ -362,6 +362,9 @@ jobs:
             
             echo "🧹 Cleanup old Docker images..."
             docker image prune -af >/dev/null 2>&1 || echo "Image cleanup completed"
+            
+            echo "🧹 Cleanup verification flag..."
+            rm -f /tmp/verification_ready
           
             echo "🎉 COMPREHENSIVE VERIFICATION COMPLETE!"
             echo "📊 Deployment summary:"
