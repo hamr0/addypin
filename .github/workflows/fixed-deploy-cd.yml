@@ -149,6 +149,17 @@ jobs:
           
           if [ "$health_check_passed" = true ]; then
             echo "✅ Health check passed!"
+            
+            echo "🎯 Final verification..."
+            if curl -s http://localhost:3000/ | head -c 100 2>/dev/null; then
+              echo "✅ Main page is accessible"
+            else
+              echo "⚠️ Main page check failed, but container is running"
+            fi
+            
+            echo "⏱️ Waiting for container to fully initialize..."
+            sleep 15
+            
           else
             echo "⚠️ Health check failed - checking basic connectivity..."
             if curl -f http://localhost:3000/ >/dev/null 2>&1; then
@@ -158,6 +169,28 @@ jobs:
               echo "📋 Container logs (last 30 lines):"
               docker logs --tail 30 addypin 2>/dev/null || echo "No logs available"
               echo "🔍 Continuing deployment - app is running"
+              
+              echo "⏱️ Extra wait for health endpoint to stabilize..."
+              sleep 20
+              
+              echo "🔄 Retrying health check after wait..."
+              if curl -f http://localhost:3000/api/health >/dev/null 2>&1; then
+                echo "✅ Health check now passed after extra wait!"
+                health_check_passed=true
+                
+                echo "🎯 Final verification..."
+                if curl -s http://localhost:3000/ | head -c 100 2>/dev/null; then
+                  echo "✅ Main page is accessible"
+                else
+                  echo "⚠️ Main page check failed, but container is running"
+                fi
+                
+                echo "⏱️ Waiting for container to fully initialize..."
+                sleep 15
+              else
+                echo "❌ Health check still failing after extended wait"
+                exit 1
+              fi
             else
               echo "❌ Complete deployment failure"
               echo "📋 Full container logs:"
@@ -166,32 +199,24 @@ jobs:
             fi
           fi
           
-          echo "🎯 Final verification..."
-          if curl -s http://localhost:3000/ | head -c 100 2>/dev/null; then
-            echo "✅ Main page is accessible"
-          else
-            echo "⚠️ Main page check failed, but container is running"
-          fi
-          
-          echo "⏱️ Waiting for container to fully initialize..."
-          sleep 15
-          
-          echo "🧪 STEP 5/5: COMPREHENSIVE FUNCTIONAL VERIFICATION"
-          echo "================================================="
-          echo "Running all verified test blocks from VPS testing..."
-          
-          echo "🔍 DEBUG: Docker environment before Step 5/5..."
-          docker --version
-          docker ps -a
-          docker ps --filter "name=addypin"
-          echo "Current user: $(whoami)"
-          echo "Docker group: $(groups)"
-          
-          # Step 1: Container Environment Verification (from VPS testing)
-          echo "📋 1. Container Environment Verification..."
-          CONTAINER_ID=$(docker ps -q --filter "name=addypin" | head -1)
-          if [ ! -z "$CONTAINER_ID" ]; then
-            echo "✅ Container running: $CONTAINER_ID"
+          # Only run Step 5/5 if health check ultimately passed
+          if [ "$health_check_passed" = true ]; then
+            echo "🧪 STEP 5/5: COMPREHENSIVE FUNCTIONAL VERIFICATION"
+            echo "================================================="
+            echo "Running all verified test blocks from VPS testing..."
+            
+            echo "🔍 DEBUG: Docker environment before Step 5/5..."
+            docker --version
+            docker ps -a
+            docker ps --filter "name=addypin"
+            echo "Current user: $(whoami)"
+            echo "Docker group: $(groups)"
+            
+            # Step 1: Container Environment Verification (from VPS testing)
+            echo "📋 1. Container Environment Verification..."
+            CONTAINER_ID=$(docker ps -q --filter "name=addypin" | head -1)
+            if [ ! -z "$CONTAINER_ID" ]; then
+              echo "✅ Container running: $CONTAINER_ID"
             
             # Verify environment variables inside container
             ENV_CHECK=$(docker exec $CONTAINER_ID printenv | grep -E "(DATABASE_URL|RESEND_API_KEY|NODE_ENV)" | wc -l)
@@ -223,10 +248,10 @@ jobs:
               echo "❌ Database connectivity failed from container"
               exit 1
             fi
-          else
-            echo "❌ No container found"
-            exit 1
-          fi
+            else
+              echo "❌ No container found"
+              exit 1
+            fi
           
           # Step 2: API Integration Testing (from VPS testing)
           echo "📋 2. API Integration Testing..."
@@ -325,15 +350,19 @@ jobs:
           echo "🧹 Cleanup old Docker images..."
           docker image prune -af >/dev/null 2>&1 || echo "Image cleanup completed"
           
-          echo "🎉 COMPREHENSIVE VERIFICATION COMPLETE!"
-          echo "📊 Deployment summary:"
-          echo "   - Container: $(docker ps --filter name=addypin --format '{{.Status}}')"
-          echo "   - Port 3000: Listening"
-          echo "   - Health check: $([ "$health_check_passed" = true ] && echo "PASSED" || echo "PARTIAL")"
-          echo "   - API endpoints: FUNCTIONAL"
-          echo "   - Database: CONNECTED"
-          echo "   - Frontend: ACCESSIBLE"
-          echo "   - Security: ACTIVE"
+            echo "🎉 COMPREHENSIVE VERIFICATION COMPLETE!"
+            echo "📊 Deployment summary:"
+            echo "   - Container: $(docker ps --filter name=addypin --format '{{.Status}}')"
+            echo "   - Port 3000: Listening"
+            echo "   - Health check: PASSED"
+            echo "   - API endpoints: FUNCTIONAL"
+            echo "   - Database: CONNECTED"
+            echo "   - Frontend: ACCESSIBLE"
+            echo "   - Security: ACTIVE"
+          else
+            echo "⚠️ Skipping Step 5/5 verification due to health check failure"
+            exit 1
+          fi
           
         EOF
         
