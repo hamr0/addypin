@@ -26,6 +26,9 @@ jobs:
         # Pre-build GitHub URL with token substitution
         GITHUB_URL="https://$PERSONAL_ACCESS_TOKEN@github.com/amrhas82/addypin.git"
         
+        # Pre-substitute RESEND_API_KEY to avoid variable scoping issues
+        RESEND_API_VAR="$RESEND_API_KEY"
+        
         ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no root@155.94.144.191 << EOF
           set -e
           echo "📍 Connected to VPS successfully"
@@ -108,7 +111,7 @@ jobs:
           if docker run -d --name addypin -p 3000:3000 \
             -e DATABASE_URL="postgresql://addypin_user:secure_password_123@172.17.0.1:5432/addypin" \
             -e NODE_ENV=production \
-            -e RESEND_API_KEY="$RESEND_API_KEY" \
+            -e RESEND_API_KEY="$RESEND_API_VAR" \
             --restart unless-stopped \
             addypin:latest; then
             echo "✅ Container started successfully"
