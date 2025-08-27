@@ -191,8 +191,22 @@ jobs:
               echo "⚠️ Main page check failed, but container is running"
             fi
             
-            echo "⏱️ Waiting for container to fully initialize..."
-            sleep 15
+            echo "⏱️ Waiting for container to fully initialize and health endpoint..."
+            MAX_ATTEMPTS=5
+            ATTEMPT=1
+            while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
+              echo "⏱️ Health check attempt $ATTEMPT of $MAX_ATTEMPTS..."
+              if curl -f http://localhost:3000/api/health > /dev/null 2>&1; then
+                echo "✅ Health check passed after initialization wait!"
+                break
+              fi
+              ATTEMPT=$((ATTEMPT + 1))
+              sleep 15
+            done
+            if [ $ATTEMPT -gt $MAX_ATTEMPTS ]; then
+              echo "❌ Health check still failing after extended wait"
+              exit 1
+            fi
           else
             echo "⚠️ Verification not ready - exiting"
             exit 1
