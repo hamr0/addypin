@@ -173,6 +173,9 @@ jobs:
             echo "⚠️ Main page check failed, but container is running"
           fi
           
+          echo "⏱️ Waiting for container to fully initialize..."
+          sleep 15
+          
           echo "🧪 STEP 5/5: COMPREHENSIVE FUNCTIONAL VERIFICATION"
           echo "================================================="
           echo "Running all verified test blocks from VPS testing..."
