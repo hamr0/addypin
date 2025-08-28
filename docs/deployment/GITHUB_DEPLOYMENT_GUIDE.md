@@ -264,6 +264,7 @@ certbot renew --dry-run
 - Slack/Discord notifications for deployment status
 - Health check monitoring with alerts
 - Database backup automation
+- **Health check timeout optimization**: Improve CI/CD health verification timing and retry logic for more reliable deployment validation
 
 ### Scaling Considerations
 - Load balancer for multiple VPS instances
