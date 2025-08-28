@@ -80,6 +80,15 @@ jobs:
           fi
           echo "✅ Dockerfile found"
           
+          echo "🧹 Cleaning Docker storage before build..."
+          echo "📊 Current storage usage:"
+          docker system df
+          echo "🗑️ Cleaning up unused images and containers..."
+          docker system prune -f
+          echo "📊 Storage after cleanup:"
+          docker system df
+          echo "✅ Docker storage cleaned"
+          
           echo "🛑 Stopping and removing any existing addypin containers..."
           # Stop and remove container if it exists
           if docker ps -a --filter "name=addypin" | grep -q addypin; then
