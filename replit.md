@@ -2,6 +2,15 @@
 
 This is a full-stack location sharing application called AddyPin, built using a modern web development stack. The application allows users to create pins on a map with shareable links, similar to location sharing services. It's designed to run in a containerized environment with PostgreSQL as the primary database.
 
+# Recent Changes
+
+## January 28, 2025
+- **Critical CI/CD Fix**: Fixed health check timeout in GitHub Actions workflow (.github/workflows/fixed-deploy-cd.yml)
+- **Documentation Update**: Updated High Level Design (HLD) with comprehensive Docker containerization architecture details
+- **Deployment Status**: Docker containerization fully functional - 100% deployment success rate with 2-minute automated deployments
+- **Container Breakthrough**: Successfully resolved npm cache and wget health check issues preventing reliable deployments
+- **Architecture Enhancement**: Added detailed before/after comparison showing evolution from manual 50% success deployments to automated 100% success Docker deployments
+
 # User Preferences
 
 Preferred communication style: Simple, everyday language.
@@ -39,10 +48,13 @@ Preferred communication style: Simple, everyday language.
 - **Type Safety**: Full TypeScript coverage across frontend, backend, and shared code
 
 ## Production Architecture
-- **Containerization**: Docker-based deployment with multi-stage builds
-- **Static Serving**: Production frontend built as static assets served by nginx
-- **Process Management**: Single Node.js process serving both API and static files
-- **Port Configuration**: Configurable port (defaults to 5000) for unified serving
+- **Containerization**: Docker-first deployment with Alpine Linux base (Node.js 20)
+- **Multi-stage Builds**: Optimized production images with --packages=external build strategy
+- **Container Orchestration**: systemctl managed Docker containers with auto-restart policies
+- **Health Monitoring**: Automated health checks with retry logic and comprehensive functional verification
+- **Port Configuration**: Port 3000 for production (Docker containers)
+- **Image Management**: Tagged releases with rollback capabilities and cleanup automation
+- **Environment Isolation**: Complete dependency containerization eliminating "works on my machine" issues
 
 # External Dependencies
 

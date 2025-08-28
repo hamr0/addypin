@@ -62,8 +62,9 @@ AddyPin is a location sharing service that transforms GPS coordinates into short
 │ Production:    RackNerd VPS ($2/month)             │
 │ Web Server:    Nginx (Reverse proxy + SSL)         │
 │ SSL Certs:     Let's Encrypt (Auto-renewal)        │
-│ Process Mgmt:  Docker Containers                    │
-│ Deployment:    Automated 2-minute deployments      │
+│ Containerization: Docker + Alpine Linux            │
+│ Process Mgmt:  Container orchestration (systemctl) │
+│ Deployment:    Automated 2-minute Docker deployments│
 │ Domain:        Namecheap DNS management             │
 └─────────────────────────────────────────────────────┘
 ```
