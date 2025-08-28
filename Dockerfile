@@ -36,6 +36,7 @@ RUN chown -R node:node /app && \
     npx esbuild server/index.ts \
       --platform=node \
       --packages=external \
+      --external:vite \
       --bundle \
       --format=esm \
       --outdir=dist && \
