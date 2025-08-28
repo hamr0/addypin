@@ -1,4 +1,4 @@
-name: "🚀 AddyPin VPS Deployment - TESTED WORKING"
+name: "addypin VPS manual deploy"
 
 on:
   workflow_dispatch:

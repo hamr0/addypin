@@ -19,10 +19,10 @@ RUN mkdir -p /home/node/.npm && \
 # Copy package files FIRST (allows Docker to cache dependencies)
 COPY package*.json ./
 
-# Fix npm cache permissions and install dependencies
+# Fix npm cache permissions and install ALL dependencies (including devDependencies for build)
 RUN npm cache clean --force && \
     npm config set cache /home/node/.npm && \
-    npm ci --only=production
+    npm ci
 
 # Remove build dependencies to reduce image size
 RUN apk del .build-deps
@@ -38,7 +38,8 @@ RUN chown -R node:node /app && \
       --packages=external \
       --bundle \
       --format=esm \
-      --outdir=dist
+      --outdir=dist && \
+    npm prune --production
 
 # Tell Docker the port to expose
 EXPOSE 3000
