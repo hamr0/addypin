@@ -1,9 +1,11 @@
 # Use official Node runtime as base image
 FROM node:20-alpine
 
-# Add build dependencies for native modules and runtime tools
-RUN apk add --no-cache curl && \
-    apk add --no-cache --virtual .build-deps \
+# Add runtime tools first
+RUN apk add --no-cache curl
+
+# Add build dependencies for native modules
+RUN apk add --no-cache --virtual .build-deps \
     gcc \
     g++ \
     make \
