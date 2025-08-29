@@ -40,6 +40,7 @@ RUN chown -R node:node /app && \
       --platform=node \
       --packages=external \
       --external:vite \
+      --external:./vite \
       --bundle \
       --format=esm \
       --outdir=dist && \
