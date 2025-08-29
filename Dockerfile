@@ -1,8 +1,9 @@
 # Use official Node runtime as base image
 FROM node:20-alpine
 
-# Add build dependencies for native modules
-RUN apk add --no-cache --virtual .build-deps \
+# Add build dependencies for native modules and runtime tools
+RUN apk add --no-cache curl && \
+    apk add --no-cache --virtual .build-deps \
     gcc \
     g++ \
     make \
@@ -47,7 +48,7 @@ EXPOSE 3000
 
 # Add Docker healthcheck with comprehensive monitoring
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1
+  CMD curl -f http://localhost:3000/api/health || exit 1
 
 # Switch to node user for security
 USER node

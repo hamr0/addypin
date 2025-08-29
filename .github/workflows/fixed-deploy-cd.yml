@@ -124,7 +124,7 @@ jobs:
             -e NODE_ENV=production \
             -e RESEND_API_KEY="$RESEND_API_VAR" \
             --restart unless-stopped \
-            --health-cmd="wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1" \
+            --health-cmd="curl -f http://localhost:3000/api/health || exit 1" \
             --health-interval=30s \
             --health-timeout=10s \
             --health-retries=3 \
