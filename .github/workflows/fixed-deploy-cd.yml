@@ -109,10 +109,12 @@ jobs:
           # Remove any dangling images first
           docker image prune -f 2>/dev/null || true
           
-          if docker build -t addypin:latest .; then
+          if docker build --progress=plain -t addypin:latest . 2>&1 | tee build.log; then
             echo "✅ Docker build successful"
           else
             echo "❌ Docker build failed"
+            echo "📋 Last 20 lines of build log:"
+            tail -20 build.log || echo "No build log available"
             exit 1
           fi
           
@@ -120,8 +122,12 @@ jobs:
           if docker run -d --name addypin -p 3000:3000 \
             -e DATABASE_URL="postgresql://addypin_user:secure_password_123@172.17.0.1:5432/addypin" \
             -e NODE_ENV=production \
-            -e RESEND_API_KEY="$RESEND_API_KEY" \
+            -e RESEND_API_KEY="$RESEND_API_VAR" \
             --restart unless-stopped \
+            --health-cmd="wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1" \
+            --health-interval=30s \
+            --health-timeout=10s \
+            --health-retries=3 \
             addypin:latest; then
             echo "✅ Container started successfully"
           else
@@ -388,8 +394,8 @@ jobs:
             echo "🧹 Cleanup old Docker images..."
             docker image prune -af >/dev/null 2>&1 || echo "Image cleanup completed"
             
-            echo "🧹 Cleanup verification flag..."
-            rm -f /tmp/verification_ready
+            echo "🧹 Cleanup temporary files..."
+            rm -f build.log /tmp/verification_ready
           
             echo "🎉 COMPREHENSIVE VERIFICATION COMPLETE!"
             echo "📊 Deployment summary:"
