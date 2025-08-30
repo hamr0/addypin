@@ -248,20 +248,27 @@ jobs:
             echo "🔍 Checking for addypin container..."
             docker ps --filter "name=^addypin$" --format "table {{.Names}}\t{{.Status}}\t{{.ID}}"
             
-            # Simple delay then original working detection
-            echo "⏱️ Waiting 30 seconds for container to fully start..."
-            sleep 30
+            # Proven approach from working Personal Data OS CI/CD
+            echo "🚀 Starting addypin container..."
+            docker run -d --name addypin \
+              -p 3000:3000 \
+              -e DATABASE_URL="$DATABASE_URL" \
+              -e RESEND_API_KEY="$RESEND_API_KEY" \
+              -e NODE_ENV=production \
+              --health-cmd="wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1" \
+              --health-interval=30s \
+              --health-timeout=10s \
+              --health-retries=3 \
+              addypin:latest
             
-            # Original working detection logic
-            CONTAINER_ID=""
-            for i in {1..3}; do
-              CONTAINER_ID=$(docker ps -q --filter "name=addypin" --filter "name=addypin$" 2>/dev/null | grep -v "addypin-" | head -1)
-              if [ ! -z "$CONTAINER_ID" ]; then
-                break
-              fi
-              echo "⏳ Retry $i: Container not found, waiting 2 seconds..."
-              sleep 2
-            done
+            echo "⏱️ Waiting for services to be ready..."
+            sleep 15
+            
+            echo "📋 Checking container status..."
+            docker ps --filter "name=addypin" --format "table {{.Names}}\t{{.Status}}\t{{.ID}}"
+            
+            # Get container ID using simple, reliable method
+            CONTAINER_ID=$(docker ps -q --filter "name=addypin" | head -1)
             
             if [ ! -z "$CONTAINER_ID" ]; then
               echo "✅ Container running: $CONTAINER_ID"
@@ -301,37 +308,32 @@ jobs:
               exit 1
             fi
           
-            # Step 2: API Integration Testing (from VPS testing)
-            echo "📋 2. API Integration Testing..."
-            USER_AGENT="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            # Step 2: Direct Functional Testing (proven approach)
+            echo "📋 2. Testing Application Accessibility..."
             
-            # Test health endpoint
-            HEALTH_RESPONSE=$(curl -s -H "User-Agent: $USER_AGENT" -o /dev/null -w "%{http_code}" http://localhost:3000/api/health)
-            if [ "$HEALTH_RESPONSE" = "200" ]; then
-              echo "✅ Health endpoint working: HTTP $HEALTH_RESPONSE"
-            else
-              echo "❌ Health endpoint failed: HTTP $HEALTH_RESPONSE"
+            # Simple, reliable health check using curl
+            echo "🧪 Testing backend accessibility..."
+            curl -f http://localhost:3000/api/health -m 10 || {
+              echo "❌ Health endpoint failed"
               exit 1
-            fi
+            }
+            echo "✅ Health endpoint accessible"
             
             # Test stats endpoint
-            STATS_RESPONSE=$(curl -s -H "User-Agent: $USER_AGENT" -o /dev/null -w "%{http_code}" http://localhost:3000/api/stats)
-            if [ "$STATS_RESPONSE" = "200" ] || [ "$STATS_RESPONSE" = "429" ]; then
-              echo "✅ Stats endpoint working: HTTP $STATS_RESPONSE"
-            else
-              echo "❌ Stats endpoint failed: HTTP $STATS_RESPONSE"
+            echo "🧪 Testing stats endpoint..."
+            curl -f http://localhost:3000/api/stats -m 10 || {
+              echo "❌ Stats endpoint failed"
               exit 1
-            fi
+            }
+            echo "✅ Stats endpoint accessible"
             
-            # Test map links endpoint (rate-limit aware)
-            sleep 2
-            MAP_RESPONSE=$(curl -s -H "User-Agent: $USER_AGENT" -o /dev/null -w "%{http_code}" "http://localhost:3000/api/map-links/52.2748/4.7611")
-            if [ "$MAP_RESPONSE" = "200" ] || [ "$MAP_RESPONSE" = "429" ]; then
-              echo "✅ Map links endpoint working: HTTP $MAP_RESPONSE"
-            else
-              echo "❌ Map links endpoint failed: HTTP $MAP_RESPONSE"
+            # Test map links endpoint  
+            echo "🧪 Testing map links endpoint..."
+            curl -f http://localhost:3000/api/map-links/52.2748/4.7611 -m 10 || {
+              echo "❌ Map links endpoint failed"
               exit 1
-            fi
+            }
+            echo "✅ Map links endpoint accessible"
             
             # Step 3: External Connectivity Testing (from VPS testing)
             echo "📋 3. External Connectivity Testing..."
