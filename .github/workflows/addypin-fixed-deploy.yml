@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       deployment_reason:
-        description: 'Reason for deployment'
+        description: "Reason for deployment"
         required: false
-        default: 'Manual production deployment with proven approach'
+        default: "Manual production deployment with proven approach"
 
 permissions:
   contents: read
@@ -30,8 +30,8 @@ jobs:
     - name: "🏗️ Setup Node.js"
       uses: actions/setup-node@v4
       with:
-        node-version: '20'
-        cache: 'npm'
+        node-version: "20"
+        cache: "npm"
         cache-dependency-path: package-lock.json
 
     - name: "🔐 Validate Required Environment Variables"
@@ -200,7 +200,7 @@ jobs:
             echo "✅ Map links endpoint accessible"
             
             echo "🎉 DEPLOYMENT SUCCESSFUL!"
-            echo "✅ AddyPin is running at http://${{ secrets.VPS_HOST }}:3000"
+            echo "✅ AddyPin is running at http://155.94.144.191:3000"
             
           else
             echo "❌ No container found after deployment"
@@ -215,7 +215,7 @@ jobs:
         echo "✅ Code deployed successfully"
         echo "✅ Container started with proven approach"
         echo "✅ Health checks passed"
-        echo "✅ AddyPin is live at http://${{ secrets.VPS_HOST }}:3000"
+        echo "✅ AddyPin is live at http://155.94.144.191:3000"
         echo ""
         echo "🔧 Fixes Applied:"
         echo "- Used proven Personal Data OS container approach"
