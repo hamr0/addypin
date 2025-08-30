@@ -425,7 +425,6 @@ export default function MapSection({ coordinates, onCoordinatesChange, generated
             <a
               key={app.name}
               href={mapLinks[app.name] || "#"}
-              target="_blank"
               rel="noopener noreferrer"
               onClick={async (e) => {
                 // Track map app click analytics
