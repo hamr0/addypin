@@ -58,6 +58,12 @@ jobs:
         
         echo "✅ All required environment variables are present"
 
+    - name: "📦 Install rsync"
+      run: |
+        echo "📦 Installing rsync for file transfer..."
+        sudo apt-get update && sudo apt-get install -y rsync
+        echo "✅ rsync installed"
+
     - name: "🔑 Setup SSH Access"
       run: |
         echo "🔑 Setting up SSH access to VPS..."
