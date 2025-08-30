@@ -1,0 +1,17 @@
+git add .
+
+git commit -m "Fix: CI/CD workflow rsync error + map link behavior
+
+CRITICAL FIXES:
+- Fixed rsync missing command error by adding apt-get install rsync
+- Created addypin-fixed-deploy.yml with Personal Data OS proven approach
+- Fixed map links opening in new tabs (removed target='_blank' from MapSection)
+- Added database migration npm run db:push before container start
+- Uses hardcoded SSH connection root@155.94.144.191 with deploy_key
+- Proven 15-second sleep timing instead of complex health parsing
+- Direct curl -f functional testing for reliability
+- Manual workflow_dispatch trigger for controlled testing
+
+DEPLOYMENT READY: All troubleshooting learnings applied from failed attempts"
+
+git push origin main
