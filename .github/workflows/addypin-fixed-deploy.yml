@@ -72,7 +72,7 @@ jobs:
         chmod 600 ~/.ssh/deploy_key
         echo "✅ SSH access configured"
 
-    - name: "📋 Pre-deployment Health Check"
+    - name: "📋 Pre-deployment Health Check & Install rsync on VPS"
       run: |
         echo "📋 Running pre-deployment health checks..."
         ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no root@155.94.144.191 '
@@ -81,12 +81,25 @@ jobs:
           free -h
           echo "Checking Docker status..."
           docker --version
-          echo "✅ Pre-deployment health check completed"
+          
+          echo "📦 Installing rsync on VPS for file transfers..."
+          # Try multiple package managers like Personal Data OS does
+          dnf install -y rsync 2>/dev/null || yum install -y rsync 2>/dev/null || apt-get install -y rsync 2>/dev/null
+          rsync --version
+          
+          echo "✅ Pre-deployment health check and rsync installation completed"
         '
 
     - name: "🚀 Deploy Code to VPS"
       run: |
         echo "🚀 Starting file transfer deployment..."
+        
+        # Prepare deployment directory on VPS (like Personal Data OS)
+        echo "📁 Preparing transfer directory on VPS..."
+        ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no root@155.94.144.191 '
+          rm -rf /tmp/addypin-transfer
+          mkdir -p /tmp/addypin-transfer
+        '
         
         # Transfer files from GitHub Actions to VPS
         echo "📂 Transferring code files..."
