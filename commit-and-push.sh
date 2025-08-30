@@ -9,13 +9,19 @@ git add .
 
 # Commit with descriptive message
 echo "💾 Committing changes..."
-git commit -m "Fix: Add proven CI/CD workflow and map link behavior
+git commit -m "Fix: CI/CD workflow rsync error + map link behavior
 
-- Created addypin-fixed-deploy.yml with Personal Data OS approach
-- Fixed map links to open in same window (removed target='_blank')
-- Added database migration step before container deployment
-- Uses proven 15-second timing and direct curl testing
-- Manual trigger workflow for controlled deployment testing"
+CRITICAL FIXES:
+- Fixed rsync missing command error by adding apt-get install rsync
+- Created addypin-fixed-deploy.yml with Personal Data OS proven approach
+- Fixed map links opening in new tabs (removed target='_blank' from MapSection)
+- Added database migration npm run db:push before container start
+- Uses hardcoded SSH connection root@155.94.144.191 with deploy_key
+- Proven 15-second sleep timing instead of complex health parsing
+- Direct curl -f functional testing for reliability
+- Manual workflow_dispatch trigger for controlled testing
+
+DEPLOYMENT READY: All troubleshooting learnings applied from failed attempts"
 
 # Push to main branch
 echo "⬆️ Pushing to GitHub..."
