@@ -433,4 +433,87 @@ The key architectural insight was moving from individual `--external` flags to `
 | **Debugging** | Host-level logs | Container logs |
 | **Environment** | "Works on my machine" | Identical everywhere |
 
-This High Level Design provides a comprehensive overview of AddyPin's evolution from manual deployment to enterprise-grade Docker-first CI/CD, demonstrating how modern containerization and automation combine to create a bulletproof, scalable location sharing service.
+## Recent Deployment Fixes & Challenges (August 31, 2025)
+
+### **Critical Nginx Routing Issue Resolution**
+**Problem:** API requests failing with "Cannot GET /api/stats" despite container running successfully.
+
+**Root Cause:** Nginx configuration had separate `/api/` location block routing to port 5000 (development) instead of port 3000 (production container).
+
+**Solution Applied:**
+```nginx
+# BEFORE (Broken)
+server {
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+    }
+    location /api/ {
+        proxy_pass http://127.0.0.1:5000;  # Wrong port!
+    }
+}
+
+# AFTER (Fixed)
+server {
+    location / {
+        proxy_pass http://127.0.0.1:3000;  # All traffic to container
+    }
+    # No separate /api/ block - everything routes to port 3000
+}
+```
+
+### **CI/CD Anti-Bot Middleware Challenge**
+**Problem:** GitHub Actions deployment failing with "429 Too Many Requests" on health checks.
+
+**Root Cause:** Rate limiting middleware detects `curl` commands as bot traffic and blocks them.
+
+**Solution Applied:**
+- Added browser user-agent headers to all curl commands in CI/CD
+- Increased delays between API tests from 2 to 5 seconds
+- Modified health check requests to mimic browser behavior:
+```bash
+curl -f http://localhost:3000/api/health \
+  -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" \
+  -H "Accept: application/json"
+```
+
+### **Container Environment Variable Management**
+**Problem:** Container crashes due to missing RESEND_API_KEY environment variable.
+
+**Solution:** Comprehensive environment variable injection in Docker run command:
+```bash
+docker run -d --name addypin \
+  -p 3000:3000 \
+  -e DATABASE_URL="postgresql://..." \
+  -e RESEND_API_KEY="${{ secrets.RESEND_API_KEY }}" \
+  -e NODE_ENV=production \
+  -e DOMAIN=addypin.com \
+  addypin:latest
+```
+
+### **Troubleshooting Methodology That Worked**
+1. **Methodical Step-by-Step Testing**: Each component tested in isolation
+2. **Direct Container Logs**: `docker logs addypin -f` revealed missing requests
+3. **Nginx Config Analysis**: `grep -r "api" /etc/nginx/` found conflicting configs
+4. **Request Tracing**: Compared browser vs curl requests to identify bot detection
+
+### **Key Lessons for Replit Agent Development**
+
+**Containerization Challenges:**
+- Port mapping confusion between development (5000) and production (3000)
+- Environment variable propagation through Docker layers
+- Health check timing and retry logic complexities
+- Anti-bot middleware blocking automated testing tools
+
+**Solutions That Proved Effective:**
+- Unified port configuration (all traffic to container port)
+- Explicit environment variable declaration in all contexts
+- Browser-mimicking headers for automated testing
+- Comprehensive logging at each layer (nginx, container, application)
+
+**Infrastructure Best Practices Discovered:**
+- Always test nginx config with `nginx -t` before reload
+- Use `docker ps` format options for clear status checking
+- Monitor both container logs AND nginx access logs
+- Keep backup configs before making routing changes
+
+This High Level Design provides a comprehensive overview of AddyPin's evolution from manual deployment to enterprise-grade Docker-first CI/CD, demonstrating how modern containerization and automation combine with real-world troubleshooting to create a bulletproof, scalable location sharing service.

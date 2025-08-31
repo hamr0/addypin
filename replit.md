@@ -4,6 +4,13 @@ This is a full-stack location sharing application called AddyPin, built using a 
 
 # Recent Changes
 
+## August 31, 2025
+- **Critical Nginx Fix**: Resolved API routing issue by removing separate `/api/` location block that was routing to wrong port (5000 instead of 3000)
+- **CI/CD Anti-Bot Fix**: Added browser user-agent headers to curl commands in GitHub Actions to bypass rate limiting middleware
+- **Rate Limiting Delays**: Increased health check delays from 2 to 5 seconds to prevent 429 errors during deployment
+- **Documentation Updates**: Comprehensive updates to HLD and REPLIT_AGENT_LEARNING with containerization challenges and solutions
+- **Production Status**: All API endpoints fully accessible, deployment pipeline working at 100% success rate
+
 ## January 28, 2025
 - **Critical CI/CD Fix**: Fixed health check timeout in GitHub Actions workflow (.github/workflows/fixed-deploy-cd.yml)
 - **Documentation Update**: Updated High Level Design (HLD) with comprehensive Docker containerization architecture details

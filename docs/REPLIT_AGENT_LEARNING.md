@@ -155,6 +155,43 @@ This document captures key mistakes, wrong assumptions, and important learnings 
 - Minimal external dependencies
 - Self-hosted solutions where appropriate
 
+## Docker Containerization Challenges (August 31, 2025)
+
+### 23. **Nginx Port Routing Confusion**
+
+**❌ Wrong Assumption**: Separate `/api/` location blocks in nginx would properly route to container
+**🐛 What Happened**: API endpoints returned "Cannot GET /api/stats" despite container running successfully
+**✅ Correction**: Unified all routing to single container port (3000), removed separate `/api/` block
+**📚 Learning**: Keep nginx routing simple - route everything to container port, let the app handle internal routing
+
+### 24. **Anti-Bot Middleware vs CI/CD**
+
+**❌ Wrong Assumption**: CI/CD health checks with curl would work without issues
+**🐛 What Happened**: Rate limiter detected curl as bot traffic, returned 429 errors
+**✅ Correction**: Added browser user-agent headers to all curl commands in CI/CD
+**📚 Learning**: Security middleware can interfere with automation - design with testing in mind
+
+### 25. **Container Environment Variables**
+
+**❌ Wrong Assumption**: Environment variables would automatically propagate to container
+**🐛 What Happened**: Container crashed due to missing RESEND_API_KEY
+**✅ Correction**: Explicit `-e` flags for all environment variables in docker run command
+**📚 Learning**: Be explicit with container configuration - never assume variable inheritance
+
+### 26. **Development vs Production Port Confusion**
+
+**❌ Wrong Assumption**: Port 5000 (development) and 3000 (production) could coexist in configs
+**🐛 What Happened**: Nginx routing to wrong port caused API failures
+**✅ Correction**: Standardized on port 3000 for all production routing
+**📚 Learning**: Maintain clear port separation between environments, document thoroughly
+
+### 27. **Health Check Timing**
+
+**❌ Wrong Assumption**: Rapid health checks in CI/CD would be fine
+**🐛 What Happened**: Rate limiting triggered by quick succession of API tests
+**✅ Correction**: Added 5-second delays between health check requests
+**📚 Learning**: Respect rate limits even in automated testing - add appropriate delays
+
 ## Future Project Guidelines
 
 Based on these learnings:
