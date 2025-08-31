@@ -358,37 +358,29 @@ export default function RedirectPage() {
               
               <div className="grid grid-cols-1 gap-3">
                 {typedMapLinks && Object.entries(typedMapLinks).map(([appName, link]) => (
-                  <Button
+                  <a
                     key={appName}
-                    asChild
-                    variant="outline"
-                    className="h-14 flex items-center justify-start p-4 hover:bg-addypin-cyan hover:text-white hover:border-addypin-cyan transition-all duration-200"
+                    href={link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="h-14 flex items-center justify-start p-4 border rounded-md hover:bg-addypin-cyan hover:text-white hover:border-addypin-cyan transition-all duration-200 no-underline text-gray-700 hover:no-underline"
                     data-testid={`link-${appName.toLowerCase().replace(/\s+/g, '-')}`}
+                    onClick={async (e) => {
+                      // Track map app click analytics without preventing default
+                      if (coordinates) {
+                        // Fire and forget - don't await to avoid blocking the link
+                        apiRequest("POST", "/api/analytics/map-click", {
+                          appName: appName,
+                          latitude: coordinates.lat,
+                          longitude: coordinates.lng
+                        }).catch(error => {
+                          console.log("Analytics tracking failed:", error);
+                        });
+                      }
+                    }}
                   >
-                    <a
-                      href={link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full flex items-center"
-                      onClick={async () => {
-                        // Track map app click analytics
-                        if (coordinates) {
-                          try {
-                            await apiRequest("POST", "/api/analytics/map-click", {
-                              appName: appName,
-                              latitude: coordinates.lat,
-                              longitude: coordinates.lng
-                            });
-                            console.log(`Tracked click for ${appName}`);
-                          } catch (error) {
-                            console.log("Analytics tracking failed:", error);
-                          }
-                        }
-                      }}
-                    >
-                      <span className="font-medium">{appName}</span>
-                    </a>
-                  </Button>
+                    <span className="font-medium">{appName}</span>
+                  </a>
                 ))}
               </div>
             </div>

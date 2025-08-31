@@ -10,6 +10,9 @@ This is a full-stack location sharing application called AddyPin, built using a 
 - **Rate Limiting Delays**: Increased health check delays from 2 to 5 seconds to prevent 429 errors during deployment
 - **Documentation Updates**: Comprehensive updates to HLD and REPLIT_AGENT_LEARNING with containerization challenges and solutions
 - **Production Status**: All API endpoints fully accessible, deployment pipeline working at 100% success rate
+- **Subdomain Support Fixed**: Added client-side detection for subdomain access (e.g., trzlua.addypin.com) with automatic routing to pin display page
+- **Map Links Fix**: Fixed map application links to properly open in new browser windows/tabs instead of same window
+- **UI Improvements**: Converted Button components to direct anchor tags for better link handling and target="_blank" support
 
 ## January 28, 2025
 - **Critical CI/CD Fix**: Fixed health check timeout in GitHub Actions workflow (.github/workflows/fixed-deploy-cd.yml)
