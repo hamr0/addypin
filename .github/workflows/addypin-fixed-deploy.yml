@@ -194,29 +194,39 @@ jobs:
             # Step 2: Direct Functional Testing (proven approach)
             echo "📋 Testing Application Accessibility..."
             
-            # Simple, reliable health check using curl
+            # Simple, reliable health check using curl with browser headers to bypass anti-bot
             echo "🧪 Testing backend accessibility..."
-            curl -f http://localhost:3000/api/health -m 10 || {
+            curl -f http://localhost:3000/api/health -m 10 \
+              -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36" \
+              -H "Accept: application/json" || {
               echo "❌ Health endpoint failed"
               exit 1
             }
             echo "✅ Health endpoint accessible"
             
-            # Test stats endpoint
+            # Wait longer to avoid rate limiting
+            echo "⏱️ Waiting 5 seconds to avoid rate limiting..."
+            sleep 5
+            
+            # Test stats endpoint with browser headers
             echo "🧪 Testing stats endpoint..."
-            curl -f http://localhost:3000/api/stats -m 10 || {
+            curl -f http://localhost:3000/api/stats -m 10 \
+              -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36" \
+              -H "Accept: application/json" || {
               echo "❌ Stats endpoint failed"
               exit 1
             }
             echo "✅ Stats endpoint accessible"
             
-            # Wait to avoid rate limiting
-            echo "⏱️ Waiting 2 seconds to avoid rate limiting..."
-            sleep 2
+            # Wait longer to avoid rate limiting
+            echo "⏱️ Waiting 5 seconds to avoid rate limiting..."
+            sleep 5
             
-            # Test map links endpoint  
+            # Test map links endpoint with browser headers
             echo "🧪 Testing map links endpoint..."
-            curl -f http://localhost:3000/api/map-links/52.2748/4.7611 -m 10 || {
+            curl -f http://localhost:3000/api/map-links/52.2748/4.7611 -m 10 \
+              -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36" \
+              -H "Accept: application/json" || {
               echo "❌ Map links endpoint failed"
               exit 1
             }
