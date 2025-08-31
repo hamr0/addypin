@@ -77,6 +77,15 @@ export function createRateLimiter(options: {
       return next();
     }
 
+    // CRITICAL FIX: Allow localhost requests in production for CI/CD health checks
+    // This is needed for Docker container health checks and deployment verification
+    if (process.env.NODE_ENV === 'production' && 
+        (ip === '127.0.0.1' || ip === 'localhost' || ip === '::1' || ip === '::ffff:127.0.0.1') &&
+        (req.path.includes('/health') || req.path.includes('/stats') || req.path.includes('/map-links'))) {
+      console.log(`🔓 Allowing localhost health check in production: ${ip} for ${req.path}`);
+      return next();
+    }
+
     const now = Date.now();
     const store = options.windowMs > 3600000 ? dailyStore : rateLimitStore;
 
@@ -141,6 +150,14 @@ export function antibotMiddleware(req: Request, res: Response, next: NextFunctio
 
   // Skip anti-bot for whitelisted IPs
   if (isIPWhitelisted(ip)) {
+    return next();
+  }
+
+  // CRITICAL FIX: Allow localhost requests in production for CI/CD health checks
+  // This prevents blocking curl/wget from localhost during deployment verification
+  if (process.env.NODE_ENV === 'production' && 
+      (ip === '127.0.0.1' || ip === 'localhost' || ip === '::1' || ip === '::ffff:127.0.0.1')) {
+    console.log(`🔓 Allowing localhost request in production for CI/CD: ${ip}`);
     return next();
   }
 
