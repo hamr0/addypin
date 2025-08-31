@@ -46,13 +46,51 @@ interface TrackEventParams {
   sessionId?: string; // For tracking unique daily users
 }
 
+interface BatchedEvent {
+  pinId: string;
+  eventType: string;
+  userAgent: string | null;
+  ipAddress: string | null;
+  country: string | null;
+  browser: string | null;
+  os: string | null;
+  metadata: any;
+  sessionId: string | null;
+  timestamp: Date;
+}
+
 class AnalyticsService {
+  private eventBatch: BatchedEvent[] = [];
+  private batchFlushInterval: NodeJS.Timeout | null = null;
+  private BATCH_FLUSH_INTERVAL = 30 * 60 * 1000; // 30 minutes
+  private MAX_BATCH_SIZE = 1000; // Flush if batch gets too large
+  private lastFlushTime = Date.now();
+
+  constructor() {
+    // Start the batch flush interval
+    this.startBatchFlushInterval();
+    
+    // Flush on process exit to avoid losing data
+    process.on('SIGINT', () => this.flushBatch('SIGINT'));
+    process.on('SIGTERM', () => this.flushBatch('SIGTERM'));
+    process.on('beforeExit', () => this.flushBatch('beforeExit'));
+  }
+
+  private startBatchFlushInterval(): void {
+    this.batchFlushInterval = setInterval(() => {
+      this.flushBatch('interval');
+    }, this.BATCH_FLUSH_INTERVAL);
+    
+    console.log(`📊 Analytics batch flush interval started (every ${this.BATCH_FLUSH_INTERVAL / 1000 / 60} minutes)`);
+  }
+
   async trackEvent(params: TrackEventParams): Promise<void> {
     try {
       const { browser, os } = parseUserAgent(params.userAgent);
       const country = params.ipAddress ? getCountryFromIP(params.ipAddress) : null;
 
-      await storage.createAnalyticsEvent({
+      // Add to batch instead of immediate database write
+      this.eventBatch.push({
         pinId: params.pinId,
         eventType: params.eventType,
         userAgent: params.userAgent || null,
@@ -62,13 +100,54 @@ class AnalyticsService {
         os,
         metadata: params.metadata || null,
         sessionId: params.sessionId || null,
+        timestamp: new Date()
       });
 
-      // Update daily stats
-      await this.updateDailyStats();
+      // Flush if batch is getting too large
+      if (this.eventBatch.length >= this.MAX_BATCH_SIZE) {
+        console.log(`📊 Batch size reached ${this.MAX_BATCH_SIZE}, flushing...`);
+        await this.flushBatch('size_limit');
+      }
     } catch (error) {
       console.error("Analytics tracking error:", error);
     }
+  }
+
+  async flushBatch(reason: string = 'manual'): Promise<void> {
+    if (this.eventBatch.length === 0) {
+      return;
+    }
+
+    const batchToFlush = [...this.eventBatch];
+    this.eventBatch = []; // Clear batch immediately to avoid duplicates
+    
+    const timeSinceLastFlush = (Date.now() - this.lastFlushTime) / 1000 / 60;
+    console.log(`📊 Flushing ${batchToFlush.length} analytics events to database (reason: ${reason}, time since last flush: ${timeSinceLastFlush.toFixed(1)} minutes)`);
+    
+    try {
+      // Write all events to database in a single transaction
+      for (const event of batchToFlush) {
+        await storage.createAnalyticsEvent(event);
+      }
+      
+      // Update daily stats once after batch
+      await this.updateDailyStats();
+      
+      this.lastFlushTime = Date.now();
+      console.log(`✅ Successfully flushed ${batchToFlush.length} events to database`);
+    } catch (error) {
+      console.error("Error flushing analytics batch:", error);
+      // Re-add failed events to batch for retry
+      this.eventBatch = [...batchToFlush, ...this.eventBatch];
+    }
+  }
+
+  // New method to get current batch status (for monitoring)
+  getBatchStatus(): { batchSize: number; timeSinceLastFlush: number } {
+    return {
+      batchSize: this.eventBatch.length,
+      timeSinceLastFlush: Math.floor((Date.now() - this.lastFlushTime) / 1000)
+    };
   }
 
   private async updateDailyStats(): Promise<void> {
@@ -109,6 +188,10 @@ class AnalyticsService {
     } catch (error) {
       console.error("Daily report error:", error);
     }
+  }
+  // Method to force immediate flush (for testing or critical events)
+  async forceFlush(): Promise<void> {
+    await this.flushBatch('forced');
   }
 }
 

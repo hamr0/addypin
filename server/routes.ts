@@ -323,7 +323,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Track map app click
+  // Track map app click (now batched for efficiency)
   app.post("/api/map-click", async (req, res) => {
     try {
       const { shortcode, mapApp } = req.body;
@@ -337,6 +337,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Pin not found" });
       }
 
+      // Now using batched tracking - no immediate DB write
       await analyticsService.trackEvent({
         pinId: pin.id,
         eventType: "map_app_click",
@@ -345,9 +346,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         metadata: { appName: mapApp }
       });
 
-      // Invalidate stats cache since click counts affect stats
-      invalidateStatsCache();
-
+      // Don't invalidate cache here - it will be updated when batch flushes
+      // Stats will be slightly delayed but much more efficient
+      
       res.json({ success: true });
     } catch (error) {
       console.error("Error tracking map click:", error);
@@ -589,6 +590,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching stats:", error);
       res.status(500).json({ message: "Failed to fetch stats" });
+    }
+  });
+
+  // Get batch status (for monitoring click batching)
+  app.get("/api/analytics/batch-status", async (req, res) => {
+    try {
+      const status = analyticsService.getBatchStatus();
+      res.json({
+        ...status,
+        message: `${status.batchSize} events waiting to be flushed (last flush: ${Math.floor(status.timeSinceLastFlush / 60)} minutes ago)`,
+        flushInterval: "30 minutes",
+        maxBatchSize: 1000
+      });
+    } catch (error) {
+      console.error("Error fetching batch status:", error);
+      res.status(500).json({ message: "Failed to fetch batch status" });
     }
   });
 
