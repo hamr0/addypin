@@ -210,6 +210,10 @@ jobs:
             }
             echo "✅ Stats endpoint accessible"
             
+            # Wait to avoid rate limiting
+            echo "⏱️ Waiting 2 seconds to avoid rate limiting..."
+            sleep 2
+            
             # Test map links endpoint  
             echo "🧪 Testing map links endpoint..."
             curl -f http://localhost:3000/api/map-links/52.2748/4.7611 -m 10 || {
