@@ -128,9 +128,13 @@ jobs:
           echo "Installing Node.js dependencies..."
           npm ci --omit=dev
           
-          echo "Setting up environment variables..."
+          echo "Setting up environment variables for staging..."
           export DATABASE_URL="postgresql://addypin_user:secure_password_123@172.17.0.1:5432/addypin_staging"
-          export RESEND_API_KEY="${{ secrets.RESEND_API_KEY }}"
+          export RESEND_API_KEY="re_YEEpxspy_2zkWUtuc3aVw4fcbYCFqD2mK"
+          export CLERK_SECRET_KEY="sk_test_0EIjIoMe694NJvxKoiMPwexmUsVlIo55ILP6bv5c8h"
+          export NODE_ENV=staging
+          export PORT=3000
+          export STAGING_PORT=8080
           
           echo "Running database migration..."
           npm run db:push || echo "Migration completed with warnings"
@@ -169,10 +173,14 @@ jobs:
           # Proven approach from working Personal Data OS CI/CD
           echo "🚀 Starting addypin-staging container..."
           docker run -d --name addypin-staging \
-            -p 3001:3000 \
+            -p 8080:3000 \
             -e DATABASE_URL="postgresql://addypin_user:secure_password_123@172.17.0.1:5432/addypin_staging" \
-            -e RESEND_API_KEY="${{ secrets.RESEND_API_KEY }}" \
+            -e RESEND_API_KEY="re_YEEpxspy_2zkWUtuc3aVw4fcbYCFqD2mK" \
+            -e CLERK_SECRET_KEY="sk_test_0EIjIoMe694NJvxKoiMPwexmUsVlIo55ILP6bv5c8h" \
             -e NODE_ENV=staging \
+            -e PORT=3000 \
+            -e STAGING_PORT=8080 \
+            --restart unless-stopped \
             --health-cmd="wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1" \
             --health-interval=30s \
             --health-timeout=10s \
@@ -196,7 +204,7 @@ jobs:
             
             # Simple, reliable health check using curl with browser headers to bypass anti-bot
             echo "🧪 Testing backend accessibility..."
-            curl -f http://localhost:3001/api/health -m 10 \
+            curl -f http://localhost:8080/api/health -m 10 \
               -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36" \
               -H "Accept: application/json" || {
               echo "❌ Health endpoint failed"
@@ -210,7 +218,7 @@ jobs:
             
             # Test stats endpoint with browser headers
             echo "🧪 Testing stats endpoint..."
-            curl -f http://localhost:3001/api/stats -m 10 \
+            curl -f http://localhost:8080/api/stats -m 10 \
               -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36" \
               -H "Accept: application/json" || {
               echo "❌ Stats endpoint failed"
@@ -224,7 +232,7 @@ jobs:
             
             # Test map links endpoint with browser headers
             echo "🧪 Testing map links endpoint..."
-            curl -f http://localhost:3001/api/map-links/52.2748/4.7611 -m 10 \
+            curl -f http://localhost:8080/api/map-links/52.2748/4.7611 -m 10 \
               -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36" \
               -H "Accept: application/json" || {
               echo "❌ Map links endpoint failed"
@@ -233,7 +241,8 @@ jobs:
             echo "✅ Map links endpoint accessible"
             
             echo "🎉 STAGING DEPLOYMENT SUCCESSFUL!"
-            echo "✅ AddyPin Staging is running at http://155.94.144.191:3001"
+            echo "✅ AddyPin Staging is running at http://155.94.144.191:8080"
+            echo "✅ Staging accessible at http://addypin.com:8080"
             
           else
             echo "❌ No container found after deployment"
@@ -248,10 +257,12 @@ jobs:
         echo "✅ Code deployed successfully"
         echo "✅ Container started with proven approach"
         echo "✅ Health checks passed"
-        echo "✅ AddyPin Staging is live at http://155.94.144.191:3001"
+        echo "✅ AddyPin Staging is live at http://155.94.144.191:8080"
+        echo "✅ Also accessible at http://addypin.com:8080"
         echo ""
         echo "🔧 Staging Environment Features:"
         echo "- Separate staging database (addypin_staging)"
-        echo "- Running on port 3001"
+        echo "- Running on port 8080 (staging port)"
+        echo "- Critical environment variables preserved"
         echo "- Independent from production environment"
         echo "- Perfect for testing before production deployment"
