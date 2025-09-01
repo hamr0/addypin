@@ -783,15 +783,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication removed - open access to avoid email limits
 
   // Handle subdomain patterns for ak7n1z.addypin.com (when custom domain is live)
-  app.use((req, res, next) => {
+  app.use(async (req, res, next) => {
     const host = req.get('host') || '';
     
     // Check for shortcode subdomain pattern: ak7n1z.addypin.com
     const subdomainMatch = host.match(/^([A-Z0-9]{6})\.addypin\.com$/i);
-    if (subdomainMatch) {
+    if (subdomainMatch && req.path === '/') {
       const shortcode = subdomainMatch[1].toUpperCase();
-      req.params.shortcode = shortcode;
-      // Continue to shortcode handler
+      
+      try {
+        const pin = await storage.getPinByShortcode(shortcode);
+        
+        if (!pin) {
+          // Serve the React app which will handle the 404 display
+          const indexPath = process.env.NODE_ENV === 'production' 
+            ? path.join(process.cwd(), 'dist', 'public', 'index.html')
+            : path.join(process.cwd(), 'client', 'index.html');
+          return res.sendFile(indexPath);
+        }
+        
+        // Track click analytics for visiting the pin page
+        await analyticsService.trackEvent({
+          pinId: pin.id,
+          eventType: "click",
+          userAgent: req.headers['user-agent'] || '',
+          ipAddress: req.ip || req.connection.remoteAddress || '127.0.0.1',
+        });
+        
+        // Serve the React app which will show the RedirectPage with all map options
+        const indexPath = process.env.NODE_ENV === 'production' 
+          ? path.join(process.cwd(), 'dist', 'public', 'index.html')
+          : path.join(process.cwd(), 'client', 'index.html');
+        return res.sendFile(indexPath);
+      } catch (error) {
+        console.error("Subdomain handler error:", error);
+        return res.status(500).send("Server error");
+      }
     }
     next();
   });
