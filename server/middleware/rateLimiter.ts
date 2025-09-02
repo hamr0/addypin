@@ -78,12 +78,11 @@ export function createRateLimiter(options: {
       return next();
     }
 
-    // CRITICAL FIX: Allow localhost requests in production for CI/CD health checks
+    // CRITICAL FIX: Allow ALL localhost requests in production for CI/CD
     // This is needed for Docker container health checks and deployment verification
     if (process.env.NODE_ENV === 'production' && 
-        (ip === '127.0.0.1' || ip === 'localhost' || ip === '::1' || ip === '::ffff:127.0.0.1') &&
-        (req.path.includes('/health') || req.path.includes('/stats') || req.path.includes('/map-links'))) {
-      console.log(`🔓 Allowing localhost health check in production: ${ip} for ${req.path}`);
+        (ip === '127.0.0.1' || ip === 'localhost' || ip === '::1' || ip === '::ffff:127.0.0.1')) {
+      console.log(`🔓 Allowing localhost request in production: ${ip} for ${req.path}`);
       return next();
     }
 
