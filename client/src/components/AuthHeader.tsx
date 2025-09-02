@@ -26,18 +26,30 @@ export default function AuthHeader() {
     );
   }
 
-  return (
-    <div className="flex items-center gap-2">
-      <SignInButton mode="modal">
-        <Button
-          variant="outline"
-          className="border-amber-300 text-amber-700 hover:bg-amber-50"
-          data-testid="button-login"
-        >
-          <Lock className="w-4 h-4 mr-2" />
-          Login to Create & Edit Pins
-        </Button>
-      </SignInButton>
-    </div>
-  );
+  try {
+    return (
+      <div className="flex items-center gap-2">
+        <SignInButton mode="modal">
+          <Button
+            variant="outline"
+            className="border-amber-300 text-amber-700 hover:bg-amber-50"
+            data-testid="button-login"
+          >
+            <Lock className="w-4 h-4 mr-2" />
+            Login to Create & Edit Pins
+          </Button>
+        </SignInButton>
+      </div>
+    );
+  } catch (error) {
+    // If Clerk components are not available, show a simple message
+    console.warn('Clerk components not available:', error);
+    return (
+      <div className="flex items-center gap-2">
+        <div className="text-sm text-gray-500 px-4 py-2 border border-gray-200 rounded-lg">
+          Authentication temporarily unavailable
+        </div>
+      </div>
+    );
+  }
 }
