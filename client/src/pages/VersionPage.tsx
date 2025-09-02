@@ -161,51 +161,6 @@ export default function VersionPage() {
           ))}
         </div>
 
-        {/* Open Source Section */}
-        <div className="mt-12">
-          <Card className="border-l-4 border-l-green-500">
-            <CardHeader>
-              <CardTitle className="text-addypin-dark flex items-center">
-                <GitBranch className="w-5 h-5 mr-2 text-green-500" />
-                Open Source Technologies
-              </CardTitle>
-              <CardDescription>
-                AddyPin is built with these amazing open source technologies and tools.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <h4 className="font-semibold text-addypin-dark mb-2">Frontend</h4>
-                  <ul className="space-y-1 text-sm text-addypin-medium">
-                    <li>• React 18 - UI library</li>
-                    <li>• TypeScript - Type safety</li>
-                    <li>• Vite - Build tool</li>
-                    <li>• Tailwind CSS - Styling</li>
-                    <li>• Leaflet.js - Interactive maps</li>
-                    <li>• Wouter - Lightweight routing</li>
-                    <li>• TanStack Query - State management</li>
-                    <li>• shadcn/ui - Component library</li>
-                    <li>• Radix UI - Accessible primitives</li>
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="font-semibold text-addypin-dark mb-2">Backend & Database</h4>
-                  <ul className="space-y-1 text-sm text-addypin-medium">
-                    <li>• Node.js - Runtime</li>
-                    <li>• Express.js - Web framework</li>
-                    <li>• PostgreSQL - Database</li>
-                    <li>• Drizzle ORM - Type-safe queries</li>
-                    <li>• Neon Database - Serverless hosting</li>
-                    <li>• Zod - Schema validation</li>
-                    <li>• Nodemailer - Email service</li>
-                    <li>• OpenStreetMap - Geocoding API</li>
-                  </ul>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
 
         {/* Footer */}
         <div className="mt-8 text-center">
