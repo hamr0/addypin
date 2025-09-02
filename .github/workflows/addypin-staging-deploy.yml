@@ -157,30 +157,89 @@ jobs:
           echo "✅ Docker image built successfully"
         '
 
-    - name: "🛑 Stop Existing Container and Port Cleanup"
+    - name: "🔍 Port 8080 Investigation and Cleanup"
       run: |
-        echo "🛑 Comprehensive container cleanup for staging..."
+        echo "🔍 SYSTEMATIC PORT 8080 TROUBLESHOOTING..."
         ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no root@155.94.144.191 '
-          # Stop any container using port 8080 (regardless of name)
-          echo "🔍 Checking for containers using port 8080..."
-          EXISTING=$(docker ps -q --filter "publish=8080")
-          if [ -n "$EXISTING" ]; then
-            echo "🛑 Found containers using port 8080: $EXISTING"
-            docker stop $EXISTING
-            docker rm $EXISTING
-            echo "✅ Port 8080 containers stopped and removed"
+          echo "==================== PORT 8080 INVESTIGATION ===================="
+          
+          # Step 1: What exactly is using port 8080?
+          echo "📊 STEP 1: Identifying what is using port 8080..."
+          echo "--- netstat output ---"
+          netstat -tulpn | grep :8080 || echo "No netstat entries for port 8080"
+          
+          echo "--- ss output ---"
+          ss -tulpn | grep :8080 || echo "No ss entries for port 8080"
+          
+          echo "--- lsof output ---"
+          lsof -i :8080 || echo "No lsof entries for port 8080"
+          
+          # Step 2: Docker container investigation
+          echo "🐳 STEP 2: Docker container investigation..."
+          echo "--- All running containers ---"
+          docker ps --format "table {{.Names}}\t{{.Ports}}\t{{.Status}}\t{{.ID}}"
+          
+          echo "--- Containers using port 8080 (publish filter) ---"
+          docker ps --filter "publish=8080" --format "table {{.Names}}\t{{.Ports}}\t{{.ID}}" || echo "No containers found with publish=8080 filter"
+          
+          echo "--- Any containers with 8080 in ports ---"
+          docker ps --format "{{.Names}}\t{{.Ports}}" | grep 8080 || echo "No containers found with 8080 in ports"
+          
+          # Step 3: System service investigation
+          echo "⚙️ STEP 3: System service investigation..."
+          echo "--- systemctl services that might use port 8080 ---"
+          systemctl list-units --state=active | grep -E "(nginx|apache|httpd|tomcat|jenkins)" || echo "No obvious web services found"
+          
+          # Step 4: Comprehensive cleanup attempt
+          echo "🛑 STEP 4: Comprehensive cleanup..."
+          
+          # Kill any process using port 8080
+          echo "--- Killing processes using port 8080 ---"
+          PID=$(lsof -ti :8080)
+          if [ -n "$PID" ]; then
+            echo "Found PID using port 8080: $PID"
+            ps -p $PID -o pid,ppid,cmd --no-headers || echo "Process info not available"
+            kill -9 $PID
+            echo "✅ Killed process $PID"
           else
-            echo "✅ No containers found using port 8080"
+            echo "No process found using port 8080 via lsof"
           fi
           
-          # Additional cleanup for addypin-staging specifically
+          # Stop ALL containers using port 8080 (multiple methods)
+          echo "--- Docker cleanup using multiple methods ---"
+          
+          # Method 1: publish filter
+          CONTAINERS_PUBLISH=$(docker ps -q --filter "publish=8080")
+          if [ -n "$CONTAINERS_PUBLISH" ]; then
+            echo "Found containers via publish filter: $CONTAINERS_PUBLISH"
+            docker stop $CONTAINERS_PUBLISH
+            docker rm $CONTAINERS_PUBLISH
+          fi
+          
+          # Method 2: port mapping inspection
+          CONTAINERS_PORT=$(docker ps --format "{{.ID}}" | xargs -I {} sh -c "docker port {} 2>/dev/null | grep 8080 && echo {}" | grep -v "8080" || true)
+          if [ -n "$CONTAINERS_PORT" ]; then
+            echo "Found containers via port inspection: $CONTAINERS_PORT"
+            docker stop $CONTAINERS_PORT
+            docker rm $CONTAINERS_PORT
+          fi
+          
+          # Method 3: staging-specific cleanup
           docker stop addypin-staging 2>/dev/null || echo "No addypin-staging container to stop"
           docker rm addypin-staging 2>/dev/null || echo "No addypin-staging container to remove"
           
-          # Clean up any orphaned containers
-          docker ps -a -q --filter "name=addypin-staging" | xargs -r docker rm -f || echo "No orphaned staging containers"
+          # Method 4: Force remove all stopped containers
+          docker container prune -f
           
           echo "✅ Comprehensive cleanup completed"
+          
+          # Step 5: Final verification
+          echo "🔍 STEP 5: Final port verification..."
+          echo "--- Final port 8080 check ---"
+          netstat -tulpn | grep :8080 || echo "✅ Port 8080 is now free"
+          lsof -i :8080 || echo "✅ No processes using port 8080"
+          
+          echo "==================== INVESTIGATION COMPLETE ===================="
         '
 
     - name: "🚀 Start Staging Container"
