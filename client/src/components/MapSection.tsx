@@ -37,9 +37,10 @@ interface MapSectionProps {
   onEditComplete?: (newCoords: { lat: number; lng: number }) => void;
   userEmail?: string;
   otpCode?: string;
+  readOnly?: boolean;
 }
 
-export default function MapSection({ coordinates, onCoordinatesChange, generatedLink, editingPin, isEditing, onEditComplete, userEmail, otpCode }: MapSectionProps) {
+export default function MapSection({ coordinates, onCoordinatesChange, generatedLink, editingPin, isEditing, onEditComplete, userEmail, otpCode, readOnly = false }: MapSectionProps) {
   const mapRef = useRef<L.Map | null>(null);
   const markerRef = useRef<L.Marker | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -148,21 +149,23 @@ export default function MapSection({ coordinates, onCoordinatesChange, generated
     }).addTo(map);
 
     const marker = L.marker([initialLat, initialLng], {
-      draggable: true,
+      draggable: !readOnly,
     }).addTo(map);
 
     // Set initial coordinates
     onCoordinatesChange({ lat: initialLat, lng: initialLng });
 
-    marker.on('dragend', () => {
-      const pos = marker.getLatLng();
-      onCoordinatesChange({ lat: pos.lat, lng: pos.lng });
-    });
+    if (!readOnly) {
+      marker.on('dragend', () => {
+        const pos = marker.getLatLng();
+        onCoordinatesChange({ lat: pos.lat, lng: pos.lng });
+      });
 
-    map.on('click', (e: L.LeafletMouseEvent) => {
-      marker.setLatLng(e.latlng);
-      onCoordinatesChange({ lat: e.latlng.lat, lng: e.latlng.lng });
-    });
+      map.on('click', (e: L.LeafletMouseEvent) => {
+        marker.setLatLng(e.latlng);
+        onCoordinatesChange({ lat: e.latlng.lat, lng: e.latlng.lng });
+      });
+    }
 
     mapRef.current = map;
     markerRef.current = marker;

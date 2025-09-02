@@ -63,6 +63,14 @@ export default function RedirectPage() {
     }
   }, [typedPin]);
 
+  // Update page title when pin loads
+  React.useEffect(() => {
+    if (typedPin) {
+      const country = getCountryFromCoords(parseFloat(typedPin.latitude), parseFloat(typedPin.longitude));
+      document.title = `${typedPin.shortcode} addypin - ${country}`;
+    }
+  }, [typedPin]);
+
   // OTP mutations
   const sendOtpMutation = useMutation({
     mutationFn: async (email: string) => {
@@ -253,6 +261,7 @@ export default function RedirectPage() {
                     coordinates={coordinates}
                     onCoordinatesChange={handleCoordinatesChange}
                     generatedLink={null}
+                    readOnly={true}
                   />
                 </div>
               )}
