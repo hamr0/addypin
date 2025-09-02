@@ -44,6 +44,7 @@ const WHITELISTED_IPS = [
   '172.31.93.34', // Development IP
   '172.31.118.66', // Development IP
   '35.185.93.79', // User's external IP (phone/laptop)
+  '34.73.234.246', // User's current IP
 ];
 
 // Whitelisted emails (user's email exempt from email limits)
