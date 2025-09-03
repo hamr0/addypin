@@ -157,7 +157,7 @@ jobs:
           cd /opt/addypin
           
           echo "Building addypin Docker image..."
-          docker build -t addypin:latest .
+          docker build --no-cache -t addypin:latest .
           
           echo "✅ Docker image built successfully"
         '

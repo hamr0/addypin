@@ -110,7 +110,7 @@ jobs:
           -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
           ./ root@155.94.144.191:/tmp/addypin-staging-transfer/
         
-        # Move files to final location
+        # Move files to final location - FIXED PATH TO MATCH DOCKERFILE
         ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no root@155.94.144.191 '
           rm -rf /opt/addypin-staging
           mkdir -p /opt/addypin-staging
@@ -153,7 +153,7 @@ jobs:
           cd /opt/addypin-staging
           
           echo "Building addypin-staging Docker image..."
-          docker build -t addypin-staging:latest .
+          docker build --no-cache -t addypin-staging:latest .
           
           echo "✅ Docker image built successfully"
         '
