@@ -8,10 +8,10 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-// Use Replit's built-in database for development
+// VPS PostgreSQL configuration - no SSL for local database
 const connectionConfig = {
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? false : true // SSL for Replit database
+  ssl: false
 };
 
 export const pool = new Pool(connectionConfig);
