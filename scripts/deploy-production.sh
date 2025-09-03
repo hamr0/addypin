@@ -53,6 +53,19 @@ rollback_deployment() {
     fi
 }
 
+# Docker cleanup before deployment
+docker_cleanup() {
+    log "🧹 Cleaning Docker artifacts to prevent disk space issues..."
+    
+    if command -v docker &> /dev/null; then
+        log "📦 Running Docker cleanup..."
+        docker system prune -af 2>/dev/null || true
+        log "✅ Docker cleanup completed"
+    else
+        log "ℹ️ Docker not detected - skipping cleanup"
+    fi
+}
+
 # Pre-flight checks
 pre_flight_checks() {
     log "🔍 Running pre-flight checks..."
@@ -241,6 +254,7 @@ main() {
     mkdir -p /var/log/addypin
     
     # Run deployment steps
+    docker_cleanup
     pre_flight_checks
     backup_database
     backup_application
