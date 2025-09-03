@@ -834,7 +834,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!pin) {
         // Serve the React app which will handle the 404 display
         const indexPath = process.env.NODE_ENV === 'production' 
-          ? path.join(process.cwd(), 'dist', 'index.html')
+          ? path.join(process.cwd(), 'dist', 'public', 'index.html')
           : path.join(process.cwd(), 'client', 'index.html');
         return res.sendFile(indexPath);
       }
@@ -849,7 +849,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Serve the React app which will show the RedirectPage with all map options
       const indexPath = process.env.NODE_ENV === 'production' 
-        ? path.join(process.cwd(), 'dist', 'index.html')
+        ? path.join(process.cwd(), 'dist', 'public', 'index.html')
         : path.join(process.cwd(), 'client', 'index.html');
       res.sendFile(indexPath);
     } catch (error) {
@@ -868,7 +868,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!pin) {
         // Serve the React app which will handle the 404 display
         const indexPath = process.env.NODE_ENV === 'production' 
-          ? path.join(process.cwd(), 'dist', 'index.html')
+          ? path.join(process.cwd(), 'dist', 'public', 'index.html')
           : path.join(process.cwd(), 'client', 'index.html');
         return res.sendFile(indexPath);
       }
@@ -883,7 +883,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Serve the React app which will show the RedirectPage with all map options
       const indexPath = process.env.NODE_ENV === 'production' 
-        ? path.join(process.cwd(), 'dist', 'index.html')
+        ? path.join(process.cwd(), 'dist', 'public', 'index.html')
         : path.join(process.cwd(), 'client', 'index.html');
       res.sendFile(indexPath);
     } catch (error) {
