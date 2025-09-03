@@ -181,7 +181,7 @@ jobs:
             -e DATABASE_URL="postgresql://addypin_user:secure_password_123@172.17.0.1:5432/addypin" \
             -e RESEND_API_KEY="${{ secrets.RESEND_API_KEY }}" \
             -e NODE_ENV=production \
-            --health-cmd="wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1" \
+            --health-cmd="wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/api/health || exit 1" \
             --health-interval=30s \
             --health-timeout=10s \
             --health-retries=3 \

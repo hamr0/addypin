@@ -256,7 +256,7 @@ jobs:
             -e PORT=3000 \
             -e STAGING_PORT=8080 \
             --restart unless-stopped \
-            --health-cmd="wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1" \
+            --health-cmd="wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/api/health || exit 1" \
             --health-interval=30s \
             --health-timeout=10s \
             --health-retries=3 \
