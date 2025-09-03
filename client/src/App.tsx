@@ -17,19 +17,9 @@ import { useEffect } from "react";
 function Router() {
   const [location, setLocation] = useLocation();
   
-  // Detect subdomain access and redirect to proper route
+  // Handle direct shortcode URLs like /TRZLUA (but NOT subdomains)
   useEffect(() => {
-    const hostname = window.location.hostname;
-    // Check if we're on a subdomain like trzlua.addypin.com
-    const subdomainMatch = hostname.match(/^([A-Z0-9]{6})\.addypin\.com$/i);
-    
-    if (subdomainMatch && location === "/") {
-      const shortcode = subdomainMatch[1].toUpperCase();
-      // Redirect to the proper route for the shortcode
-      setLocation(`/redirect/${shortcode}`);
-    }
-    
-    // Also handle direct shortcode URLs like /TRZLUA
+    // Only handle direct shortcode URLs like /TRZLUA, not subdomains
     const pathMatch = location.match(/^\/([A-Z0-9]{6})$/i);
     if (pathMatch) {
       const shortcode = pathMatch[1].toUpperCase();
