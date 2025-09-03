@@ -2,15 +2,18 @@ import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import * as schema from "../shared/schema";
 
-if (!process.env.DATABASE_URL) {
+// Use working database URL if available, fallback to default DATABASE_URL
+const databaseUrl = process.env.WORKING_DATABASE_URL || process.env.DATABASE_URL;
+
+if (!databaseUrl) {
   throw new Error(
-    "DATABASE_URL must be set. Did you forget to provision a database?",
+    "DATABASE_URL or WORKING_DATABASE_URL must be set. Did you forget to provision a database?",
   );
 }
 
 // VPS PostgreSQL configuration - no SSL for local database
 const connectionConfig = {
-  connectionString: process.env.DATABASE_URL,
+  connectionString: databaseUrl,
   ssl: false
 };
 
