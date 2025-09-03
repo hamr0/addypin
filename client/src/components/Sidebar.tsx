@@ -186,7 +186,22 @@ export default function Sidebar({ coordinates, generatedLink, onLinkGenerated, i
 
   const copyToClipboard = async (text: string) => {
     try {
-      await navigator.clipboard.writeText(text);
+      // Try modern clipboard API first (requires HTTPS or localhost)
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        // Fallback for HTTP environments (like staging)
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.style.position = 'fixed';
+        textArea.style.opacity = '0';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      }
+      
       toast({
         title: "Copied!",
         description: "Link copied to clipboard.",
