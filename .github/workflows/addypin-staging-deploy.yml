@@ -139,9 +139,7 @@ jobs:
           echo "Running database migration..."
           npm run db:push || echo "Migration completed with warnings"
           
-          echo "Building application..."
-          export VITE_API_BASE_URL=http://155.94.144.191:8080
-          npm run build
+          echo "Application will be built inside Docker container..."
           
           echo "✅ Dependencies, migration, and build completed"
         '
