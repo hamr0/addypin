@@ -29,3 +29,12 @@
                   |         └── staging.mapycom.com # STAGING config ——
                   └── sites-enabled/ # (symlinks to sites-available)
 ```
+
+## 4. Network & Port Matrix (TARGET)
+| Component | Host Interface | Host Port | Container Port | Protocol | Notes |
+|---|---|---|---|---|---|
+| **Nginx** | 0.0.0.0 | 80 | - | HTTP | Redirects to 443 |
+| **Nginx** | 0.0.0.0 | 443 | - | HTTPS | Main entry point |
+| **PostgreSQL** | localhost | 5432 | - | TCP | Only accessible from host and containers via host.docker.internal |
+| **Prod App** | localhost | 3001 | 3000 | TCP | Nginx proxies "mapycom.com" -> "localhost:3001" |
+| **Staging App** | localhost | 3002 | 3000 | TCP | Nginx proxies "staging.mapycom.com" -> "localhost:3002" |
