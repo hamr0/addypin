@@ -313,3 +313,62 @@ docker run -d --name addypin-postgres \
 2. **URGENT**: Change database password (exposed in command history)
 3. **CRITICAL**: Fix Nginx routing to restore staging environment isolation
 4. **SECURITY**: Secure PostgreSQL public exposure
+
+---
+
+# REPLIT DEVELOPMENT ENVIRONMENT ANALYSIS
+
+## Replit Configuration Discovery
+**✅ DEVELOPMENT ENVIRONMENT STRUCTURE:**
+- **Runtime**: Node.js 20 with PostgreSQL 16 module
+- **Development Command**: `npm run dev` (port 5000)
+- **Production Build**: `npm run build` → `npm run start`
+- **Deployment Target**: Autoscale (Replit's managed hosting)
+
+## Development vs Production Environment Comparison
+| Aspect | Replit Development | VPS Production | Status |
+| :--- | :--- | :--- | :--- |
+| **Node.js Version** | 20 | Unknown | ❓ UNKNOWN |
+| **Database** | PostgreSQL 16 (module) | PostgreSQL (Docker) | ✅ COMPATIBLE |
+| **Port Configuration** | 5000 (dev), 3000 (mapped) | 3000 (prod), 8080 (staging) | ⚠️ DIFFERENT |
+| **Build Process** | `npm run build` + `npm run start` | Local Docker images | ❌ **DIFFERENT** |
+| **Deployment** | Replit Autoscale | Docker Compose in `/opt/` | ❌ **DIFFERENT** |
+
+## Critical Replit Configuration Findings
+**🔍 DEVELOPMENT TOOLING:**
+```
+Nix Packages:
+- docker_26     ← Docker available for VPS deployment  
+- sshpass       ← SSH automation for VPS deployment
+- gh            ← GitHub CLI for CI/CD
+- openssh       ← SSH client for VPS access
+```
+
+**🚀 WORKFLOW CONFIGURATION:**
+- **"Start application"** workflow runs `npm run dev` on port 5000
+- **Build target**: Replit Autoscale deployment
+- **Development database**: Built-in PostgreSQL 16 module
+
+## Development vs VPS Architecture Gap
+**⚠️ TWO SEPARATE DEPLOYMENT PATHS:**
+1. **Replit Path**: `npm run build` → Replit Autoscale deployment
+2. **VPS Path**: Unknown build process → Docker images → Docker Compose
+
+**CONFIGURATION MYSTERIES REVEALED:**
+- ✅ **Replit has proper build process** (`npm run build` / `npm run start`)
+- ❌ **VPS deployment bypasses this** (uses unknown Docker image creation)
+- ✅ **Development database separate** from VPS PostgreSQL
+- ⚠️ **Port conflicts**: Dev uses 5000, VPS uses 3000/8080
+
+## Build Process Gap Analysis
+**❓ MISSING LINK:** How does code go from Replit → VPS Docker images?
+- Replit has `npm run build` / `npm run start` 
+- VPS has Docker images `addypin:latest` / `addypin-staging:latest`
+- **Gap**: No clear connection between Replit build and VPS images
+
+**COMPREHENSIVE INFRASTRUCTURE PRIORITIES:**
+1. **IMMEDIATE**: Examine `/opt/addypin/` Docker Compose configuration  
+2. **BUILD PROCESS**: Understand Replit → VPS deployment pipeline
+3. **URGENT**: Change database password (exposed in command history)
+4. **CRITICAL**: Fix Nginx routing to restore staging environment isolation
+5. **SECURITY**: Secure PostgreSQL public exposure
