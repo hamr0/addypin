@@ -139,3 +139,41 @@ The application must be configured solely through environment variables. The fol
 - ✅ Frontend serving properly (health checks confirm full stack working)
 
 **CONCLUSION:** Your applications are **WORKING CORRECTLY** despite infrastructure mismatches with target architecture.
+
+---
+
+# NGINX ROUTING ANALYSIS (CRITICAL FINDING)
+
+## Current Nginx Configuration (ACTUAL)
+**✅ Nginx Status:** Configuration syntax OK, SSL certificates valid
+
+**🔍 Server Blocks & Routing:**
+| Domain Pattern | SSL Port | HTTP Port | Backend Target | Purpose |
+| :--- | :--- | :--- | :--- | :--- |
+| `*.addypin.com` | `443` | `80` | `127.0.0.1:3000` | **ALL subdomains → PRODUCTION** |
+| `addypin.com`, `www.addypin.com` | `443` | `80` → redirect | `127.0.0.1:3000` | Main domain → Production |
+
+## 🚨 CRITICAL ROUTING ISSUE DISCOVERED
+**❌ STAGING CONTAINER UNREACHABLE VIA NGINX:**
+- **Staging Container**: Running on port `8080` ✅
+- **Nginx Routing**: NO specific route to port `8080` ❌
+- **Result**: `staging.addypin.com` → Routes to **PRODUCTION** (port 3000)
+
+**How This Breaks Staging:**
+1. `staging.addypin.com` matches `*.addypin.com` wildcard
+2. Wildcard routes to `127.0.0.1:3000` (production)
+3. Staging container on `127.0.0.1:8080` **never receives traffic**
+
+## Target vs Reality: Nginx Routing
+| Domain | Target Backend | Actual Backend | Status |
+| :--- | :--- | :--- | :--- |
+| `addypin.com` | `localhost:3001` | `127.0.0.1:3000` | ⚠️ PORT MISMATCH |
+| `staging.addypin.com` | `localhost:3002` | `127.0.0.1:3000` | ❌ **ROUTES TO PROD** |
+
+## SSL Certificate Status
+**✅ VALID SSL SETUP:**
+- Certificate: `/etc/letsencrypt/live/addypin.com-0001/fullchain.pem`
+- Modern TLS (v1.2, v1.3) with strong ciphers
+- Automatic HTTP → HTTPS redirect for main domains
+
+**INFRASTRUCTURE PRIORITY:** Fix staging routing to enable proper environment separation.
