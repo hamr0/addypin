@@ -1,0 +1,16 @@
+Replit ENV:
+NODE_ENV: development (when running)
+PORT: 5000
+
+Available Secrets:
+DATABASE_URL: [EXISTS]
+PGDATABASE: [EXISTS]
+PGHOST: [EXISTS]
+PGPASSWORD: [EXISTS]
+PGPORT: [EXISTS]
+PGUSER: [EXISTS]
+RESEND_API_KEY: [EXISTS]
+
+Missing Secrets (per target blueprint):
+WORKING_DATABASE_URL: [MISSING]
+VITE_API_URL: [MISSING]
