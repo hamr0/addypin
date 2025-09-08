@@ -47,3 +47,15 @@
 - **Dockerfile**
 - **Example Dockerfile CMD**
 CMD ["node", "build/index.js"]
+
+## 6. Environment Variables (TARGET)
+The application must be configured solely through environment variables. The following are required:
+
+### Application Variables
+- NODE_ENV: 'production' or 'staging'
+- PORT: 3000 (The port the Node.js app listens on *inside* the container)
+- DATABASE_URL: Connection string to PostgreSQL (e.g., 'postgresql://user:pass@host.docker.internal:5432/app_production')
+
+### External Service Variables
+- RESEND_API_KEY
+- VITE_API_URL: The public base URL for the API (e.g., 'https://myapp.com/api'), used by the frontend.
