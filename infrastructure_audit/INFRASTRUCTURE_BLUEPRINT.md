@@ -1,19 +1,7 @@
-# Infrastructure Blueprint: AddyPin VPS Audit
+# Infrastructure Blueprint: Target State
 
-**Status**: Fresh Start - Clean Audit  
-**Date**: September 8, 2025  
-**Methodology**: Systematic data-driven analysis
-
----
-
-## Audit Progress
-
-- [ ] Phase 0: Preparation & Workspace Setup  
-- [ ] Phase 1: Define Target Blueprint  
-- [ ] Phase 2: VPS Discovery & Interrogation  
-- [ ] Phase 3: Replit Self-Audit  
-- [ ] Phase 4: Gap Analysis & Migration Strategy
-
----
-
-*This document will be systematically updated with verified data only. No assumptions.*
+## 1. Core Principles
+*   **Simplicity:** The simplest solution is the best. Avoid unnecessary complexity.
+*   **Explicitness:** No magic. All configuration must be defined in version-controlled files or environment variables.
+*   **Isolation:** Staging and Production are isolated at the application (container) level but can share underlying services (DB, Nginx).
+*   **Portability:** The entire system should be definable with Docker Compose for local simulation.
