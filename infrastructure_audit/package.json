@@ -1,12 +1,12 @@
 {
   "name": "infrastructure_audit",
   "version": "1.0.0",
-  "description": "",
+  "description": "Infrastructure audit workspace for systematic VPS analysis",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
+  "keywords": ["infrastructure", "audit", "vps"],
   "author": "",
   "license": "ISC"
 }
