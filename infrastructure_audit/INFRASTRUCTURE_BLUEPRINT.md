@@ -218,3 +218,124 @@ addypin           latest    dd423ae9f1c2   4 days ago   1.37GB
 **Infrastructure Audit Status: COMPLETE ✅**  
 **Critical Issues Identified: 6 Major Security & Architecture Gaps**  
 **Foundation Fix Required: YES - Comprehensive restructuring needed**
+
+---
+
+# PHASE 2 DETAILED DISCOVERY DATA
+
+## Docker Container Deep Analysis
+
+### Container Configuration Issues Found:
+- **Production Container (`addypin`)**: Multiple "/app/dist/index.html" missing errors
+- **Staging Container (`addypin-staging`)**: "Parse Error: Invalid method encountered" 
+
+### Critical Container Problems:
+1. **Frontend Build Missing**: Production container cannot find built frontend files
+2. **HTTP Parsing Errors**: Staging container has request parsing issues
+3. **Public Network Exposure**: Both containers accessible from internet (0.0.0.0)
+
+## Nginx Full Configuration Analysis
+
+### Current Nginx Structure:
+- **Single Config File**: `/etc/nginx/conf.d/addypin.conf` handles both environments
+- **Syntax Valid**: Configuration passes nginx test
+- **Missing**: Separate staging configuration
+
+### Configuration Gaps:
+- No environment-specific upstream definitions
+- Missing proper proxy_pass configurations for localhost ports
+- Combined routing instead of isolated environment configs
+
+## PostgreSQL Deep Analysis
+
+### Database Configuration:
+- **Version**: PostgreSQL running on AlmaLinux
+- **Config Location**: `/var/lib/pgsql/data/postgresql.conf`
+- **Listen Address**: localhost only (secure)
+- **Port**: 5432 (standard)
+- **Max Connections**: Default PostgreSQL settings
+
+### Database Permissions:
+```
+addypin_user has CTc (CREATE, TEMP, CONNECT) on both databases
+- addypin (production)
+- addypin_staging (staging)
+```
+
+## Configuration Files Discovery
+
+### Environment Files Status:
+- **Result**: NO `.env` files found anywhere on system
+- **Impact**: All configuration hardcoded in containers/compose files
+- **Risk**: Cannot modify settings without rebuilding
+
+### Configuration Files Found:
+- `/opt/addypin/docker-compose.yml`
+- `/opt/addypin/nginx-api-fix.conf`
+- `/opt/addypin-staging/docker-compose.yml` 
+- `/opt/addypin-staging/nginx-api-fix.conf`
+
+### Environment Variables in Docker Compose:
+- **Result**: No PORT, NODE_ENV, or DATABASE environment variables found in compose files
+- **Impact**: Applications using hardcoded configuration
+
+## Deployment Scripts Analysis
+
+### Deployment Automation Status:
+- **Scripts Found**: None
+- **Systemd Services**: No addypin-specific services
+- **Cron Jobs**: None configured
+- **Deployment Binaries**: None in /usr/local/bin/
+
+### Manual Deployment Reality:
+- **Current Process**: Manual Docker container management
+- **No Automation**: No CI/CD pipeline scripts
+- **Risk**: Human error in deployments, inconsistent environments
+
+---
+
+# PHASE 3: REPLIT SELF-AUDIT ANALYSIS
+
+## Development Environment Configuration
+
+### Replit Setup Analysis:
+```
+Modules: nodejs-20, web, postgresql-16
+Runtime: Nix channel stable-24_05
+Development: npm run dev (tsx server/index.ts)
+Production: npm run start (node dist/index.js)
+Port: 5000 (development), 3000 (deployment)
+```
+
+### Build Strategy:
+- **Frontend**: Vite build system
+- **Backend**: esbuild for production bundling
+- **TypeScript**: tsx for development, compiled for production
+- **Database**: Drizzle ORM with PostgreSQL
+
+### Environment Variables Status:
+```
+✅ Available Secrets:
+- DATABASE_URL
+- PGDATABASE, PGHOST, PGPASSWORD, PGPORT, PGUSER
+- RESEND_API_KEY
+
+❌ Missing Secrets (per target):
+- WORKING_DATABASE_URL
+- VITE_API_URL
+```
+
+### Development vs Production Gap:
+- **Development**: Works correctly on Replit (port 5000)
+- **VPS Production**: Container errors, missing frontend builds
+- **Root Cause**: Build process not properly transferring to VPS containers
+
+## Critical Insight: Development-Production Disconnect
+
+**The Replit development environment works perfectly, but the VPS production deployment is broken:**
+
+1. **Build Process Issue**: Frontend dist files not properly included in Docker images
+2. **Configuration Management**: No environment variable injection from Replit to VPS
+3. **Port Mapping Confusion**: Development (5000) vs Production (3000) vs VPS reality (3000/8080)
+
+**Next Required**: Migration strategy to align VPS infrastructure with working Replit configuration while maintaining zero downtime.
