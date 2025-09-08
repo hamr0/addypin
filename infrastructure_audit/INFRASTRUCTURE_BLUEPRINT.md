@@ -263,3 +263,53 @@ Since no .env files exist, containers must be getting configuration via:
 2. **URGENT**: Fix Nginx routing to restore staging environment isolation
 3. **ARCHITECTURE**: Implement proper configuration management (.env files)
 4. **SECURITY**: Secure PostgreSQL public exposure
+
+---
+
+# DEPLOYMENT METHOD DISCOVERY (BREAKTHROUGH!)
+
+## Deployment Scripts Discovery Results
+**✅ DEPLOYMENT MYSTERY SOLVED:**
+- **Deploy Script Found**: `/home/deploy` (needs examination)
+- **Docker Compose Files Located**: `/opt/addypin/docker-compose.yml` and `/opt/addypin-staging/docker-compose.yml`
+- **Different Location**: Deployment structure exists but in `/opt/` not `/home/user/app/`
+
+## Command History Analysis - CRITICAL FINDINGS
+**🔍 ACTUAL DEPLOYMENT EVIDENCE:**
+```bash
+# Manual PostgreSQL deployment with exposed credentials:
+docker run -d --name addypin-postgres \
+  -e POSTGRES_DB=addypin \
+  -e POSTGRES_USER=addypin \
+  -e POSTGRES_PASSWORD=addypin_password \
+  -p 5432:5432 postgres:15
+
+# Docker Compose files confirmed at:
+/opt/addypin/docker-compose.yml           ← Production
+/opt/addypin-staging/docker-compose.yml   ← Staging
+```
+
+## Target vs Reality: Deployment Structure
+| Aspect | Target Location | Actual Location | Status |
+| :--- | :--- | :--- | :--- |
+| **Docker Compose** | `/home/user/app/production/` | `/opt/addypin/` | ✅ **EXISTS** (different path) |
+| **Staging Compose** | `/home/user/app/staging/` | `/opt/addypin-staging/` | ✅ **EXISTS** (different path) |
+| **Deploy Script** | Unknown | `/home/deploy` | ✅ **FOUND** |
+
+## Security Alert from Command History
+**🚨 EXPOSED DATABASE CREDENTIALS:**
+- PostgreSQL password visible in command history: `addypin_password`
+- Database publicly accessible on `0.0.0.0:5432`
+- **IMMEDIATE SECURITY RISK**: Production database credentials exposed
+
+**BREAKTHROUGH IMPLICATIONS:**
+- ✅ **Docker Compose deployment exists** (target architecture partially implemented)
+- ✅ **Proper environment separation** at file level  
+- ❌ **Wrong directory structure** (should investigate `/opt/` location)
+- ❌ **Security breach** (database credentials in command history)
+
+**UPDATED PRIORITIES:**
+1. **IMMEDIATE**: Examine `/opt/addypin/` and `/opt/addypin-staging/` directories  
+2. **URGENT**: Change database password (exposed in command history)
+3. **CRITICAL**: Fix Nginx routing to restore staging environment isolation
+4. **SECURITY**: Secure PostgreSQL public exposure
