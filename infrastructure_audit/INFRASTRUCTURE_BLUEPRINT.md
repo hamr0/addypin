@@ -59,3 +59,15 @@ The application must be configured solely through environment variables. The fol
 ### External Service Variables
 - RESEND_API_KEY
 - VITE_API_URL: The public base URL for the API (e.g., 'https://myapp.com/api'), used by the frontend.
+
+## 7. CI/CD Pipeline Flow (TARGET)
+1. **Code Push:** Code is pushed to `main` or `staging` branch.
+2. **Build Image:** GitHub Actions builds the Docker image.
+3. **Push Image:** Image is tagged and pushed to GHCR.
+4. **Deploy:** GitHub Actions SSHes into the VPS and executes a deployment script.
+5. **Deploy Execution:** The deployment script:
+   a. Goes to the correct directory (`/app/staging` or `/app/production`).
+   b. Pulls the new Docker image.
+   c. Runs `docker-compose up -d` which uses the `.env` file in that directory.
+   d. Runs a health check validation script.
+6. **Rollback:** If health checks fail, the script automatically re-deploys the previous known-good image.
