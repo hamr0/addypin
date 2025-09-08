@@ -38,3 +38,12 @@
 | **PostgreSQL** | localhost | 5432 | - | TCP | Only accessible from host and containers via host.docker.internal |
 | **Prod App** | localhost | 3001 | 3000 | TCP | Nginx proxies "mapycom.com" -> "localhost:3001" |
 | **Staging App** | localhost | 3002 | 3000 | TCP | Nginx proxies "staging.mapycom.com" -> "localhost:3002" |
+
+## 5. Docker Strategy
+- **One Dockerfile:** A single multi-stage `Dockerfile` at the project root.
+- **Build in CI:** Images are built by GitHub Actions, tagged with `{commit-sha}`, `:staging`, `:prod`, and pushed to GitHub Container Registry (GHCR).
+- **Run with Compose:** The VPS only pulls images from GHCR and uses `docker-compose.yml` files to run them. The VPS does not build images.
+- **Image Command:** The container's default command must start the application. It must respect the `$PORT` environment variable.
+- **Dockerfile**
+- **Example Dockerfile CMD**
+CMD ["node", "build/index.js"]
