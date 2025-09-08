@@ -14,3 +14,18 @@
 | **Database** | PostgreSQL (External) | Single instance on VPS hosting `app_production` and `app_staging` databases |
 | **CI/CD** | GitHub Actions | Builds Docker images, pushes to GHCR, triggers deployment scripts on VPS |
 | **Deployment** | Docker Compose | Defines and manages the application container on the VPS |
+
+## 3. Physical Layout on VPS
+
+```
+/home/user/ ——— app/ ——— production/ # Production Environment Directory |
+                  |         ├── .env # PROD environment variables |
+                  |         └── docker-compose.yml # PROD service definition |
+                  ├── staging/ # Staging Environment Directory |
+                  |         ├── .env # STAGING environment variables |
+                  |         └── docker-compose.yml # STAGING service definition |
+                  ├── sites-available/ |
+                  |         ├── mapycom.com # PROD config |
+                  |         └── staging.mapycom.com # STAGING config ——
+                  └── sites-enabled/ # (symlinks to sites-available)
+```
