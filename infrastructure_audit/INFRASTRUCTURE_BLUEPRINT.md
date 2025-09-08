@@ -360,11 +360,36 @@ Nix Packages:
 - ✅ **Development database separate** from VPS PostgreSQL
 - ⚠️ **Port conflicts**: Dev uses 5000, VPS uses 3000/8080
 
-## Build Process Gap Analysis
-**❓ MISSING LINK:** How does code go from Replit → VPS Docker images?
-- Replit has `npm run build` / `npm run start` 
-- VPS has Docker images `addypin:latest` / `addypin-staging:latest`
-- **Gap**: No clear connection between Replit build and VPS images
+## Build Process Analysis - COMPLETE
+**🔍 REPLIT BUILD PROCESS DISCOVERED:**
+```json
+{
+  "dev": "NODE_ENV=development tsx server/index.ts",
+  "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
+  "start": "NODE_ENV=production node dist/index.js",
+  "check": "tsc",
+  "db:push": "drizzle-kit push"
+}
+```
+
+**📋 BUILD PIPELINE BREAKDOWN:**
+1. **Development**: `tsx server/index.ts` → Direct TypeScript execution
+2. **Frontend Build**: `vite build` → Static frontend assets
+3. **Backend Build**: `esbuild` → Bundled Node.js application in `dist/`
+4. **Production Run**: `node dist/index.js` → Optimized JavaScript execution
+5. **Database Sync**: `drizzle-kit push` → Schema synchronization
+
+**❓ DEPLOYMENT GAP ANALYSIS:**
+- ✅ **Replit Build**: `npm run build` → `dist/` folder with optimized assets
+- ❓ **Missing Link**: How does `dist/` folder → VPS Docker images?
+- ✅ **VPS Docker**: Images `addypin:latest` / `addypin-staging:latest` exist
+- ❓ **Gap**: No clear Dockerfile or CI/CD pipeline visible
+
+**🚀 TECHNOLOGY STACK CONFIRMED:**
+- **Frontend**: Vite + React + TypeScript  
+- **Backend**: Express + TypeScript + ESBuild bundling
+- **Database**: Drizzle ORM + PostgreSQL
+- **Development**: tsx for hot-reload TypeScript execution
 
 **COMPREHENSIVE INFRASTRUCTURE PRIORITIES:**
 1. **IMMEDIATE**: Examine `/opt/addypin/` Docker Compose configuration  
