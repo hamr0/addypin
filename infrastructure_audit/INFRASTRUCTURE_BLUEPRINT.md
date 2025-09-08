@@ -177,3 +177,52 @@ The application must be configured solely through environment variables. The fol
 - Automatic HTTP → HTTPS redirect for main domains
 
 **INFRASTRUCTURE PRIORITY:** Fix staging routing to enable proper environment separation.
+
+---
+
+# POSTGRESQL DATABASE ANALYSIS
+
+## Database Structure (ACTUAL)
+**✅ PROPER DATABASE SEPARATION:**
+| Database | Owner | User Access | Encoding | Purpose |
+| :--- | :--- | :--- | :--- | :--- |
+| `addypin` | postgres | `addypin_user` (CTc) | UTF8 | **Production Database** |
+| `addypin_staging` | postgres | `addypin_user` (CTc) | UTF8 | **Staging Database** |
+| `postgres` | postgres | - | UTF8 | System database |
+
+**✅ DATABASE USER PRIVILEGES:**
+- `addypin_user` has `CTc` privileges on both databases:
+  - **C** = CREATE (tables, indexes)
+  - **T** = TEMP (temporary tables)
+  - **c** = CONNECT (database access)
+
+## PostgreSQL Configuration Discovery
+**📍 Multiple PostgreSQL Instances Found:**
+```
+/var/lib/pgsql/data/postgresql.conf              ← Native PostgreSQL
+/var/lib/docker/volumes/addypin_postgres_data/   ← Docker Volume
+```
+
+## Security Assessment: Public Exposure Analysis
+**⚠️ PREVIOUS FINDING:** PostgreSQL exposed on `0.0.0.0:5432`
+
+**✅ POSITIVE DISCOVERY:**
+- **Proper Database Separation**: Production and staging have separate databases
+- **Controlled Access**: Dedicated `addypin_user` with limited privileges  
+- **No Root Access**: Applications don't use postgres superuser
+
+**❌ SECURITY CONCERNS:**
+- **Public Exposure**: PostgreSQL accessible from internet
+- **Shared User**: Same `addypin_user` for both production and staging
+- **Multiple Instances**: Unclear which instance is serving port 5432
+
+## Database vs Container Routing Issue
+**🔍 CONTRADICTION RESOLVED:**
+- **Database Level**: ✅ Proper separation (`addypin` vs `addypin_staging`)
+- **Application Level**: ❌ Staging container gets production traffic via Nginx
+- **Result**: Staging container likely connects to `addypin_staging` but serves production users
+
+**INFRASTRUCTURE PRIORITIES:**
+1. **URGENT**: Fix Nginx routing to restore staging environment isolation
+2. **SECURITY**: Secure PostgreSQL public exposure 
+3. **CLEANUP**: Resolve dual PostgreSQL instance setup
