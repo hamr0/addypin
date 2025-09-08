@@ -77,3 +77,37 @@ The application must be configured solely through environment variables. The fol
     c. Runs `docker-compose up -d` which uses the `.env` file in that directory.
     d. Runs a health check validation script.
 6.  **Rollback:** If health checks fail, the script automatically re-deploys the previous known-good image.
+
+---
+
+# VPS REALITY: Discovery Results (Sep 8, 2025)
+
+## Current Network & Ports (ACTUAL)
+| Component | Host Interface | Host Port | Container Port | Process | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Nginx** | `0.0.0.0` | `80` | - | nginx master | ACTIVE |
+| **Nginx** | `0.0.0.0` | `443` | - | nginx master | ACTIVE |
+| **PostgreSQL** | `0.0.0.0` | `5432` | - | postmaster | **EXPOSED PUBLICLY** |
+| **Production App** | `0.0.0.0` | `3000` | `3000` | docker-proxy | ACTIVE |
+| **Staging App** | `0.0.0.0` | `8080` | `3000` | docker-proxy | ACTIVE |
+| **Unknown Service** | `:::` | `5000` | - | node | ACTIVE |
+
+## Current Docker Containers (ACTUAL)
+| Name | Image | Ports | Status | Uptime |
+| :--- | :--- | :--- | :--- | :--- |
+| `addypin` | `addypin:latest` | `0.0.0.0:3000->3000/tcp` | Up (healthy) | 5 days |
+| `addypin-staging` | `addypin-staging:latest` | `0.0.0.0:8080->3000/tcp` | Up (healthy) | 4 days |
+
+## Docker Configuration Status (ACTUAL)
+- **Docker Compose Files**: None found
+- **Image Source**: Local builds (not GHCR)
+- **Deployment Method**: Unknown (no compose files detected)
+
+## Gap Analysis: Target vs Reality
+| Aspect | Target | Reality | Status |
+| :--- | :--- | :--- | :--- |
+| **Prod Port** | `localhost:3001` | `0.0.0.0:3000` | ❌ MISMATCH |
+| **Staging Port** | `localhost:3002` | `0.0.0.0:8080` | ❌ MISMATCH |
+| **DB Exposure** | `localhost:5432` | `0.0.0.0:5432` | ⚠️ SECURITY RISK |
+| **Image Source** | GHCR | Local builds | ❌ MISMATCH |
+| **Deployment** | Docker Compose | Unknown method | ❌ MISMATCH |

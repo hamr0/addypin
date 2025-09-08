@@ -1,0 +1,3 @@
+NAMES             IMAGE                    PORTS                    STATUS
+addypin-staging   addypin-staging:latest   0.0.0.0:8080->3000/tcp   Up 4 days (healthy)
+addypin           addypin:latest           0.0.0.0:3000->3000/tcp   Up 5 days (healthy)
