@@ -71,3 +71,42 @@ The application must be configured solely through environment variables. The fol
    c. Runs `docker-compose up -d` which uses the `.env` file in that directory.
    d. Runs a health check validation script.
 6. **Rollback:** If health checks fail, the script automatically re-deploys the previous known-good image.
+
+---
+
+# Phase 2: Current Reality Discovery
+
+## Network Ports Analysis (CURRENT)
+```
+tcp        0      0 0.0.0.0:443             0.0.0.0:*               LISTEN      1977696/nginx: mast 
+tcp        0      0 0.0.0.0:8080            0.0.0.0:*               LISTEN      2058739/docker-prox 
+tcp        0      0 0.0.0.0:80              0.0.0.0:*               LISTEN      1977696/nginx: mast 
+tcp        0      0 0.0.0.0:3000            0.0.0.0:*               LISTEN      2030655/docker-prox 
+tcp        0      0 0.0.0.0:5432            0.0.0.0:*               LISTEN      1989726/postmaster  
+tcp6       0      0 :::5000                 :::*                    LISTEN      274720/node         
+tcp6       0      0 :::5432                 :::*                    LISTEN      1989726/postmaster  
+```
+
+### Key Findings:
+- ✅ Nginx running on ports 80/443 (correct)
+- ❌ Docker containers exposed on host ports 3000 & 8080 (should be localhost only)
+- ❌ Node.js process running directly on port 5000 (not containerized)
+- ✅ PostgreSQL running on port 5432
+
+## Current Directory Structure
+### Actual App Locations:
+- **Production**: `/opt/addypin/` (not `/home/user/app/production/`)
+- **Staging**: `/opt/addypin-staging/` (not `/home/user/app/staging/`)
+
+### Key Configuration Files Found:
+- `/opt/addypin/docker-compose.yml`
+- `/opt/addypin/nginx-api-fix.conf`
+- `/opt/addypin/frontend/nginx.conf`
+- `/opt/addypin-staging/docker-compose.yml`
+- `/opt/addypin-staging/nginx-api-fix.conf`
+- `/opt/addypin-staging/frontend/nginx.conf`
+
+### Critical Gaps vs Target:
+❌ **No `.env` files found** - Applications not using environment variables
+❌ **Wrong directory structure** - Apps in `/opt/` instead of `/home/user/app/`
+❌ **No sites-available/sites-enabled structure** - Custom nginx configs instead
