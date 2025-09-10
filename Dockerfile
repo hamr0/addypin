@@ -14,17 +14,20 @@ RUN npm run build # This runs 'vite build' and 'esbuild'
 FROM node:20-alpine AS runner
 WORKDIR /app
 
-# Create a non-root user for security
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S addypin -u 1001
-USER addypin
-
 # Copy built application from builder stage
-COPY --from=builder --chown=addypin:nodejs /app/dist ./dist
-COPY --from=builder --chown=addypin:nodejs /app/package*.json ./
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/package*.json ./
 
-# Install production dependencies only
-RUN npm ci --only=production
+# Install production dependencies as ROOT first
+RUN npm ci --only=production --omit=dev
+
+# Create a non-root user and change ownership
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S addypin -u 1001 && \
+    chown -R addypin:nodejs /app
+
+# Switch to non-root user
+USER addypin
 
 # Expose port and define runtime command
 EXPOSE 3000
