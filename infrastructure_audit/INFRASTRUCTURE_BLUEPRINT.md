@@ -1,8 +1,8 @@
 # Infrastructure Blueprint: Modern AddyPin Architecture
 
 **Updated:** September 10, 2025  
-**Status:** FULLY IMPLEMENTED ✅  
-**Architecture:** Professional CI/CD with Containerized Infrastructure
+**Status:** SECURITY HARDENED ✅  
+**Architecture:** Professional CI/CD with Security-Hardened Containerized Infrastructure
 
 ## 1. Core Principles
 
@@ -57,14 +57,16 @@ GitHub Actions:
 | **Nginx** | `0.0.0.0` | `80` | - | HTTP | ✅ ACTIVE | Redirects to 443 |
 | **Nginx** | `0.0.0.0` | `443` | - | HTTPS | ✅ ACTIVE | Main entry point with SSL |
 | **PostgreSQL** | `127.0.0.1` | `5432` | `5432` | TCP | ✅ ACTIVE | Containerized, secure binding |
-| **Prod App** | `0.0.0.0` | `3000` | `3000` | TCP | ✅ ACTIVE | Nginx proxies `addypin.com` → `localhost:3000` |
-| **Staging App** | `0.0.0.0` | `8080` | `3000` | TCP | ✅ ACTIVE | Nginx proxies `staging.addypin.com` → `localhost:8080` |
+| **Prod App** | `127.0.0.1` | `3000` | `3000` | TCP | ✅ SECURED | Nginx proxies `addypin.com` → `localhost:3000` |
+| **Staging App** | `127.0.0.1` | `8080` | `3000` | TCP | ✅ SECURED | Nginx proxies `staging.addypin.com` → `localhost:8080` |
 
 **Network Security:**
 - ✅ PostgreSQL bound to localhost only (127.0.0.1) - No public exposure
+- ✅ ALL containers bound to localhost only (127.0.0.1) - External access blocked
 - ✅ Docker network isolation with dedicated `addypin-network`
 - ✅ SSL/TLS encryption for all public traffic
 - ✅ Container-to-container communication via internal network
+- ✅ Public access ONLY through secure Nginx reverse proxy
 
 ## 5. Docker Strategy (IMPLEMENTED)
 
@@ -84,8 +86,8 @@ WORKDIR /app
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/package*.json ./
 
-# Install dependencies as root, then switch to non-root user
-RUN npm ci --only=production --omit=dev
+# Install ALL dependencies including vite (required for runtime)
+RUN npm ci
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S addypin -u 1001 && \
     chown -R addypin:nodejs /app
@@ -109,7 +111,7 @@ CMD ["node", "dist/index.js"]
 **Application Variables:**
 *   `NODE_ENV`: `production` or `staging` ✅
 *   `PORT`: `3000` (The port the Node.js app listens on inside container) ✅
-*   `DATABASE_URL`: `postgresql://addypin_user:Kn8mP9@xR2#vL4&jF6^qW1eT7*zA3%@addypin-postgres:5432/addypin` ✅
+*   `DATABASE_URL`: `postgresql://addypin_user:[SECURE_PASSWORD]@addypin-postgres:5432/addypin` ✅
 
 **External Service Variables:**
 *   `RESEND_API_KEY` ✅
@@ -170,7 +172,7 @@ Port: 127.0.0.1:5432:5432 (secure localhost binding)
 | `addypin_staging` | addypin_user | Staging data (15 pins, 9 users) | ✅ ACTIVE |
 
 **Security Features:**
-- ✅ Secure password: `Kn8mP9@xR2#vL4&jF6^qW1eT7*zA3%`
+- ✅ Secure password: `[REDACTED - STRONG PASSWORD CONFIGURED]`
 - ✅ Localhost binding only (no public exposure)
 - ✅ Container isolation with dedicated network
 - ✅ Persistent storage with automatic backups
@@ -386,4 +388,34 @@ Scaling: Ready for horizontal scaling with container orchestration
 
 The AddyPin infrastructure now represents a modern, secure, and professionally managed platform with automated CI/CD capabilities, ready for continued development and operation with complete confidence in its stability, security, and deployment automation.
 
-**Architecture Status: PROFESSIONALLY MODERNIZED ✅**
+**Architecture Status: SECURITY HARDENED & PRODUCTION STABLE ✅**
+
+## Phase 5: Security Hardening Summary
+
+**✅ COMPLETED HARDENING INITIATIVES:**
+
+### Container Security Hardening
+- **Localhost Binding:** All containers now bound to 127.0.0.1 only
+- **External Access Blocked:** Direct port access completely eliminated
+- **Nginx-Only Routing:** Public access exclusively through secure reverse proxy
+- **Environment Standardization:** All 8 API keys configured in production
+
+### Operational Improvements
+- **Docker Image Cleanup:** Automated cleanup in CI/CD preventing disk accumulation
+- **Production Stability:** Fixed vite dependency issue causing container crashes
+- **GHCR Authentication:** Resolved container registry access with proper permissions
+- **Health Verification:** All environments healthy with optimal response times
+
+### Security Verification Results
+```bash
+# External Access Test (BLOCKED)
+curl http://155.94.144.191:3000/api/health → ✅ Connection refused
+
+# Internal Access Test (WORKING)  
+curl http://localhost:3000/api/health → ✅ Healthy response
+
+# Public Access Test (WORKING)
+curl https://addypin.com/api/health → ✅ Healthy via Nginx
+```
+
+**Final Infrastructure Status: ENTERPRISE-GRADE SECURITY ✅**

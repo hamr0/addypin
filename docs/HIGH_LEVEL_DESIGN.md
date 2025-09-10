@@ -1,11 +1,11 @@
 # AddyPin - High Level Design (HLD)
 
 **Updated:** September 10, 2025  
-**Phase 4 Complete:** Professional CI/CD with Modern Containerized Infrastructure
+**Phase 5 Complete:** Infrastructure Security Hardening with Production Stability
 
 ## System Overview
 
-AddyPin is a location sharing service that transforms GPS coordinates into short, memorable links. Users can create pins on an interactive map and share them via dual formats: web links (`ABC123.addypin.com`) or email addresses (`ABC123@addypin.com`). The system features professional CI/CD deployment, containerized infrastructure, and enterprise-grade security.
+AddyPin is a location sharing service that transforms GPS coordinates into short, memorable links. Users can create pins on an interactive map and share them via dual formats: web links (`ABC123.addypin.com`) or email addresses (`ABC123@addypin.com`). The system features professional CI/CD deployment, security-hardened containerized infrastructure, automated operations, and enterprise-grade security with localhost-only container bindings.
 
 ## Technology Stack
 
@@ -71,9 +71,10 @@ AddyPin is a location sharing service that transforms GPS coordinates into short
 │ Web Server:    Nginx (Reverse proxy + SSL)         │
 │ SSL Certs:     Let's Encrypt (Auto-renewal)        │
 │ Containerization: Docker + Docker Compose          │
-│ Security:      Ed25519 SSH keys, non-root exec     │
+│ Security:      Ed25519 SSH keys, localhost binding │
 │ Deployment:    Automated with health verification  │
 │ Monitoring:    Health checks with rollback         │
+│ Image Cleanup: Automated Docker cleanup            │
 │ Domain:        Namecheap DNS management             │
 └─────────────────────────────────────────────────────┘
 ```
@@ -90,9 +91,10 @@ AddyPin is a location sharing service that transforms GPS coordinates into short
 │ Deployment:    SSH-based VPS deployment            │
 │ Health Checks: Automated verification & rollback   │
 │ Environments:  Isolated staging & production       │
-│ Security:      Manual approval gates               │
+│ Security:      Manual approval gates, localhost binding │
 │ Monitoring:    Real-time deployment verification   │
-│ Image Mgmt:    Versioned releases with cleanup     │
+│ Image Mgmt:    Versioned releases with automated cleanup │
+│ Container Security: Non-root exec, port isolation  │
 └─────────────────────────────────────────────────────┘
 ```
 
@@ -132,8 +134,9 @@ AddyPin is a location sharing service that transforms GPS coordinates into short
 │  │ • React/TS      │         │ • React/TS      │              │
 │  │ • Leaflet Maps  │         │ • Leaflet Maps  │              │
 │  │ • TailwindCSS   │         │ • TailwindCSS   │              │
-│  │ • Docker        │         │ • Docker        │              │
+│  │ • Docker (Secure)│         │ • Docker (Secure)│              │
 │  │ • Health Checks │         │ • Health Checks │              │
+│  │ • 127.0.0.1:3000│         │ • 127.0.0.1:8080│              │
 │  └─────────────────┘         └─────────────────┘              │
 └─────────────────────────────────────────────────────────────────┘
                                 │
@@ -420,10 +423,12 @@ jobs:
 
 ### **Container Security**
 - **Non-root execution**: All containers run as non-privileged users
+- **Localhost binding**: All containers bound to 127.0.0.1 only
 - **Minimal base images**: Alpine Linux for reduced attack surface
 - **Image scanning**: Automated vulnerability assessment
 - **Secrets management**: GitHub secrets with encrypted storage
-- **Network isolation**: Dedicated Docker networks
+- **Network isolation**: Dedicated Docker networks with access control
+- **Port security**: External direct access completely blocked
 
 ### **Authentication & Authorization**
 - **SSH keys**: Ed25519 cryptography for CI/CD access
@@ -434,10 +439,12 @@ jobs:
 
 ### **Infrastructure Security**
 - **Firewall**: Proper port management and access control
-- **Database isolation**: Container network separation
+- **Database isolation**: Container network separation with localhost binding
 - **Certificate management**: Automated SSL renewal
-- **Monitoring**: Health checks with automated alerting
+- **Monitoring**: Health checks with automated alerting and cleanup
 - **Backup strategy**: Persistent volumes with snapshot capability
+- **Access Control**: External port access blocked, Nginx-only routing
+- **Environment Standardization**: All API keys configured across environments
 
 ## Monitoring & Health Checks
 

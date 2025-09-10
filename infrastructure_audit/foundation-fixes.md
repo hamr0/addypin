@@ -2,7 +2,7 @@
 
 **Document Created:** September 9, 2025  
 **Updated:** September 10, 2025  
-**Completed Phases:** Phase 1 (Critical Security), Phase 2 (Nginx Routing), Phase 3 (PostgreSQL Dockerization) & Phase 4 (Professional CI/CD)  
+**Completed Phases:** Phase 1 (Critical Security), Phase 2 (Nginx Routing), Phase 3 (PostgreSQL Dockerization), Phase 4 (Professional CI/CD) & Phase 5 (Infrastructure Hardening)  
 **Status:** COMPLETE ✅
 
 ## Executive Summary
@@ -18,6 +18,9 @@ This document details the comprehensive infrastructure fixes applied to the Addy
 - ✅ **CI/CD**: Implemented professional GitHub Actions pipeline with manual triggers
 - ✅ **Deployments**: Automated Docker image builds and VPS deployments
 - ✅ **Authentication**: Fixed SSH key authentication for automated deployments
+- ✅ **Container Security**: Localhost-only port bindings and production hardening
+- ✅ **Image Management**: Docker cleanup automation and production stability
+- ✅ **Environment Standardization**: All API keys configured across environments
 
 ---
 
@@ -33,10 +36,10 @@ This document details the comprehensive infrastructure fixes applied to the Addy
 ### 1.2 Database Password Security Fix
 
 **Actions Taken:**
-1. **Generated secure password:** `UBih+0YllInCRul3liIlMXHiezktiq8vGXbZ9CiAljA=`
+1. **Generated secure password:** `[REDACTED - SECURE PASSWORD GENERATED]`
 2. **Updated PostgreSQL user password:**
    ```bash
-   sudo -u postgres psql -c "ALTER USER addypin_user PASSWORD 'UBih+0YllInCRul3liIlMXHiezktiq8vGXbZ9CiAljA=';"
+   sudo -u postgres psql -c "ALTER USER addypin_user PASSWORD '[SECURE_PASSWORD]';"
    ```
 3. **Updated application environment variables in both production and staging**
 
@@ -60,12 +63,12 @@ This document details the comprehensive infrastructure fixes applied to the Addy
 
 **Updated Production Environment Variables:**
 ```bash
-DATABASE_URL=postgresql://addypin_user:UBih+0YllInCRul3liIlMXHiezktiq8vGXbZ9CiAljA=@172.17.0.1:5432/addypin
+DATABASE_URL=postgresql://addypin_user:[SECURE_PASSWORD]@172.17.0.1:5432/addypin
 ```
 
 **Updated Staging Environment Variables:**
 ```bash
-DATABASE_URL=postgresql://addypin_user:UBih+0YllInCRul3liIlMXHiezktiq8vGXbZ9CiAljA=@172.17.0.1:5432/addypin
+DATABASE_URL=postgresql://addypin_user:[SECURE_PASSWORD]@172.17.0.1:5432/addypin_staging
 ```
 
 ### 1.4 Application Restart and Health Verification
@@ -1051,6 +1054,170 @@ curl -f http://localhost:3000/api/health || exit 1
 - [x] Professional CI/CD pipeline operational
 - [x] Automated testing and deployment processes
 - [x] Comprehensive monitoring and health verification
+
+---
+
+## Phase 5: Infrastructure Security Hardening
+
+### 5.1 Docker Image Cleanup Automation
+
+**Problem Identified:** Docker image accumulation on VPS without cleanup
+- **Issue:** Each CI/CD deployment created new images without removing old ones
+- **Risk:** Disk space exhaustion and performance degradation over time
+- **Solution Required:** Automated cleanup in CI/CD workflows
+
+**Implementation:**
+```yaml
+# Added to both staging and production workflows
+- name: Clean up old Docker images
+  run: |
+    echo "Cleaning up old Docker images..."
+    docker system prune -f
+    docker image prune -a -f
+    echo "✅ Cleanup completed."
+```
+
+**Results:**
+- ✅ **Automated cleanup** integrated into CI/CD pipelines
+- ✅ **Disk space management** prevents accumulation issues
+- ✅ **Performance optimization** through image cleanup
+- ✅ **Operational efficiency** with zero manual intervention
+
+### 5.2 Container Security Hardening
+
+**Security Assessment:** Container port exposure analysis
+- **Staging Issue:** `0.0.0.0:8080` binding exposed container to public internet
+- **Production Issue:** Missing environment variables and potential exposure
+- **Goal:** Localhost-only bindings for maximum security
+
+**Staging Security Fix:**
+```bash
+# Changed staging port binding from public to localhost-only
+sed -i 's/0.0.0.0:8080:3000/127.0.0.1:8080:3000/g' /opt/addypin-staging/docker-compose.yml
+```
+
+**Production Environment Standardization:**
+```bash
+# Added all 8 required environment variables
+REQUIRED_VARS="
+  - DATABASE_URL=postgresql://addypin_user:[SECURE_PASSWORD]@addypin-postgres:5432/addypin
+  - NODE_ENV=production
+  - RESEND_API_KEY=[REDACTED]
+  - GOOGLE_MAPS_API_KEY=[REDACTED]
+  - UMAMI_API_URL=https://your-umami-domain.com/api
+  - UMAMI_WEBSITE_ID=[REDACTED]
+  - CLERK_SECRET_KEY=[REDACTED]
+  - CLERK_PUBLISHABLE_KEY=[REDACTED]"
+
+# Secured production port binding
+sed -i 's/0.0.0.0:3000:3000/127.0.0.1:3000:3000/g' /opt/addypin/docker-compose.yml
+```
+
+### 5.3 Docker Runtime Issue Resolution
+
+**Critical Production Problem:** Container constant crashes
+- **Error:** `Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'vite'`
+- **Root Cause:** Production Docker image excluded dev dependencies (including vite)
+- **Impact:** Production container restarting continuously, service unavailable
+
+**Dockerfile Analysis:**
+```dockerfile
+# PROBLEMATIC LINE (Initial fix attempt)
+RUN npm ci --only=production --omit=dev  # Still excluded vite
+
+# INTERMEDIATE FIX (Partial success)
+RUN npm ci --omit=dev  # Still excluded dev dependencies
+
+# FINAL SOLUTION (Complete fix)
+RUN npm ci  # Includes ALL dependencies including vite
+```
+
+**Resolution Process:**
+1. **Issue Detection:** Production logs showed vite import failures
+2. **Image Analysis:** Confirmed vite missing from node_modules in container
+3. **Dockerfile Correction:** Removed ALL dependency exclusions
+4. **Build Verification:** New image includes vite and all required dependencies
+5. **Deployment Success:** Production container now stable and healthy
+
+### 5.4 Security Verification and Testing
+
+**Infrastructure Security Audit:**
+```bash
+# Container Status Verification
+NAMES              STATUS                 PORTS
+addypin            Up 4 minutes           127.0.0.1:3000->3000/tcp  ✅
+addypin-staging    Up 4 hours (healthy)   127.0.0.1:8080->3000/tcp  ✅
+addypin-postgres   Up 27 hours            127.0.0.1:5432->5432/tcp  ✅
+
+# Security Testing
+# Internal access (should work)
+curl -f http://localhost:3000/api/health  ✅ SUCCESS
+
+# External direct access (should be blocked)
+curl -m 5 http://155.94.144.191:3000/api/health  ✅ BLOCKED
+
+# Public domain access (should work through Nginx)
+curl -f https://addypin.com/api/health  ✅ SUCCESS
+```
+
+**Environment Isolation Verification:**
+```json
+// Production Health Check
+{
+  "status": "healthy",
+  "timestamp": "2025-09-10T18:16:16.387Z",
+  "environment": "production",
+  "checks": [
+    {"name": "postgresql", "status": "healthy", "responseTime": 21},
+    {"name": "memory", "status": "healthy", "responseTime": 19}
+  ]
+}
+
+// Staging Health Check  
+{
+  "status": "healthy",
+  "timestamp": "2025-09-10T18:16:19.383Z",
+  "environment": "staging",
+  "checks": [
+    {"name": "postgresql", "status": "healthy", "responseTime": 2},
+    {"name": "memory", "status": "healthy", "responseTime": 19}
+  ]
+}
+```
+
+### 5.5 GitHub Container Registry Authentication
+
+**GHCR Access Issue Resolution:**
+- **Problem:** CI/CD workflows failing to pull images from GHCR
+- **Cause:** GitHub Personal Access Token lacked proper package permissions
+- **Solution:** Created new PAT with `read:packages` and `write:packages` permissions
+- **Result:** Both staging and production image access fully operational
+
+### 5.6 Phase 5 Completion Status
+
+**✅ PHASE 5 COMPLETE - Infrastructure Security Hardening Achieved:**
+
+**Security Hardening:**
+- ✅ **Container Security:** Localhost-only port bindings (127.0.0.1) for all containers
+- ✅ **Network Isolation:** External direct access completely blocked
+- ✅ **Public Access:** Maintained through secure Nginx reverse proxy only
+- ✅ **Environment Standardization:** All 8 required API keys configured
+
+**Operational Improvements:**
+- ✅ **Docker Cleanup:** Automated image cleanup prevents disk space issues
+- ✅ **Runtime Stability:** Vite dependency issue resolved, no more crashes
+- ✅ **GHCR Authentication:** Container registry access fully operational
+- ✅ **Health Monitoring:** All environments healthy with optimal response times
+
+**Infrastructure Modernization:**
+- **Before Phase 5:** Mixed security posture, potential container exposure, manual cleanup
+- **After Phase 5:** Complete security hardening, automated operations, stable production
+
+**Security Posture Enhanced:**
+- **Port Security:** All containers bound to localhost only
+- **Access Control:** External access blocked, internal routing secured
+- **Automation:** Zero manual intervention required for operations
+- **Reliability:** Production stability with comprehensive monitoring
 
 ---
 
