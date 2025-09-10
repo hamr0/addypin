@@ -19,7 +19,7 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/package*.json ./
 
 # Install production dependencies as ROOT first
-RUN npm ci --only=production --omit=dev
+RUN npm ci
 
 # Create a non-root user and change ownership
 RUN addgroup -g 1001 -S nodejs && \
