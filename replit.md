@@ -1,8 +1,20 @@
 # Overview
 
-This is a full-stack location sharing application called AddyPin, built using a modern web development stack. The application allows users to create pins on a map with shareable links, similar to location sharing services. It's designed to run in a containerized environment with PostgreSQL as the primary database.
+This is a full-stack location sharing application called AddyPin, built using a modern web development stack. The application allows users to create pins on a map with shareable links, similar to location sharing services. It's designed to run in a containerized environment with PostgreSQL as the primary database and professional CI/CD deployment pipeline.
 
 # Recent Changes
+
+## September 10, 2025
+- **PHASE 4 COMPLETE**: Professional CI/CD Pipeline Implementation with GitHub Actions ✅
+- **Docker Multi-Stage Builds**: Optimized production images with security-first non-root execution
+- **GitHub Container Registry**: Automated image builds and versioning with GHCR integration
+- **SSH Automation**: Ed25519 key authentication for secure VPS deployments
+- **Manual Approval Gates**: Production deployment safety with workflow_dispatch triggers
+- **Health Verification**: Automated deployment validation with rollback capability
+- **Permission Resolution**: Fixed Docker build issues with proper root/non-root user handling
+- **Environment Isolation**: Separate staging and production deployment workflows
+- **Zero-Downtime Deployments**: Health check verification ensuring service continuity
+- **Security Hardening**: Container security with minimal attack surface and encrypted credentials
 
 ## August 31, 2025
 - **Critical Nginx Fix**: Resolved API routing issue by removing separate `/api/` location block that was routing to wrong port (5000 instead of 3000)
@@ -36,7 +48,7 @@ Preferred communication style: Simple, everyday language.
 - **Build Tool**: Vite with custom configuration for development and production builds
 
 ## Backend Architecture
-- **Runtime**: Node.js with TypeScript using ESM modules
+- **Runtime**: Node.js 20 with TypeScript using ESM modules
 - **Framework**: Express.js for API server
 - **Database ORM**: Drizzle ORM with PostgreSQL dialect
 - **Database Migrations**: Drizzle Kit for schema management
@@ -44,12 +56,13 @@ Preferred communication style: Simple, everyday language.
 - **Production**: Builds to optimized JavaScript bundle using esbuild
 
 ## Database Design
-- **Primary Database**: PostgreSQL with UUID-based primary keys
+- **Primary Database**: PostgreSQL 15 (Containerized) with UUID-based primary keys
 - **Schema Management**: Centralized in `shared/schema.ts` using Drizzle ORM
 - **Key Tables**: 
   - Users table for authentication
   - Pins table for location data with latitude/longitude coordinates
 - **Extensions**: Uses pgcrypto extension for UUID generation
+- **Isolation**: Separate production (`addypin`) and staging (`addypin_staging`) databases
 
 ## Development Environment
 - **Monorepo Structure**: Client and server code in separate directories with shared schema
@@ -59,19 +72,35 @@ Preferred communication style: Simple, everyday language.
 
 ## Production Architecture
 - **Containerization**: Docker-first deployment with Alpine Linux base (Node.js 20)
-- **Multi-stage Builds**: Optimized production images with --packages=external build strategy
-- **Container Orchestration**: systemctl managed Docker containers with auto-restart policies
+- **Multi-stage Builds**: Optimized production images with security-first non-root execution
+- **Container Orchestration**: Docker Compose with automated health checks and restart policies
 - **Health Monitoring**: Automated health checks with retry logic and comprehensive functional verification
-- **Port Configuration**: Port 3000 for production (Docker containers)
-- **Image Management**: Tagged releases with rollback capabilities and cleanup automation
+- **Port Configuration**: Port 3000 for production, 8080 for staging (Docker containers)
+- **Image Management**: GitHub Container Registry with tagged releases and automated cleanup
 - **Environment Isolation**: Complete dependency containerization eliminating "works on my machine" issues
+- **CI/CD Pipeline**: Professional GitHub Actions with manual approval gates and automated deployments
+
+## CI/CD Infrastructure
+- **Build System**: GitHub Actions with Node.js 20 and multi-stage Docker builds
+- **Container Registry**: GitHub Container Registry (GHCR) with automated image versioning
+- **Deployment**: SSH-based VPS deployments with Ed25519 key authentication
+- **Security**: Manual approval gates, non-root containers, encrypted credentials
+- **Monitoring**: Automated health verification with deployment rollback capability
+- **Workflows**: Separate staging and production pipelines with environment isolation
 
 # External Dependencies
 
 ## Core Infrastructure
-- **Database**: PostgreSQL (Neon serverless or local instance)
+- **Database**: PostgreSQL 15 (Containerized with Docker)
 - **Container Runtime**: Docker for application packaging and deployment
-- **Web Server**: nginx for static file serving in production
+- **Web Server**: nginx for static file serving and reverse proxy in production
+- **Container Registry**: GitHub Container Registry for image storage and distribution
+
+## CI/CD & DevOps
+- **CI/CD Platform**: GitHub Actions with automated workflows
+- **SSH Authentication**: Ed25519 keys for secure VPS access
+- **Health Monitoring**: Automated deployment verification and system health checks
+- **Image Management**: Automated builds, versioning, and registry management
 
 ## Authentication & Communication
 - **Clerk**: User authentication service (optional based on configuration)
