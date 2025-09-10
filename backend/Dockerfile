@@ -34,7 +34,7 @@ WORKDIR /app
 # Copy package file (from backend/)
 COPY package.json ./
 
-# Install only production dependencies
+# Install only production dependencies AS ROOT
 RUN npm ci --only=production --legacy-peer-deps --no-audit && npm cache clean --force
 
 # Copy built application from builder stage
