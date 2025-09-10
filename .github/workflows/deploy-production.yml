@@ -42,19 +42,10 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/addypin:latest
             ghcr.io/${{ github.repository_owner }}/addypin:${{ github.sha }}
 
-  # 🔐 MANUAL APPROVAL GATE FOR PRODUCTION
-  request-production-deploy:
+  deploy-to-production:
     needs: test-and-build
     runs-on: ubuntu-latest
-    steps:
-      - name: Wait for manual approval
-        run: echo "Production image built and pushed. Awaiting manual approval for deployment."
-        # This step does nothing but wait, allowing you to add an 'environments' approval rule in GitHub settings.
-
-  deploy-to-production:
-    needs: request-production-deploy
-    runs-on: ubuntu-latest
-    environment: production # 🔐 This links to the protection rule you will create
+    if: github.event_name == 'workflow_dispatch' # Only runs when manually triggered
     steps:
       - name: Deploy to Production VPS
         uses: appleboy/ssh-action@v1.0.0
