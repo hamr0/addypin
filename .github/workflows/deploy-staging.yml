@@ -1,7 +1,12 @@
 name: 🚀 Deploy to Staging
 
 on:
-  workflow_dispatch: # Manual trigger only
+workflow_dispatch:
+  inputs:
+    deployment_reason:
+      description: "Reason for deployment"
+      required: false
+      default: "Manual staging deployment with proven approach"
 
 jobs:
   test-and-build:
@@ -37,9 +42,15 @@ jobs:
           push: true
           tags: |
             ghcr.io/${{ github.repository_owner }}/addypin:staging-latest
+            deploy-to-staging:
+              needs: test-and-build
+              runs-on: ubuntu-latest
+              if: github.event_name == 'workflow_dispatch' # Add this line!
+              steps:
             ghcr.io/${{ github.repository_owner }}/addypin:${{ github.sha }}
 
   deploy-to-staging:
+    if: github.event_name == 'workflow_dispatch' # Only runs when manually triggered
     needs: test-and-build
     runs-on: ubuntu-latest
     steps:
