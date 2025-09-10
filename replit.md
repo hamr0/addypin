@@ -5,14 +5,18 @@ This is a full-stack location sharing application called AddyPin, built using a 
 # Recent Changes
 
 ## September 10, 2025
-- **PHASE 5 COMPLETE**: Infrastructure Security Hardening with Production Stability ✅
+- **PHASE 5 COMPLETE**: Infrastructure Security Hardening & Monitoring with Production Stability ✅
 - **Container Security**: Localhost-only port bindings (127.0.0.1) for all containers
 - **Docker Image Management**: Automated cleanup preventing disk space accumulation
 - **Production Stability**: Fixed vite dependency issue causing container crashes
 - **Environment Standardization**: All 8 required API keys configured in production
 - **Security Verification**: External direct access blocked, Nginx-only routing confirmed
 - **GHCR Authentication**: Fixed container registry access with proper token permissions
-- **Infrastructure Hardening**: Complete security posture with automated operations
+- **VPS Health Monitoring**: Automated 5-minute health checks (`*/5 * * * * /opt/infra-health-check.sh`)
+- **Service Auto-Recovery**: Nginx automatic restart capability with comprehensive logging
+- **Monitoring Logs**: Complete audit trail at `/var/log/infra-health-check.log` with 7-day rotation
+- **Operations Commands**: `sudo /opt/infra-health-check.sh` manual verification, `sudo tail -f /var/log/infra-health-check.log` live monitoring
+- **Infrastructure Hardening**: Complete security posture with automated operations and proactive monitoring
 
 ## September 10, 2025 (Phase 4)
 - **PHASE 4 COMPLETE**: Professional CI/CD Pipeline Implementation with GitHub Actions ✅

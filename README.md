@@ -77,6 +77,23 @@ npm run db:push
 - SSL: Valid certificates ✅
 - Health: All systems operational ✅
 
+## 📈 Production Monitoring
+
+**Automated Health Monitoring:**
+- **Frequency**: 5-minute cron-based health checks
+- **Coverage**: Nginx, Docker containers, API endpoints
+- **Auto-Recovery**: Nginx automatic restart on failures
+- **Logging**: Comprehensive audit trail with 7-day rotation
+- **Manual Verification**: `sudo /opt/infra-health-check.sh`
+- **Live Monitoring**: `sudo tail -f /var/log/infra-health-check.log`
+
+**Monitored Services:**
+- ✅ Nginx web server (auto-restart enabled)
+- ✅ Production container (addypin) 
+- ✅ Staging container (addypin-staging)
+- ✅ Database container (addypin-postgres)
+- ✅ Health endpoints (localhost:3000, localhost:8080)
+
 ## 🛡️ Security Features
 
 - **Database**: Secure credentials with container isolation

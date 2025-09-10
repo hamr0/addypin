@@ -25,7 +25,7 @@
 | **Container Registry** | GitHub Container Registry (GHCR) | Versioned Docker images with automated builds | ✅ IMPLEMENTED |
 | **Deployment** | Docker Compose | Defines and manages the application container on the VPS | ✅ IMPLEMENTED |
 | **Authentication** | SSH Ed25519 Keys | Secure, automated CI/CD access to VPS | ✅ IMPLEMENTED |
-| **Monitoring** | Health Check Endpoints | Automated deployment verification and system monitoring | ✅ IMPLEMENTED |
+| **Monitoring** | Health Check Endpoints & VPS Monitoring | Automated deployment verification, 5-minute cron health checks, service auto-recovery | ✅ ACTIVE |
 
 ## 3. Physical Layout on VPS (ACTUAL - IMPLEMENTED)
 
@@ -238,6 +238,10 @@ server {
 - ✅ Memory usage monitoring
 - ✅ Automatic rollback on health check failures
 - ✅ Fast response times (3-16ms database queries)
+- ✅ **VPS Continuous Monitoring**: 5-minute cron-based health checks
+- ✅ **Service Auto-Recovery**: Nginx automatic restart on failures
+- ✅ **Comprehensive Logging**: `/var/log/infra-health-check.log` with 7-day rotation
+- ✅ **Manual Verification**: `sudo /opt/infra-health-check.sh` for immediate status
 
 ## 11. Security Implementation (COMPREHENSIVE)
 

@@ -446,7 +446,41 @@ jobs:
 - **Access Control**: External port access blocked, Nginx-only routing
 - **Environment Standardization**: All API keys configured across environments
 
-## Monitoring & Health Checks
+## Monitoring & Observability
+
+### **Automated VPS Health Monitoring**
+
+**Health Check System:**
+```bash
+# Cron-based monitoring every 5 minutes
+*/5 * * * * /opt/infra-health-check.sh
+
+# Monitored Services:
+• Nginx web server (with auto-restart)
+• Docker containers (addypin, addypin-staging, addypin-postgres)
+• API health endpoints (production :3000, staging :8080)
+• System resource utilization
+```
+
+**Comprehensive Logging:**
+```bash
+# Health monitoring logs
+/var/log/infra-health-check.log (7-day rotation)
+
+# Operations commands:
+sudo tail -f /var/log/infra-health-check.log        # Live monitoring
+sudo /opt/infra-health-check.sh                     # Manual health check
+sudo grep "ERROR" /var/log/infra-health-check.log   # Error analysis
+```
+
+**Integration Benefits:**
+- **Proactive Monitoring**: Issues detected within 5 minutes
+- **Automated Recovery**: Nginx restarts automatically on failures  
+- **CI/CD Enhancement**: Complements post-deployment verification
+- **Audit Trail**: Complete operational history for troubleshooting
+- **Zero Maintenance**: Fully automated with log rotation
+
+### **Health Check Endpoints**
 
 ### **Application Monitoring**
 ```json
@@ -482,6 +516,10 @@ jobs:
 - **Network monitoring**: Response time and availability tracking
 - **Resource monitoring**: CPU, memory, and disk usage alerts
 - **Log aggregation**: Centralized logging with rotation
+- **VPS Health Monitoring**: Automated 5-minute cron-based monitoring
+- **Service Auto-Recovery**: Nginx automatic restart on failures
+- **Endpoint Verification**: Production and staging API health checks
+- **Audit Logging**: Comprehensive health logs at `/var/log/infra-health-check.log`
 
 ## Development Workflow
 

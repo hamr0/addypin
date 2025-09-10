@@ -2,7 +2,7 @@
 
 **Document Created:** September 9, 2025  
 **Updated:** September 10, 2025  
-**Completed Phases:** Phase 1 (Critical Security), Phase 2 (Nginx Routing), Phase 3 (PostgreSQL Dockerization), Phase 4 (Professional CI/CD) & Phase 5 (Infrastructure Hardening)  
+**Completed Phases:** Phase 1 (Critical Security), Phase 2 (Nginx Routing), Phase 3 (PostgreSQL Dockerization), Phase 4 (Professional CI/CD) & Phase 5 (Infrastructure Hardening & Monitoring)  
 **Status:** COMPLETE ✅
 
 ## Executive Summary
@@ -21,6 +21,7 @@ This document details the comprehensive infrastructure fixes applied to the Addy
 - ✅ **Container Security**: Localhost-only port bindings and production hardening
 - ✅ **Image Management**: Docker cleanup automation and production stability
 - ✅ **Environment Standardization**: All API keys configured across environments
+- ✅ **VPS Health Monitoring**: Automated 5-minute health checks with comprehensive logging
 
 ---
 
@@ -1218,6 +1219,146 @@ curl -f https://addypin.com/api/health  ✅ SUCCESS
 - **Access Control:** External access blocked, internal routing secured
 - **Automation:** Zero manual intervention required for operations
 - **Reliability:** Production stability with comprehensive monitoring
+
+---
+
+## Phase 5 Part 3: VPS Health Monitoring Implementation
+
+### 5.7 Health Monitoring System Requirements
+
+**Objective:** Implement comprehensive automated health monitoring for the AddyPin production infrastructure to ensure maximum uptime and early issue detection.
+
+**Monitoring Requirements:**
+- **Services:** Nginx web server, Docker containers (addypin, addypin-staging, addypin-postgres)
+- **Health Endpoints:** Production (localhost:3000) and Staging (localhost:8080) API health checks
+- **Frequency:** Every 5 minutes for continuous monitoring
+- **Logging:** Comprehensive logs with rotation for troubleshooting and audit trails
+- **Recovery:** Automatic service restart for critical services (Nginx)
+
+### 5.8 Cron-Based Health Check Implementation
+
+**Health Check Script Deployment:**
+```bash
+# Main health monitoring script installed at /opt/infra-health-check.sh
+# Comprehensive monitoring with Docker, Nginx, and endpoint verification
+# Automated restart capabilities for critical services
+```
+
+**Cron Schedule Configuration:**
+```bash
+# Added to root crontab for system-level monitoring
+*/5 * * * * /opt/infra-health-check.sh
+
+# Verification command:
+sudo crontab -l | grep infra-health-check
+```
+
+**Monitoring Coverage:**
+- ✅ **Nginx Service Status:** Auto-restart if stopped
+- ✅ **Docker Container Health:** addypin, addypin-staging, addypin-postgres
+- ✅ **API Health Endpoints:** Production (localhost:3000/api/health) and Staging (localhost:8080/api/health)
+- ✅ **Service Restart Logic:** Automatic recovery for Nginx failures
+- ✅ **Detailed Logging:** Comprehensive status reporting and error tracking
+
+### 5.9 Logging and Log Management
+
+**Log Location Configuration:**
+```bash
+# Main health check log
+/var/log/infra-health-check.log
+
+# Log viewing commands:
+sudo tail -f /var/log/infra-health-check.log        # Follow real-time logs
+sudo tail -n 50 /var/log/infra-health-check.log     # View last 50 entries
+sudo grep "ERROR" /var/log/infra-health-check.log   # Filter error messages
+```
+
+**Logrotate Configuration:**
+```bash
+# Automated log rotation configuration at /etc/logrotate.d/infra-health-check
+/var/log/infra-health-check.log {
+    daily
+    rotate 7
+    compress
+    missingok
+    notifempty
+    create 644 root root
+}
+
+# Log retention: 7 days with daily rotation
+# Compression enabled to save disk space
+```
+
+### 5.10 Health Monitoring Verification
+
+**Manual Health Check Execution:**
+```bash
+# Run immediate health check
+sudo /opt/infra-health-check.sh
+
+# Expected output format:
+# [TIMESTAMP] Health Check: ✅ Nginx running
+# [TIMESTAMP] Health Check: ✅ Docker container addypin running
+# [TIMESTAMP] Health Check: ✅ Docker container addypin-staging running  
+# [TIMESTAMP] Health Check: ✅ Docker container addypin-postgres running
+# [TIMESTAMP] Health Check: ✅ Production API healthy (localhost:3000)
+# [TIMESTAMP] Health Check: ✅ Staging API healthy (localhost:8080)
+```
+
+**Current System Status:**
+- ✅ **All Services Healthy:** Nginx, Docker containers, API endpoints operational
+- ✅ **Monitoring Active:** 5-minute cron schedule running
+- ✅ **Logging Functional:** Comprehensive logs with rotation configured
+- ✅ **Auto-Recovery:** Nginx restart automation implemented
+
+### 5.11 Integration with CI/CD Pipeline
+
+**Post-Deployment Health Verification:**
+The health monitoring system integrates with the existing CI/CD pipeline to provide comprehensive post-deployment verification:
+
+```yaml
+# GitHub Actions deployment verification (already implemented)
+- name: Verify deployment health
+  run: |
+    sleep 10
+    curl -f http://localhost:3000/api/health || exit 1
+    curl -f http://localhost:8080/api/health || exit 1
+    echo "✅ Deployment health verified!"
+```
+
+**Continuous Monitoring Benefits:**
+- **Early Detection:** Issues identified within 5 minutes of occurrence
+- **Automated Recovery:** Nginx restarts automatically on failures
+- **Audit Trail:** Complete log history for troubleshooting and compliance
+- **CI/CD Integration:** Seamless verification during deployments
+- **Operational Excellence:** Proactive monitoring with minimal manual intervention
+
+### 5.12 Phase 5 Part 3 Completion Status
+
+**✅ PHASE 5 PART 3 COMPLETE - VPS Health Monitoring Implemented:**
+
+**Health Monitoring Implementation:**
+- ✅ **Automated Monitoring:** 5-minute cron-based health checks for all critical services
+- ✅ **Service Coverage:** Nginx, Docker containers, and API health endpoints
+- ✅ **Logging System:** Comprehensive logging with 7-day rotation at `/var/log/infra-health-check.log`
+- ✅ **Auto-Recovery:** Nginx automatic restart on service failures
+- ✅ **Manual Testing:** `sudo /opt/infra-health-check.sh` for immediate verification
+
+**Operational Capabilities:**
+- ✅ **Continuous Monitoring:** Every 5 minutes around the clock
+- ✅ **Comprehensive Coverage:** All critical infrastructure components monitored
+- ✅ **Audit Trail:** Complete log history for troubleshooting and compliance
+- ✅ **Integration Ready:** Extends existing CI/CD health verification
+- ✅ **Maintenance Commands:** Easy log viewing and system status verification
+
+**Infrastructure Monitoring Maturity:**
+- **Before:** Reactive issue detection during deployments only
+- **After:** Proactive 5-minute monitoring with automated recovery and comprehensive logging
+
+**Phase 5 Complete Status:** All three parts accomplished
+- **Part 1:** Container security hardening with localhost bindings ✅
+- **Part 2:** Docker image cleanup automation and production stability ✅  
+- **Part 3:** VPS health monitoring with comprehensive logging ✅
 
 ---
 
