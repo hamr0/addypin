@@ -70,4 +70,7 @@ jobs:
             echo "Waiting for health check..."
             sleep 10
             curl -f http://localhost:8080/api/health || exit 1
+            # ✅ NEW CLEANUP COMMAND:
+            echo "Cleaning up unused Docker images..."
+            docker image prune -a -f --filter "until=24h"
             echo "✅ Staging deployment successful!"
