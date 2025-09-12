@@ -66,6 +66,9 @@ jobs:
 
             # Verify deployment
             echo "Waiting for health check..."
-            sleep 10
+            sleep 30
             curl -f http://localhost:3000/api/health || exit 1
+            # ✅ NEW CLEANUP COMMAND:
+            echo "Cleaning up unused Docker images..."
+            docker image prune -a -f --filter "until=24h"
             echo "✅ PRODUCTION deployment successful and verified!"
