@@ -4,16 +4,17 @@ This is a full-stack location sharing application called AddyPin, built using a 
 
 # Recent Changes
 
-## September 13, 2025 - Infrastructure Foundation Fixes & SSL Security Implementation ✅
-- **CRITICAL INFRASTRUCTURE AUDIT COMPLETE**: Comprehensive foundation fixes with production-ready SSL encryption
-- **PostgreSQL SSL Encryption**: Resolved critical staging 503 errors by enabling SSL encryption with certificate generation, connection string updates (`sslmode=require`), and pg_hba.conf configuration
-- **Database Architecture Realignment**: Confirmed native PostgreSQL installation (not containerized) - containers connect via `host.docker.internal:5432` with SSL encryption for optimal stability
-- **Email-Enhanced Monitoring**: Implemented Resend API integration for automated health alerts with confirmed delivery (message IDs: `04566fc8-2c35-4cb9-b2fc-fffb22ee0abd`, `b8c39167-6076-4969-b1e5-d91dd2587849`)
-- **Health Script Foundation Fix**: Repaired critical `/usr/local/bin/health` command that was showing incorrect container statuses - now accurately detects running containers
-- **Docker Image Sprawl Resolution**: Clean infrastructure verified and optimized - removed unused postgres:15 image (445MB) and orphaned volumes (123MB), reducing disk usage from 53% to 51%
-- **Comprehensive SSL Verification**: Both production and staging APIs now report "healthy" status with encrypted database connections (11ms and 19ms response times respectively)
-- **Infrastructure Documentation Alignment**: All documentation updated to reflect current native PostgreSQL + SSL encryption architecture with monitoring enhancements
-- **Production Security Status**: Enterprise-grade SSL encryption across all database communications with automated monitoring, email alerting, and architect-verified production readiness
+## September 13, 2025 - MSMTP Email System Implementation & Complete Infrastructure Transition ✅
+- **MSMTP EMAIL SYSTEM COMPLETE**: Full transition from Resend API to reliable MSMTP Gmail SMTP system
+- **Live Monitoring**: Enhanced health checks with MSMTP email alerts (every 10 minutes) - critical/warning alerts automatically sent
+- **Backup Email Integration**: Foundation backup system converted to MSMTP (bi-weekly Sunday 2:00 AM) with professional HTML notifications
+- **Email Infrastructure**: Gmail SMTP via MSMTP with App Password authentication, secure configuration at `/root/.msmtprc` (600 permissions)
+- **Health Script Locations**: `/opt/addypin/scripts/enhanced-health-check.sh` (MSMTP), `/opt/addypin/scripts/send-health-alert.sh`, `/opt/addypin/health-manager.sh`
+- **Backup Script Locations**: `/opt/addypin-foundation-backup/scripts/backup-foundation-msmtp.sh` (new MSMTP version), automated cron scheduling
+- **Email Recipient**: All infrastructure alerts sent to `avoidaccess@gmail.com` with professional HTML formatting
+- **System Integration**: Complete replacement of Resend API dependencies with proven MSMTP solution based on working Terribic implementation
+- **Automation Status**: Live monitoring (*/10 * * * *), backup automation (0 2 * * 0), both using MSMTP email alerts
+- **Production Stability**: SSL encryption maintained, all monitoring active, email notifications 100% operational
 
 ## September 10, 2025 - PHASE 5 COMPLETE
 - **Infrastructure Security Hardening & Monitoring with Production Stability**: ✅
@@ -105,7 +106,7 @@ Preferred communication style: Simple, everyday language.
 - **Multi-stage Builds**: Optimized production images with security-first non-root execution
 - **Container Orchestration**: Docker Compose with automated health checks and restart policies
 - **Database Connectivity**: Application containers connect to native PostgreSQL via `host.docker.internal:5432` with SSL encryption
-- **Health Monitoring**: Enhanced automated health checks with email alerting via Resend API integration
+- **Health Monitoring**: Enhanced automated health checks with MSMTP email alerting via Gmail SMTP
 - **Port Configuration**: Localhost-only binding (127.0.0.1:3000 production, 127.0.0.1:8080 staging)
 - **Image Management**: GitHub Container Registry with tagged releases and automated cleanup (optimized from 53% to 51% disk usage)
 - **SSL Security**: Enterprise-grade encryption for all database communications with certificate management
@@ -135,15 +136,39 @@ Preferred communication style: Simple, everyday language.
 - **CI/CD Platform**: GitHub Actions with automated workflows
 - **SSH Authentication**: Ed25519 keys for secure VPS access
 - **Health Monitoring**: Enhanced automated health checks with email alerting and system health checks
-- **Email Integration**: Resend API for automated infrastructure alerts and notifications
+- **Email Integration**: MSMTP Gmail SMTP system for automated infrastructure alerts and notifications (replaced Resend API)
 - **Image Management**: Automated builds, versioning, and registry management
 
 ## Authentication & Communication
 - **Clerk**: User authentication service (optional based on configuration)
 - **Email Services**: 
-  - SendGrid for transactional email
-  - Resend as alternative email provider
-  - React Email for email template rendering
+  - MSMTP for infrastructure monitoring and backup alerts (primary)
+  - SendGrid for transactional email (application level)
+  - React Email for email template rendering (application level)
+  - Gmail SMTP for all VPS infrastructure notifications
+
+## MSMTP Email System
+- **SMTP Provider**: Gmail SMTP (smtp.gmail.com:587) with TLS encryption
+- **Authentication**: Gmail App Password (16-character) with 2FA requirement
+- **Configuration**: `/root/.msmtprc` with 600 permissions for security
+- **Email Format**: Professional HTML-formatted alerts with AddyPin branding
+- **Recipients**: `avoidaccess@gmail.com` for all infrastructure notifications
+- **Integration**: Direct msmtp command usage bypassing mail client compatibility issues
+- **Script Locations**:
+  - Health Manager: `/opt/addypin/health-manager.sh`
+  - Email Alerts: `/opt/addypin/scripts/send-health-alert.sh`
+  - Enhanced Health Check: `/opt/addypin/scripts/enhanced-health-check.sh`
+  - MSMTP Backup: `/opt/addypin-foundation-backup/scripts/backup-foundation-msmtp.sh`
+
+## Automated Monitoring Schedule
+- **Live Health Monitoring**: Every 10 minutes via cron (`*/10 * * * * /opt/addypin/scripts/enhanced-health-check.sh`)
+- **Foundation Backup**: Bi-weekly Sundays at 2:00 AM via cron (`0 2 * * 0 backup-foundation-msmtp.sh --auto --biweekly`)
+- **Email Alerts**: Automatic notifications for critical issues, warnings, and backup completion
+- **Manual Commands**:
+  - Test email: `/opt/addypin/health-manager.sh test-email`
+  - Manual alert: `/opt/addypin/health-manager.sh alert 'message'`
+  - Manual backup: `/opt/addypin-foundation-backup/scripts/backup-foundation-msmtp.sh --auto`
+  - Health status: `/opt/addypin/health-manager.sh status`
 
 ## Development Tools
 - **Package Manager**: npm with lock file for dependency consistency
