@@ -143,7 +143,7 @@ declare -A INFRASTRUCTURE_FILES=(
     ["/var/spool/cron/root"]="system/root-crontab"
     
     # Monitoring Scripts (High Priority)
-    ["/opt/infra/health-check.sh"]="monitoring/infra-health-check.sh"
+    ["/opt/addypin/scripts/health-check.sh"]="monitoring/health-check.sh"
     ["/opt/addypin/scripts/enhanced-health-check.sh"]="monitoring/enhanced-health-check.sh"
     ["/opt/addypin/scripts/health-check-email.js"]="monitoring/health-check-email.js"
     
@@ -158,7 +158,7 @@ declare -A INFRASTRUCTURE_FILES=(
     ["/var/lib/pgsql/data/ssl/server.key"]="postgresql/ssl/server.key"
     
     # Logrotate Configuration (Low Priority)
-    ["/etc/logrotate.d/infra-health-check"]="system/logrotate-infra-health-check"
+    ["/etc/logrotate.d/addypin-health-check"]="system/logrotate-addypin-health-check"
 )
 
 # File priority classification for better reporting
@@ -171,7 +171,7 @@ declare -A FILE_PRIORITIES=(
     ["/var/spool/cron/root"]="CRITICAL"
     
     # High priority files (should exist)
-    ["/opt/infra/health-check.sh"]="HIGH"
+    ["/opt/addypin/scripts/health-check.sh"]="HIGH"
     ["/opt/addypin/scripts/enhanced-health-check.sh"]="HIGH"
     ["/opt/addypin/scripts/health-check-email.js"]="HIGH"
     ["/etc/nginx/nginx.conf"]="HIGH"
@@ -184,7 +184,7 @@ declare -A FILE_PRIORITIES=(
     ["/var/lib/pgsql/data/ssl/server.key"]="MEDIUM"
     
     # Low priority files (optional)
-    ["/etc/logrotate.d/infra-health-check"]="LOW"
+    ["/etc/logrotate.d/addypin-health-check"]="LOW"
 )
 
 # SSL Certificate paths (Let's Encrypt)
