@@ -520,9 +520,9 @@ backup_ssl_certificates() {
                 COPIED_FILES=$((COPIED_FILES + 1))
             fi
         else
-            print_progress "SSL cert path not found: $cert_path" "warning"
-            TOTAL_FILES=$((TOTAL_FILES + 1))
-            MISSING_FILES=$((MISSING_FILES + 1))
+            print_progress "SSL cert path not found (optional): $cert_path" "info"
+            # Note: Don't count missing SSL directories as missing files since they're optional
+            # Only count and track files that actually exist or are copied
         fi
     done
 }

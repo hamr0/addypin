@@ -118,7 +118,7 @@ declare -A INFRASTRUCTURE_FILES=(
     # Monitoring Scripts
     ["monitoring/enhanced-health-check.sh"]="/opt/addypin/scripts/enhanced-health-check.sh"
     ["monitoring/health-check-email.js"]="/opt/addypin/scripts/health-check-email.js"
-    ["monitoring/infra-health-check.sh"]="/opt/infra/health-check.sh"
+    ["monitoring/health-check.sh"]="/opt/addypin/scripts/health-check.sh"
     
     # Nginx Configuration
     ["nginx/nginx.conf"]="/etc/nginx/nginx.conf"
@@ -126,7 +126,7 @@ declare -A INFRASTRUCTURE_FILES=(
     
     # System Configuration
     ["system/root-crontab"]="/var/spool/cron/root"
-    ["system/logrotate-infra-health-check"]="/etc/logrotate.d/infra-health-check"
+    ["system/logrotate-addypin-health-check"]="/etc/logrotate.d/addypin-health-check"
 )
 
 # SSL Certificate paths (Let's Encrypt)
