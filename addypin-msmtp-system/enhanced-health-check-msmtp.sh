@@ -126,7 +126,7 @@ echo "🏗️ AddyPin Infrastructure:"
 
 # Check backup system
 if [[ -f "/opt/addypin-foundation-backup/scripts/setup-automated-backups.sh" ]]; then
-    BACKUP_STATUS=$(crontab -l 2>/dev/null | grep -q "backup-foundation.sh" && echo "Active" || echo "Not scheduled")
+    BACKUP_STATUS=$(crontab -l 2>/dev/null | grep -q "backup-foundation-msmtp.sh" && echo "Active" || echo "Not scheduled")
     if [[ "$BACKUP_STATUS" == "Active" ]]; then
         log_message "INFO: ✅ Backup automation active"
         echo "✅ Backup System: Automated ($BACKUP_STATUS)"
@@ -157,6 +157,14 @@ else
     ((WARNINGS++))
 fi
 
+# Collect specific warning and issue details
+WARNING_DETAILS=""
+ISSUE_DETAILS=""
+
+# Extract specific warnings from logs (last 20 lines for current run)
+RECENT_WARNINGS=$(tail -20 "$LOG_FILE" | grep "$(date '+%Y-%m-%d %H:%M')" | grep "WARNING:" | sed 's/.*WARNING: //' || echo "")
+RECENT_ISSUES=$(tail -20 "$LOG_FILE" | grep "$(date '+%Y-%m-%d %H:%M')" | grep "ERROR:" | sed 's/.*ERROR: //' || echo "")
+
 # Summary and alerting
 echo ""
 echo "📋 Health Check Summary:"
@@ -169,7 +177,11 @@ if [[ $ISSUES -gt 0 ]]; then
     # Send critical alert if email system is available
     if [[ -f "$ALERT_SCRIPT" ]] && command -v msmtp >/dev/null 2>&1; then
         log_message "INFO: 📧 Sending critical alert email"
-        "$ALERT_SCRIPT" critical "Health check found $ISSUES critical infrastructure issues and $WARNINGS warnings"
+        if [[ -n "$RECENT_ISSUES" ]]; then
+            "$ALERT_SCRIPT" critical "Critical infrastructure issues detected: $RECENT_ISSUES"
+        else
+            "$ALERT_SCRIPT" critical "Health check found $ISSUES critical infrastructure issues and $WARNINGS warnings"
+        fi
     fi
     
 elif [[ $WARNINGS -gt 0 ]]; then
@@ -178,7 +190,11 @@ elif [[ $WARNINGS -gt 0 ]]; then
     # Send warning alert if email system is available
     if [[ -f "$ALERT_SCRIPT" ]] && command -v msmtp >/dev/null 2>&1; then
         log_message "INFO: 📧 Sending warning alert email"
-        "$ALERT_SCRIPT" warning "Health check found $WARNINGS warnings requiring attention"
+        if [[ -n "$RECENT_WARNINGS" ]]; then
+            "$ALERT_SCRIPT" warning "Infrastructure warnings detected: $RECENT_WARNINGS"
+        else
+            "$ALERT_SCRIPT" warning "Health check found $WARNINGS warnings requiring attention"
+        fi
     fi
     
 else
