@@ -2,7 +2,7 @@
 
 # AddyPin Foundation Backup Script
 # Creates comprehensive backups of critical infrastructure files
-# Usage: ./backup-foundation.sh [--dry-run] [--golden] [--force]
+# Usage: ./backup-foundation.sh [--dry-run] [--golden] [--force] [--auto]
 
 set -e
 
@@ -26,6 +26,7 @@ TIMESTAMP=$(date '+%Y%m%d_%H%M%S')
 DRY_RUN=false
 GOLDEN_MODE=false
 FORCE_MODE=false
+AUTO_MODE=false
 
 # Centralized logging setup
 LOGS_DIR="$BACKUP_ROOT/logs"
@@ -46,14 +47,20 @@ while [[ $# -gt 0 ]]; do
             FORCE_MODE=true
             shift
             ;;
+        --auto)
+            AUTO_MODE=true
+            FORCE_MODE=true  # Auto mode always forces to avoid prompts
+            shift
+            ;;
         -h|--help)
             echo "AddyPin Foundation Backup Script"
-            echo "Usage: $0 [--dry-run] [--golden] [--force]"
+            echo "Usage: $0 [--dry-run] [--golden] [--force] [--auto]"
             echo ""
             echo "Options:"
             echo "  --dry-run    Show what would be backed up without actually copying files"
             echo "  --golden     Create golden backup (immutable reference)"
             echo "  --force      Overwrite existing backups without confirmation"
+            echo "  --auto       Automated mode with email notifications (implies --force)"
             echo "  --help       Show this help message"
             exit 0
             ;;
@@ -64,23 +71,30 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Banner
-echo -e "${BLUE}"
-echo "╔══════════════════════════════════════════════╗"
-echo "║           🏗️  AddyPin Foundation Backup      ║"
-echo "║              Infrastructure Preservation     ║"
-echo "║                                              ║"
-echo "║ 🔒 SECURITY: Protected with 700/600 perms   ║"
-echo "╚══════════════════════════════════════════════╝"
-echo -e "${NC}"
+# Banner (suppress in auto mode for cleaner logs)
+if [ "$AUTO_MODE" = false ]; then
+    echo -e "${BLUE}"
+    echo "╔══════════════════════════════════════════════╗"
+    echo "║           🏗️  AddyPin Foundation Backup      ║"
+    echo "║              Infrastructure Preservation     ║"
+    echo "║                                              ║"
+    echo "║ 🔒 SECURITY: Protected with 700/600 perms   ║"
+    echo "╚══════════════════════════════════════════════╝"
+    echo -e "${NC}"
+else
+    echo "[$(date)] Starting automated AddyPin Foundation Backup..."
+fi
 
 # Show configuration
-echo -e "${CYAN}📋 Backup Configuration:${NC}"
-echo "   Mode: $([ "$GOLDEN_MODE" = true ] && echo "Golden (Immutable)" || echo "Versioned ($TIMESTAMP)")"
-echo "   Dry Run: $([ "$DRY_RUN" = true ] && echo "YES" || echo "NO")"
-echo "   Force: $([ "$FORCE_MODE" = true ] && echo "YES" || echo "NO")"
-echo "   Root: $BACKUP_ROOT"
-echo ""
+if [ "$AUTO_MODE" = false ]; then
+    echo -e "${CYAN}📋 Backup Configuration:${NC}"
+    echo "   Mode: $([ "$GOLDEN_MODE" = true ] && echo "Golden (Immutable)" || echo "Versioned ($TIMESTAMP)")"
+    echo "   Dry Run: $([ "$DRY_RUN" = true ] && echo "YES" || echo "NO")"
+    echo "   Force: $([ "$FORCE_MODE" = true ] && echo "YES" || echo "NO")"
+    echo "   Auto: $([ "$AUTO_MODE" = true ] && echo "YES" || echo "NO")"
+    echo "   Root: $BACKUP_ROOT"
+    echo ""
+fi
 
 # Set backup destination
 if [ "$GOLDEN_MODE" = true ]; then
@@ -133,6 +147,71 @@ TOTAL_FILES=0
 COPIED_FILES=0
 MISSING_FILES=0
 ERROR_FILES=0
+
+# Email notification settings
+NOTIFY_EMAIL="admin@addypin.com"
+RESEND_API_KEY="${RESEND_API_KEY:-}"
+
+# Function: Send email notification
+send_backup_notification() {
+    local status="$1"  # success, error, warning
+    local summary="$2"
+    local details="$3"
+    
+    # Only send emails in auto mode and if API key is available
+    if [ "$AUTO_MODE" = false ] || [ -z "$RESEND_API_KEY" ]; then
+        return 0
+    fi
+    
+    local subject=""
+    local emoji=""
+    local color="#28a745"  # green
+    
+    case "$status" in
+        "success")
+            subject="[SUCCESS] AddyPin Foundation Backup Completed"
+            emoji="✅"
+            color="#28a745"
+            ;;
+        "error")
+            subject="[ERROR] AddyPin Foundation Backup Failed"
+            emoji="❌"
+            color="#dc3545"
+            ;;
+        "warning")
+            subject="[WARNING] AddyPin Foundation Backup Completed with Issues"
+            emoji="⚠️"
+            color="#ffc107"
+            ;;
+    esac
+    
+    local backup_size=$(calculate_backup_size)
+    local timestamp=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
+    
+    # Create email payload
+    local email_payload=$(cat << EOF
+{
+  "from": "AddyPin Backup System <backup@addypin.com>",
+  "to": ["$NOTIFY_EMAIL"],
+  "subject": "$subject",
+  "html": "<!DOCTYPE html><html><head><style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;line-height:1.6;color:#333;margin:0;padding:20px;background:#f8f9fa}.container{max-width:600px;margin:0 auto;background:white;border-radius:12px;box-shadow:0 4px 6px rgba(0,0,0,0.1);overflow:hidden}.header{background:linear-gradient(135deg,$color 0%,#0056b3 100%);color:white;padding:30px 20px;text-align:center}.content{padding:30px 20px}.stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:15px;margin:20px 0}.stat-item{background:#f8f9fa;padding:15px;border-radius:8px;text-align:center}.stat-number{font-size:24px;font-weight:bold;color:#1f2937}.stat-label{font-size:12px;color:#6b7280;text-transform:uppercase}.footer{background:#f8f9fa;padding:20px;text-align:center;color:#6b7280;font-size:14px}</style></head><body><div class='container'><div class='header'><h1 style='margin:0;font-size:28px'>$emoji AddyPin Foundation Backup</h1><p style='margin:10px 0 0 0;opacity:0.9'>Automated Infrastructure Backup Report</p></div><div class='content'><h2 style='color:#1f2937;margin-top:0'>Backup Summary</h2><p><strong>Status:</strong> $summary</p><p><strong>Completed:</strong> $timestamp</p><p><strong>Backup Size:</strong> $backup_size</p><p><strong>Mode:</strong> $([ \"$GOLDEN_MODE\" = true ] && echo \"Golden\" || echo \"Versioned\")</p><div class='stats-grid'><div class='stat-item'><div class='stat-number'>$TOTAL_FILES</div><div class='stat-label'>Total Files</div></div><div class='stat-item'><div class='stat-number'>$COPIED_FILES</div><div class='stat-label'>Copied Successfully</div></div><div class='stat-item'><div class='stat-number'>$MISSING_FILES</div><div class='stat-label'>Missing Files</div></div><div class='stat-item'><div class='stat-number'>$ERROR_FILES</div><div class='stat-label'>Error Files</div></div></div><div style='background:#f1f3f4;padding:15px;border-radius:8px;margin:20px 0'><h3 style='margin-top:0;color:#1f2937'>Details</h3><pre style='white-space:pre-wrap;color:#4b5563;margin:0'>$details</pre></div></div><div class='footer'><p>AddyPin Foundation Backup System</p><p>Generated automatically every other Sunday at 2:00 AM</p></div></div></body></html>",
+  "text": "AddyPin Foundation Backup Report\n\nStatus: $summary\nCompleted: $timestamp\nBackup Size: $backup_size\nMode: $([ \"$GOLDEN_MODE\" = true ] && echo \"Golden\" || echo \"Versioned\")\n\nStatistics:\n- Total Files: $TOTAL_FILES\n- Copied Successfully: $COPIED_FILES\n- Missing Files: $MISSING_FILES\n- Error Files: $ERROR_FILES\n\nDetails:\n$details\n\n--\nAddyPin Foundation Backup System\nGenerated automatically every other Sunday at 2:00 AM"
+}
+EOF
+    )
+    
+    # Send email using curl
+    local response=$(curl -s -X POST https://api.resend.com/emails \
+        -H "Authorization: Bearer $RESEND_API_KEY" \
+        -H "Content-Type: application/json" \
+        -d "$email_payload" 2>/dev/null)
+    
+    if [ $? -eq 0 ]; then
+        log_message "Email notification sent successfully"
+    else
+        log_message "Failed to send email notification"
+    fi
+}
 
 # Function: Initialize logging system
 init_logging() {
@@ -199,11 +278,15 @@ check_permissions() {
     
     if [ "$EUID" -ne 0 ] && [ "$DRY_RUN" = false ]; then
         print_progress "This script requires root access to read system files" "warning"
-        print_progress "Run with: sudo $0 or use --dry-run to test" "info"
-        read -p "Continue anyway? (y/N): " -n 1 -r
-        echo
-        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-            exit 1
+        if [ "$AUTO_MODE" = false ]; then
+            print_progress "Run with: sudo $0 or use --dry-run to test" "info"
+            read -p "Continue anyway? (y/N): " -n 1 -r
+            echo
+            if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+                exit 1
+            fi
+        else
+            print_progress "Auto mode: Continuing without root (some files may be inaccessible)" "warning"
         fi
     fi
     
@@ -242,12 +325,14 @@ check_existing_backup() {
         print_progress "Golden backup already exists" "warning"
         print_progress "Use --force to overwrite or choose versioned backup" "info"
         
-        if [ "$DRY_RUN" = false ]; then
+        if [ "$DRY_RUN" = false ] && [ "$AUTO_MODE" = false ]; then
             read -p "Overwrite existing golden backup? (y/N): " -n 1 -r
             echo
             if [[ ! $REPLY =~ ^[Yy]$ ]]; then
                 exit 1
             fi
+        elif [ "$AUTO_MODE" = true ]; then
+            print_progress "Auto mode: Overwriting existing golden backup" "info"
         fi
     fi
 }
@@ -511,6 +596,25 @@ main() {
     
     # Summary
     print_summary
+    
+    # Send email notification in auto mode
+    if [ "$AUTO_MODE" = true ]; then
+        local notification_status="success"
+        local notification_summary="Backup completed successfully"
+        local notification_details="Backup completed at $(date)\nLocation: $BACKUP_DIR\nSize: $(calculate_backup_size)"
+        
+        if [ $ERROR_FILES -gt 0 ]; then
+            notification_status="error"
+            notification_summary="Backup completed with errors"
+            notification_details="$notification_details\n\nErrors encountered during backup process.\nReview backup manifest: $BACKUP_DIR/BACKUP_MANIFEST.txt"
+        elif [ $MISSING_FILES -gt 0 ]; then
+            notification_status="warning"
+            notification_summary="Backup completed with missing files"
+            notification_details="$notification_details\n\nSome files were missing and could not be backed up.\nReview backup manifest: $BACKUP_DIR/BACKUP_MANIFEST.txt"
+        fi
+        
+        send_backup_notification "$notification_status" "$notification_summary" "$notification_details"
+    fi
 }
 
 # Run main function
