@@ -240,17 +240,224 @@ COPIED_FILES=0
 MISSING_FILES=0
 ERROR_FILES=0
 
-# Continue with backup logic (copying from original)...
-# [Rest of the backup logic from the original script would continue here]
+# Main backup execution function
+main() {
+    print_banner
+    check_permissions
+    init_logging
+    
+    # Backup infrastructure files
+    print_progress "Starting infrastructure file backup..." "start"
+    for source_path in "${!INFRASTRUCTURE_FILES[@]}"; do
+        relative_path="${INFRASTRUCTURE_FILES[$source_path]}"
+        backup_file "$source_path" "$relative_path"
+    done
+    
+    # Backup SSL certificates if they exist
+    print_progress "Checking SSL certificates..." "start"
+    for ssl_path in "${SSL_CERT_PATHS[@]}"; do
+        if [ -d "$ssl_path" ]; then
+            CERT_NAME=$(basename "$ssl_path")
+            backup_directory "$ssl_path" "ssl-certificates/$CERT_NAME"
+        fi
+    done
+    
+    # Generate backup manifest
+    generate_manifest
+    
+    # Summary and email notification
+    print_summary
+    
+    # Send email notification in auto mode
+    if [[ "$AUTO_MODE" = true ]]; then
+        if [[ $ERROR_FILES -gt 0 ]]; then
+            send_email_notification "error" "$ERROR_FILES files failed to backup" "Check log: $LOG_FILE"
+            exit 1
+        elif [[ $MISSING_FILES -gt 0 ]]; then
+            send_email_notification "warning" "$MISSING_FILES files missing, $COPIED_FILES backed up successfully" "Review manifest for details"
+            exit 0
+        else
+            send_email_notification "success" "All $COPIED_FILES files backed up successfully" "Backup completed without issues"
+            exit 0
+        fi
+    fi
+}
 
-# At the end, add email notification
-if [[ $ERROR_FILES -gt 0 ]]; then
-    send_email_notification "error" "$ERROR_FILES files failed to backup" "Check log: $LOG_FILE"
-    exit 1
-elif [[ $MISSING_FILES -gt 0 ]]; then
-    send_email_notification "warning" "$MISSING_FILES files missing, $COPIED_FILES backed up successfully" "Review manifest for details"
-    exit 0
-else
-    send_email_notification "success" "All $COPIED_FILES files backed up successfully" "Backup completed without issues"
-    exit 0
-fi
+# Helper functions
+backup_file() {
+    local source="$1"
+    local relative_path="$2"
+    local dest="$BACKUP_DIR/$relative_path"
+    
+    ((TOTAL_FILES++))
+    
+    if [[ ! -f "$source" ]]; then
+        log_message "MISSING: $source (${FILE_PRIORITIES[$source]:-UNKNOWN} priority)"
+        ((MISSING_FILES++))
+        case "${FILE_PRIORITIES[$source]:-UNKNOWN}" in
+            "CRITICAL") ((MISSING_CRITICAL++)) ;;
+            "HIGH") ((MISSING_HIGH++)) ;;
+            "MEDIUM") ((MISSING_MEDIUM++)) ;;
+            "LOW") ((MISSING_LOW++)) ;;
+        esac
+        return 1
+    fi
+    
+    if [[ "$DRY_RUN" = true ]]; then
+        log_message "DRY-RUN: Would copy $source → $relative_path"
+        return 0
+    fi
+    
+    mkdir -p "$(dirname "$dest")"
+    if cp "$source" "$dest" 2>/dev/null; then
+        chmod 600 "$dest"
+        log_message "COPIED: $source → $relative_path ($(stat -c%s "$source") bytes)"
+        ((COPIED_FILES++))
+        return 0
+    else
+        log_message "ERROR: Failed to copy $source"
+        ((ERROR_FILES++))
+        return 1
+    fi
+}
+
+backup_directory() {
+    local source="$1"
+    local relative_path="$2"
+    local dest="$BACKUP_DIR/$relative_path"
+    
+    if [[ "$DRY_RUN" = true ]]; then
+        log_message "DRY-RUN: Would copy directory $source → $relative_path"
+        return 0
+    fi
+    
+    mkdir -p "$(dirname "$dest")"
+    if cp -r "$source" "$dest" 2>/dev/null; then
+        chmod -R 600 "$dest"
+        log_message "COPIED: Directory $source → $relative_path"
+        return 0
+    else
+        log_message "ERROR: Failed to copy directory $source"
+        return 1
+    fi
+}
+
+generate_manifest() {
+    local manifest="$BACKUP_DIR/BACKUP_MANIFEST.txt"
+    
+    if [[ "$DRY_RUN" = true ]]; then
+        log_message "DRY-RUN: Would generate manifest at $manifest"
+        return 0
+    fi
+    
+    {
+        echo "AddyPin Foundation Backup Manifest"
+        echo "Generated: $(date)"
+        echo "Mode: $([ "$GOLDEN_MODE" = true ] && echo "Golden" || echo "Versioned")"
+        echo "Total Files: $TOTAL_FILES"
+        echo "Copied Successfully: $COPIED_FILES"
+        echo "Missing Files: $MISSING_FILES"
+        echo "Error Files: $ERROR_FILES"
+        echo ""
+        echo "Missing Files by Priority:"
+        echo "  Critical: $MISSING_CRITICAL"
+        echo "  High: $MISSING_HIGH"  
+        echo "  Medium: $MISSING_MEDIUM"
+        echo "  Low: $MISSING_LOW"
+    } > "$manifest"
+    
+    chmod 600 "$manifest"
+    log_message "Generated backup manifest: $manifest"
+}
+
+print_banner() {
+    if [[ "$AUTO_MODE" = false ]]; then
+        echo -e "${BLUE}"
+        echo "╔══════════════════════════════════════════════╗"
+        echo "║           🏗️  AddyPin Foundation Backup      ║"
+        echo "║              MSMTP Email Integration         ║"
+        echo "║                                              ║"
+        echo "║ 🔒 SECURITY: Protected with 700/600 perms   ║"
+        echo "║ 📧 MSMTP: Email alerts to $NOTIFY_EMAIL"
+        echo "╚══════════════════════════════════════════════╝"
+        echo -e "${NC}"
+    fi
+}
+
+print_progress() {
+    local message="$1"
+    local status="$2"
+    
+    if [[ "$AUTO_MODE" = false ]]; then
+        case "$status" in
+            "start") echo -e "${CYAN}🔄 $message${NC}" ;;
+            "success") echo -e "${GREEN}✅ $message${NC}" ;;
+            "error") echo -e "${RED}❌ $message${NC}" ;;
+            "warning") echo -e "${YELLOW}⚠️ $message${NC}" ;;
+        esac
+    fi
+    
+    log_message "$message"
+}
+
+print_summary() {
+    local status_color="$GREEN"
+    local status_text="SUCCESS"
+    
+    if [[ $ERROR_FILES -gt 0 ]]; then
+        status_color="$RED"
+        status_text="ERROR"
+    elif [[ $MISSING_FILES -gt 0 ]]; then
+        status_color="$YELLOW"  
+        status_text="WARNING"
+    fi
+    
+    if [[ "$AUTO_MODE" = false ]]; then
+        echo ""
+        echo -e "${status_color}📊 BACKUP SUMMARY - $status_text${NC}"
+        echo "════════════════════════════════════════"
+        echo "📁 Total Files: $TOTAL_FILES"
+        echo "✅ Copied Successfully: $COPIED_FILES"
+        echo "❌ Missing Files: $MISSING_FILES"
+        echo "🔴 Error Files: $ERROR_FILES"
+        echo ""
+        echo "📊 Missing Files by Priority:"
+        echo "   🔴 Critical: $MISSING_CRITICAL"
+        echo "   🟡 High: $MISSING_HIGH"
+        echo "   🟠 Medium: $MISSING_MEDIUM"
+        echo "   🟢 Low: $MISSING_LOW"
+    fi
+    
+    log_message "SUMMARY: $status_text - Total: $TOTAL_FILES, Copied: $COPIED_FILES, Missing: $MISSING_FILES, Errors: $ERROR_FILES"
+}
+
+check_permissions() {
+    if [[ $EUID -ne 0 ]]; then
+        echo -e "${RED}❌ This script must be run as root${NC}"
+        exit 1
+    fi
+}
+
+init_logging() {
+    # Create logs directory with secure permissions
+    if [[ "$DRY_RUN" = false ]]; then
+        mkdir -m 700 -p "$LOGS_DIR"
+        # Create log file with secure permissions
+        touch "$LOG_FILE"
+        chmod 600 "$LOG_FILE"
+    fi
+    
+    log_message "Starting AddyPin Foundation Backup (MSMTP)"
+    log_message "Mode: $([ "$GOLDEN_MODE" = true ] && echo "Golden" || echo "Versioned")"
+    log_message "Auto Mode: $AUTO_MODE"
+    log_message "Dry Run: $DRY_RUN"
+}
+
+# Initialize missing counters
+MISSING_CRITICAL=0
+MISSING_HIGH=0
+MISSING_MEDIUM=0
+MISSING_LOW=0
+
+# Run main function
+main "$@"
