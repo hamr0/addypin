@@ -81,9 +81,48 @@ if [ "$MODIFIED_FILES" -gt 0 ] || [ "$UNTRACKED_FILES" -gt 0 ] || [ "$DELETED_FI
 else
     echo -e "${GREEN}✓ No changes to commit - repository is clean${NC}"
     echo ""
-    echo -e "${YELLOW}Nothing to push. Exiting...${NC}"
-    exit 0
 fi
+
+#----------------------------------------------------------------
+# Check for unpushed commits (even if working directory is clean)
+#----------------------------------------------------------------
+echo -e "${BLUE}═══════════════════════════════════════${NC}"
+echo -e "${BLUE}🔄 Checking for Unpushed Commits${NC}"
+echo -e "${BLUE}═══════════════════════════════════════${NC}"
+
+# Count commits ahead of origin/staging
+UNPUSHED_COMMITS=$(git rev-list --count origin/staging..HEAD 2>/dev/null || echo "0")
+
+if [ "$UNPUSHED_COMMITS" -gt 0 ]; then
+    echo -e "${YELLOW}📤 Found $UNPUSHED_COMMITS unpushed commit(s):${NC}"
+    echo ""
+    git log --oneline origin/staging..HEAD | while read -r line; do
+        echo -e "  ${CYAN}→${NC} $line"
+    done
+    echo ""
+    echo -e "${GREEN}✅ Will push these commits to staging branch${NC}"
+    echo ""
+else
+    echo -e "${GREEN}✓ All commits are up to date with remote${NC}"
+    echo ""
+    if [ "$MODIFIED_FILES" -eq 0 ] && [ "$UNTRACKED_FILES" -eq 0 ] && [ "$DELETED_FILES" -eq 0 ]; then
+        echo -e "${YELLOW}Nothing to push. Exiting...${NC}"
+        exit 0
+    fi
+fi
+
+# Skip commit message section if we're just pushing existing commits
+if [ "$MODIFIED_FILES" -eq 0 ] && [ "$UNTRACKED_FILES" -eq 0 ] && [ "$DELETED_FILES" -eq 0 ]; then
+    echo -e "${BLUE}📦 Pushing existing commits (no new changes to commit)${NC}"
+    echo ""
+    COMMIT_MSG="Push existing commits to staging"
+    SKIP_COMMIT=true
+else
+    SKIP_COMMIT=false
+fi
+
+# Only do commit flow if there are working directory changes
+if [ "$SKIP_COMMIT" = "false" ]; then
 
 #----------------------------------------------------------------
 # Get commit message from user
@@ -142,6 +181,8 @@ git commit -m "$COMMIT_MSG"
 echo -e "${GREEN}✓ Changes committed successfully${NC}"
 echo ""
 
+fi  # End of SKIP_COMMIT check
+
 #----------------------------------------------------------------
 # Push to GitHub
 #----------------------------------------------------------------
@@ -149,22 +190,25 @@ echo -e "${BLUE}═════════════════════�
 echo -e "${BLUE}🚀 Pushing to GitHub${NC}"
 echo -e "${BLUE}═══════════════════════════════════════${NC}"
 
-echo -e "${CYAN}Auto-pushing to staging branch (default)...${NC}"
+# Get current branch name for enhanced push logic
+CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+echo -e "${CYAN}Pushing current branch '${CURRENT_BRANCH}' to staging (enhanced staging-first workflow)...${NC}"
 
-# Sync with GitHub first (pull latest changes)
-echo -e "${CYAN}Syncing with GitHub first...${NC}"
-if git pull origin staging --rebase 2>/dev/null; then
-    echo -e "${GREEN}✓ Synced with remote staging${NC}"
+# Sync with remote staging before pushing (prevent conflicts)
+echo -e "${CYAN}🔄 Syncing with remote staging branch...${NC}"
+if git ls-remote --exit-code --heads origin staging >/dev/null 2>&1; then
+    git fetch origin staging 2>/dev/null || true
+    echo -e "${GREEN}✓ Remote staging information updated${NC}"
 else
-    echo -e "${YELLOW}⚠ No remote changes to sync${NC}"
+    echo -e "${YELLOW}📋 Remote staging branch doesn't exist yet (will be created)${NC}"
 fi
 
-# Always push to staging branch (not current branch)
-echo -e "${CYAN}Pushing to staging branch...${NC}"
-if git push origin staging 2>&1 | grep -q "Everything up-to-date"; then
-    echo -e "${YELLOW}ℹ Everything already up-to-date on GitHub${NC}"
+# Enhanced Push: Push current branch to staging branch (work from any branch!)
+echo -e "${CYAN}🚀 Pushing ${CURRENT_BRANCH} → staging...${NC}"
+if git push origin $CURRENT_BRANCH:staging 2>&1 | grep -q "Everything up-to-date"; then
+    echo -e "${YELLOW}ℹ Everything already up-to-date on staging branch${NC}"
 else
-    echo -e "${GREEN}✓ Successfully pushed to GitHub staging${NC}"
+    echo -e "${GREEN}✓ Successfully pushed ${CURRENT_BRANCH} to staging branch${NC}"
 fi
 
 echo ""
@@ -173,7 +217,7 @@ echo ""
 # Show deployment instructions
 #----------------------------------------------------------------
 echo -e "${GREEN}═══════════════════════════════════════${NC}"
-echo -e "${GREEN}🎉 SUCCESS! Changes pushed to GitHub${NC}"
+echo -e "${GREEN}🎉 SUCCESS! Changes pushed to staging branch${NC}"
 echo -e "${GREEN}═══════════════════════════════════════${NC}"
 echo ""
 
