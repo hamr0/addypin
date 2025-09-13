@@ -162,7 +162,7 @@ install_automation() {
     fi
     
     # Check if cron entry already exists
-    if crontab -l 2>/dev/null | grep -q "$BACKUP_SCRIPT --auto"; then
+    if crontab -l 2>/dev/null | grep -q -- "--auto --biweekly"; then
         echo -e "${YELLOW}⚠️  Backup automation already installed${NC}"
         echo -e "${BLUE}ℹ️  Use --uninstall to remove existing automation${NC}"
         return 0
@@ -178,10 +178,13 @@ install_automation() {
     echo "# AddyPin Foundation Backup - Every other Sunday at 2:00 AM" >> "$temp_cron"
     echo "# Environment variables for email notifications" >> "$temp_cron"
     if [ -n "$resend_key" ]; then
-        echo "RESEND_API_KEY=$resend_key" >> "$temp_cron"
+        echo "RESEND_API_KEY=\"$resend_key\"" >> "$temp_cron"
     fi
     echo "PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin" >> "$temp_cron"
-    echo "$CRON_ENTRY" >> "$temp_cron"
+    
+    # Properly expand the cron entry with full paths
+    local full_cron_entry="$CRON_SCHEDULE \"$BACKUP_SCRIPT\" --auto --biweekly >> /var/log/addypin-backup-cron.log 2>&1"
+    echo "$full_cron_entry" >> "$temp_cron"
     echo "" >> "$temp_cron"
     
     # Install new crontab
@@ -210,7 +213,7 @@ uninstall_automation() {
     echo -e "${BLUE}🗑️  Removing backup automation...${NC}"
     
     # Check if cron entry exists
-    if ! crontab -l 2>/dev/null | grep -q "$BACKUP_SCRIPT --auto"; then
+    if ! crontab -l 2>/dev/null | grep -q -- "--auto --biweekly"; then
         echo -e "${YELLOW}⚠️  Backup automation not found${NC}"
         return 0
     fi
@@ -219,7 +222,7 @@ uninstall_automation() {
     local temp_cron=$(mktemp)
     
     # Get existing crontab and remove backup entries
-    crontab -l 2>/dev/null | grep -v "AddyPin Foundation Backup" | grep -v "Environment variables for email" | grep -v "RESEND_API_KEY=" | grep -v "PATH=/usr/local/sbin" | grep -v "$BACKUP_SCRIPT --auto" > "$temp_cron"
+    crontab -l 2>/dev/null | grep -v "AddyPin Foundation Backup" | grep -v "Environment variables for email" | grep -v "RESEND_API_KEY=" | grep -v "PATH=/usr/local/sbin" | grep -v -- "--auto --biweekly" > "$temp_cron"
     
     # Install cleaned crontab
     if crontab "$temp_cron"; then
@@ -246,14 +249,14 @@ show_status() {
     echo "==============================="
     
     # Check cron job status
-    if crontab -l 2>/dev/null | grep -q "$BACKUP_SCRIPT --auto"; then
+    if crontab -l 2>/dev/null | grep -q -- "--auto --biweekly"; then
         echo -e "Automation: ${GREEN}✅ INSTALLED${NC}"
         echo -e "Schedule: Every other Sunday at 2:00 AM"
         
         # Show cron entry
         echo ""
         echo -e "${PURPLE}Current cron entry:${NC}"
-        crontab -l 2>/dev/null | grep -A1 -B1 "$BACKUP_SCRIPT --auto"
+        crontab -l 2>/dev/null | grep -A1 -B1 -- "--auto --biweekly"
         
         show_next_run_time
         

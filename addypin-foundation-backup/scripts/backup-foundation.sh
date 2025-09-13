@@ -131,13 +131,7 @@ fi
 
 # Critical infrastructure files mapping
 declare -A INFRASTRUCTURE_FILES=(
-    # PostgreSQL Configuration
-    ["/var/lib/pgsql/data/postgresql.conf"]="postgresql/postgresql.conf"
-    ["/var/lib/pgsql/data/pg_hba.conf"]="postgresql/pg_hba.conf"
-    ["/var/lib/pgsql/data/ssl/server.crt"]="postgresql/ssl/server.crt"
-    ["/var/lib/pgsql/data/ssl/server.key"]="postgresql/ssl/server.key"
-    
-    # Docker Configurations
+    # Docker Configurations (Critical)
     ["/opt/addypin/docker-compose.yml"]="docker/production-docker-compose.yml"
     ["/opt/addypin-staging/docker-compose.yml"]="docker/staging-docker-compose.yml"
     
@@ -145,18 +139,52 @@ declare -A INFRASTRUCTURE_FILES=(
     ["/opt/addypin/.env"]="environment/production.env"
     ["/opt/addypin-staging/.env"]="environment/staging.env"
     
-    # Monitoring Scripts
+    # System Configuration (Critical)
+    ["/var/spool/cron/root"]="system/root-crontab"
+    
+    # Monitoring Scripts (High Priority)
+    ["/opt/infra/health-check.sh"]="monitoring/infra-health-check.sh"
     ["/opt/addypin/scripts/enhanced-health-check.sh"]="monitoring/enhanced-health-check.sh"
     ["/opt/addypin/scripts/health-check-email.js"]="monitoring/health-check-email.js"
-    ["/opt/infra/health-check.sh"]="monitoring/infra-health-check.sh"
     
-    # Nginx Configuration
+    # Nginx Configuration (High Priority)
     ["/etc/nginx/nginx.conf"]="nginx/nginx.conf"
     ["/etc/nginx/conf.d/addypin.conf"]="nginx/addypin.conf"
     
-    # System Configuration
-    ["/var/spool/cron/root"]="system/root-crontab"
+    # PostgreSQL Configuration (Medium Priority - may not exist on all systems)
+    ["/var/lib/pgsql/data/postgresql.conf"]="postgresql/postgresql.conf"
+    ["/var/lib/pgsql/data/pg_hba.conf"]="postgresql/pg_hba.conf"
+    ["/var/lib/pgsql/data/ssl/server.crt"]="postgresql/ssl/server.crt"
+    ["/var/lib/pgsql/data/ssl/server.key"]="postgresql/ssl/server.key"
+    
+    # Logrotate Configuration (Low Priority)
     ["/etc/logrotate.d/infra-health-check"]="system/logrotate-infra-health-check"
+)
+
+# File priority classification for better reporting
+declare -A FILE_PRIORITIES=(
+    # Critical files (must exist in production)
+    ["/opt/addypin/docker-compose.yml"]="CRITICAL"
+    ["/opt/addypin-staging/docker-compose.yml"]="CRITICAL"
+    ["/opt/addypin/.env"]="CRITICAL"
+    ["/opt/addypin-staging/.env"]="CRITICAL"
+    ["/var/spool/cron/root"]="CRITICAL"
+    
+    # High priority files (should exist)
+    ["/opt/infra/health-check.sh"]="HIGH"
+    ["/opt/addypin/scripts/enhanced-health-check.sh"]="HIGH"
+    ["/opt/addypin/scripts/health-check-email.js"]="HIGH"
+    ["/etc/nginx/nginx.conf"]="HIGH"
+    ["/etc/nginx/conf.d/addypin.conf"]="HIGH"
+    
+    # Medium priority files (may or may not exist)
+    ["/var/lib/pgsql/data/postgresql.conf"]="MEDIUM"
+    ["/var/lib/pgsql/data/pg_hba.conf"]="MEDIUM"
+    ["/var/lib/pgsql/data/ssl/server.crt"]="MEDIUM"
+    ["/var/lib/pgsql/data/ssl/server.key"]="MEDIUM"
+    
+    # Low priority files (optional)
+    ["/etc/logrotate.d/infra-health-check"]="LOW"
 )
 
 # SSL Certificate paths (Let's Encrypt)
@@ -171,6 +199,10 @@ TOTAL_FILES=0
 COPIED_FILES=0
 MISSING_FILES=0
 ERROR_FILES=0
+MISSING_CRITICAL=0
+MISSING_HIGH=0
+MISSING_MEDIUM=0
+MISSING_LOW=0
 
 # Email notification settings
 NOTIFY_EMAIL="admin@addypin.com"
@@ -288,6 +320,14 @@ log_message() {
 print_progress() {
     local message="$1"
     local status="$2"
+    local custom_color="$3"
+    
+    # Use custom color if provided
+    if [ -n "$custom_color" ]; then
+        echo -e "${custom_color}$message${NC}"
+        log_message "$message"
+        return 0
+    fi
     
     case "$status" in
         "start")
@@ -384,9 +424,38 @@ copy_file_secure() {
     
     TOTAL_FILES=$((TOTAL_FILES + 1))
     
+    # Get file priority
+    local priority="${FILE_PRIORITIES[$source]:-LOW}"
+    
     # Check if source file exists
     if [ ! -f "$source" ] && [ ! -d "$source" ]; then
-        print_progress "Missing: $description ($source)" "warning"
+        local priority_icon=""
+        local priority_color=""
+        
+        case "$priority" in
+            "CRITICAL")
+                priority_icon="🚨"
+                priority_color="$RED"
+                MISSING_CRITICAL=$((MISSING_CRITICAL + 1))
+                ;;
+            "HIGH")
+                priority_icon="⚠️"
+                priority_color="$YELLOW"
+                MISSING_HIGH=$((MISSING_HIGH + 1))
+                ;;
+            "MEDIUM")
+                priority_icon="ℹ️"
+                priority_color="$BLUE"
+                MISSING_MEDIUM=$((MISSING_MEDIUM + 1))
+                ;;
+            "LOW")
+                priority_icon="📋"
+                priority_color="$NC"
+                MISSING_LOW=$((MISSING_LOW + 1))
+                ;;
+        esac
+        
+        print_progress "${priority_icon} Missing [$priority]: $description ($source)" "info" "$priority_color"
         MISSING_FILES=$((MISSING_FILES + 1))
         return 0  # Don't exit on missing files
     fi
@@ -399,7 +468,7 @@ copy_file_secure() {
     
     # Copy file
     if [ "$DRY_RUN" = true ]; then
-        print_progress "Would copy: $description" "info"
+        print_progress "Would copy [$priority]: $description" "info"
         # Note: Don't increment COPIED_FILES during dry-run
         return 0
     fi
@@ -411,19 +480,19 @@ copy_file_secure() {
             local dest_hash=$(sha256sum "$dest" 2>/dev/null | cut -d' ' -f1)
             
             if [ "$source_hash" = "$dest_hash" ]; then
-                print_progress "Copied: $description ✓" "success"
+                print_progress "✅ Copied [$priority]: $description" "success"
                 COPIED_FILES=$((COPIED_FILES + 1))
             else
-                print_progress "Checksum mismatch: $description" "error"
+                print_progress "❌ Checksum mismatch [$priority]: $description" "error"
                 ERROR_FILES=$((ERROR_FILES + 1))
                 return 0  # Continue despite checksum errors
             fi
         else
-            print_progress "Copied: $description (no checksum verification)" "success"
+            print_progress "✅ Copied [$priority]: $description (no checksum verification)" "success"
             COPIED_FILES=$((COPIED_FILES + 1))
         fi
     else
-        print_progress "Failed to copy: $description" "error"
+        print_progress "❌ Failed to copy [$priority]: $description" "error"
         ERROR_FILES=$((ERROR_FILES + 1))
         return 0  # Continue despite copy errors
     fi
@@ -583,11 +652,32 @@ print_summary() {
     echo "   ❌ Error Files: $ERROR_FILES"
     echo ""
     
+    if [ $MISSING_FILES -gt 0 ]; then
+        echo -e "${CYAN}Missing Files by Priority:${NC}"
+        if [ $MISSING_CRITICAL -gt 0 ]; then
+            echo -e "   ${RED}🚨 CRITICAL: $MISSING_CRITICAL files${NC}"
+        fi
+        if [ $MISSING_HIGH -gt 0 ]; then
+            echo -e "   ${YELLOW}⚠️  HIGH: $MISSING_HIGH files${NC}"
+        fi
+        if [ $MISSING_MEDIUM -gt 0 ]; then
+            echo -e "   ${BLUE}ℹ️  MEDIUM: $MISSING_MEDIUM files${NC}"
+        fi
+        if [ $MISSING_LOW -gt 0 ]; then
+            echo "   📋 LOW: $MISSING_LOW files"
+        fi
+        echo ""
+    fi
+    
     # Status indicator
     if [ $ERROR_FILES -eq 0 ] && [ $MISSING_FILES -eq 0 ]; then
         print_progress "Backup completed successfully! 🎉" "success"
     elif [ $ERROR_FILES -eq 0 ]; then
-        print_progress "Backup completed with missing files (review manifest)" "warning"
+        if [ $MISSING_CRITICAL -gt 0 ]; then
+            print_progress "⚠️  CRITICAL FILES MISSING - Production may be affected!" "warning"
+        else
+            print_progress "Backup completed with missing files (review manifest)" "warning"
+        fi
     else
         print_progress "Backup completed with errors (review manifest)" "error"
     fi
