@@ -20,13 +20,12 @@ BACKUP_ROOT="$(dirname "$SCRIPT_DIR")"
 BACKUP_SCRIPT="$SCRIPT_DIR/backup-foundation.sh"
 MONITOR_SCRIPT="$SCRIPT_DIR/backup-status-monitor.sh"
 
-# Cron configuration - Every other Sunday at 2:00 AM
-# The expression $(expr $(date +\%W) \% 2) calculates if the current week is even (0) or odd (1)
-# We want to run on even weeks (every other week)
+# Cron configuration - Every Sunday at 2:00 AM (script will check for bi-weekly)
+# The backup script will internally check if it should run based on week number
 CRON_SCHEDULE='0 2 * * 0'
-CRON_CONDITION='[ $(expr $(date +\%W) \% 2) -eq 0 ]'
-CRON_COMMAND="$BACKUP_SCRIPT --auto"
-CRON_ENTRY="$CRON_SCHEDULE $CRON_CONDITION && $CRON_COMMAND >> /var/log/addypin-backup-cron.log 2>&1"
+CRON_COMMAND="$BACKUP_SCRIPT --auto --biweekly"
+# Environment variables for cron (will be detected during installation)
+CRON_ENTRY="$CRON_SCHEDULE $CRON_COMMAND >> /var/log/addypin-backup-cron.log 2>&1"
 
 # Parse arguments
 ACTION=""
@@ -44,6 +43,10 @@ while [[ $# -gt 0 ]]; do
             ACTION="status"
             shift
             ;;
+        --test)
+            ACTION="test"
+            shift
+            ;;
         -h|--help)
             echo "AddyPin Foundation Backup Automation Setup"
             echo "Usage: $0 [--install] [--uninstall] [--status]"
@@ -52,6 +55,7 @@ while [[ $# -gt 0 ]]; do
             echo "  --install    Install automated bi-weekly backup cron job"
             echo "  --uninstall  Remove automated backup cron job"
             echo "  --status     Show current automation status"
+            echo "  --test       Test backup automation and email notifications"
             echo "  --help       Show this help message"
             echo ""
             echo "Backup Schedule: Every other Sunday at 2:00 AM"
@@ -139,6 +143,24 @@ install_automation() {
     sudo touch /var/log/addypin-backup-cron.log
     sudo chmod 644 /var/log/addypin-backup-cron.log
     
+    # Check for RESEND_API_KEY availability
+    local resend_key="${RESEND_API_KEY:-}"
+    if [ -z "$resend_key" ]; then
+        # Try to source from common environment files
+        for env_file in "/opt/addypin/.env" "/opt/addypin-staging/.env" "$HOME/.env"; do
+            if [ -f "$env_file" ] && grep -q "RESEND_API_KEY" "$env_file"; then
+                resend_key=$(grep "RESEND_API_KEY" "$env_file" | cut -d'=' -f2 | tr -d '"' | tr -d "'")
+                echo -e "${GREEN}✅ Found RESEND_API_KEY in $env_file${NC}"
+                break
+            fi
+        done
+    fi
+    
+    if [ -z "$resend_key" ]; then
+        echo -e "${YELLOW}⚠️  RESEND_API_KEY not found - email notifications will be disabled${NC}"
+        echo -e "${BLUE}ℹ️  To enable email notifications, set RESEND_API_KEY environment variable${NC}"
+    fi
+    
     # Check if cron entry already exists
     if crontab -l 2>/dev/null | grep -q "$BACKUP_SCRIPT --auto"; then
         echo -e "${YELLOW}⚠️  Backup automation already installed${NC}"
@@ -152,8 +174,13 @@ install_automation() {
     # Get existing crontab (if any)
     crontab -l 2>/dev/null > "$temp_cron" || true
     
-    # Add backup cron entry with comment
+    # Add environment variables and backup cron entry with comment
     echo "# AddyPin Foundation Backup - Every other Sunday at 2:00 AM" >> "$temp_cron"
+    echo "# Environment variables for email notifications" >> "$temp_cron"
+    if [ -n "$resend_key" ]; then
+        echo "RESEND_API_KEY=$resend_key" >> "$temp_cron"
+    fi
+    echo "PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin" >> "$temp_cron"
     echo "$CRON_ENTRY" >> "$temp_cron"
     echo "" >> "$temp_cron"
     
@@ -192,7 +219,7 @@ uninstall_automation() {
     local temp_cron=$(mktemp)
     
     # Get existing crontab and remove backup entries
-    crontab -l 2>/dev/null | grep -v "AddyPin Foundation Backup" | grep -v "$BACKUP_SCRIPT --auto" > "$temp_cron"
+    crontab -l 2>/dev/null | grep -v "AddyPin Foundation Backup" | grep -v "Environment variables for email" | grep -v "RESEND_API_KEY=" | grep -v "PATH=/usr/local/sbin" | grep -v "$BACKUP_SCRIPT --auto" > "$temp_cron"
     
     # Install cleaned crontab
     if crontab "$temp_cron"; then
@@ -326,11 +353,123 @@ EOF
 test_automation() {
     echo -e "${BLUE}🧪 Testing backup automation...${NC}"
     
-    # Run backup with dry-run and auto flags
-    if "$BACKUP_SCRIPT" --dry-run --auto; then
-        echo -e "${GREEN}✅ Backup automation test successful${NC}"
+    # Test 1: Basic backup script functionality
+    echo -e "${BLUE}Test 1: Basic backup script test${NC}"
+    if "$BACKUP_SCRIPT" --dry-run --auto --biweekly; then
+        echo -e "${GREEN}✅ Basic backup script test successful${NC}"
     else
-        echo -e "${RED}❌ Backup automation test failed${NC}"
+        echo -e "${RED}❌ Basic backup script test failed${NC}"
+        return 1
+    fi
+    
+    # Test 2: Cron environment simulation
+    echo -e "${BLUE}Test 2: Cron environment simulation${NC}"
+    if test_cron_environment; then
+        echo -e "${GREEN}✅ Cron environment test successful${NC}"
+    else
+        echo -e "${YELLOW}⚠️  Cron environment test had issues${NC}"
+    fi
+    
+    # Test 3: Email notification test (if RESEND_API_KEY available)
+    echo -e "${BLUE}Test 3: Email notification test${NC}"
+    if test_email_notifications; then
+        echo -e "${GREEN}✅ Email notification test successful${NC}"
+    else
+        echo -e "${YELLOW}⚠️  Email notification test failed or skipped${NC}"
+    fi
+}
+
+# Function: Test cron environment
+test_cron_environment() {
+    echo -e "${BLUE}🔧 Testing cron-like environment...${NC}"
+    
+    # Simulate minimal cron environment
+    local temp_env=$(mktemp)
+    
+    # Create minimal environment similar to cron
+    cat > "$temp_env" << 'EOF'
+#!/bin/bash
+# Minimal environment simulation for cron testing
+export PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+export HOME=/root
+export SHELL=/bin/bash
+EOF
+    
+    # Add RESEND_API_KEY if available
+    local resend_key="${RESEND_API_KEY:-}"
+    if [ -z "$resend_key" ]; then
+        # Try to source from environment files
+        for env_file in "/opt/addypin/.env" "/opt/addypin-staging/.env" "$HOME/.env"; do
+            if [ -f "$env_file" ] && grep -q "RESEND_API_KEY" "$env_file"; then
+                resend_key=$(grep "RESEND_API_KEY" "$env_file" | cut -d'=' -f2 | tr -d '"' | tr -d "'")
+                break
+            fi
+        done
+    fi
+    
+    if [ -n "$resend_key" ]; then
+        echo "export RESEND_API_KEY='$resend_key'" >> "$temp_env"
+    fi
+    
+    # Test backup script in simulated cron environment
+    chmod +x "$temp_env"
+    echo "$BACKUP_SCRIPT --dry-run --auto --biweekly" >> "$temp_env"
+    
+    if bash "$temp_env" >/dev/null 2>&1; then
+        echo -e "${GREEN}✅ Cron environment simulation successful${NC}"
+        rm -f "$temp_env"
+        return 0
+    else
+        echo -e "${RED}❌ Cron environment simulation failed${NC}"
+        rm -f "$temp_env"
+        return 1
+    fi
+}
+
+# Function: Test email notifications
+test_email_notifications() {
+    echo -e "${BLUE}📧 Testing email notifications...${NC}"
+    
+    # Check if RESEND_API_KEY is available
+    local resend_key="${RESEND_API_KEY:-}"
+    if [ -z "$resend_key" ]; then
+        # Try to source from environment files
+        for env_file in "/opt/addypin/.env" "/opt/addypin-staging/.env" "$HOME/.env"; do
+            if [ -f "$env_file" ] && grep -q "RESEND_API_KEY" "$env_file"; then
+                resend_key=$(grep "RESEND_API_KEY" "$env_file" | cut -d'=' -f2 | tr -d '"' | tr -d "'")
+                break
+            fi
+        done
+    fi
+    
+    if [ -z "$resend_key" ]; then
+        echo -e "${YELLOW}⚠️  No RESEND_API_KEY found - email notifications will not work${NC}"
+        echo -e "${BLUE}ℹ️  Set RESEND_API_KEY environment variable to enable email notifications${NC}"
+        return 1
+    fi
+    
+    # Test email API with a simple test
+    echo -e "${BLUE}Testing Resend API connectivity...${NC}"
+    
+    local test_payload='{
+        "from": "AddyPin Backup Test <backup@addypin.com>",
+        "to": ["admin@addypin.com"],
+        "subject": "[TEST] AddyPin Backup System Test",
+        "text": "This is a test email from the AddyPin Foundation Backup System to verify email functionality is working correctly."
+    }'
+    
+    local response=$(curl -s -X POST https://api.resend.com/emails \
+        -H "Authorization: Bearer $resend_key" \
+        -H "Content-Type: application/json" \
+        -d "$test_payload" 2>/dev/null)
+    
+    if [ $? -eq 0 ] && echo "$response" | grep -q '"id"'; then
+        echo -e "${GREEN}✅ Email API test successful${NC}"
+        echo -e "${BLUE}ℹ️  Test email sent to admin@addypin.com${NC}"
+        return 0
+    else
+        echo -e "${RED}❌ Email API test failed${NC}"
+        echo -e "${YELLOW}Response: $response${NC}"
         return 1
     fi
 }
@@ -354,6 +493,12 @@ main() {
             check_prerequisites
             echo ""
             show_status
+            ;;
+        "test")
+            if check_prerequisites; then
+                echo ""
+                test_automation
+            fi
             ;;
         *)
             echo -e "${RED}❌ Unknown action: $ACTION${NC}"

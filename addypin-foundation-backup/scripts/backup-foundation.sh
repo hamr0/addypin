@@ -27,6 +27,7 @@ DRY_RUN=false
 GOLDEN_MODE=false
 FORCE_MODE=false
 AUTO_MODE=false
+BIWEEKLY_MODE=false
 
 # Centralized logging setup
 LOGS_DIR="$BACKUP_ROOT/logs"
@@ -52,6 +53,10 @@ while [[ $# -gt 0 ]]; do
             FORCE_MODE=true  # Auto mode always forces to avoid prompts
             shift
             ;;
+        --biweekly)
+            BIWEEKLY_MODE=true
+            shift
+            ;;
         -h|--help)
             echo "AddyPin Foundation Backup Script"
             echo "Usage: $0 [--dry-run] [--golden] [--force] [--auto]"
@@ -61,6 +66,7 @@ while [[ $# -gt 0 ]]; do
             echo "  --golden     Create golden backup (immutable reference)"
             echo "  --force      Overwrite existing backups without confirmation"
             echo "  --auto       Automated mode with email notifications (implies --force)"
+            echo "  --biweekly   Only run if current week is even (for bi-weekly automation)"
             echo "  --help       Show this help message"
             exit 0
             ;;
@@ -85,6 +91,23 @@ else
     echo "[$(date)] Starting automated AddyPin Foundation Backup..."
 fi
 
+# Check bi-weekly scheduling if enabled
+if [ "$BIWEEKLY_MODE" = true ]; then
+    current_week=$(date +%W)
+    is_even_week=$((current_week % 2))
+    
+    if [ $is_even_week -ne 0 ]; then
+        echo "[$(date)] Skipping backup - Week $current_week is odd (bi-weekly mode)"
+        if [ "$AUTO_MODE" = true ]; then
+            # Log the skip reason but don't send email notification
+            echo "[$(date)] Backup skipped due to bi-weekly scheduling"
+        fi
+        exit 0
+    else
+        echo "[$(date)] Running backup - Week $current_week is even (bi-weekly mode)"
+    fi
+fi
+
 # Show configuration
 if [ "$AUTO_MODE" = false ]; then
     echo -e "${CYAN}📋 Backup Configuration:${NC}"
@@ -92,6 +115,7 @@ if [ "$AUTO_MODE" = false ]; then
     echo "   Dry Run: $([ "$DRY_RUN" = true ] && echo "YES" || echo "NO")"
     echo "   Force: $([ "$FORCE_MODE" = true ] && echo "YES" || echo "NO")"
     echo "   Auto: $([ "$AUTO_MODE" = true ] && echo "YES" || echo "NO")"
+    echo "   Bi-weekly: $([ "$BIWEEKLY_MODE" = true ] && echo "YES" || echo "NO")"
     echo "   Root: $BACKUP_ROOT"
     echo ""
 fi
@@ -150,7 +174,17 @@ ERROR_FILES=0
 
 # Email notification settings
 NOTIFY_EMAIL="admin@addypin.com"
+# Try to load RESEND_API_KEY from multiple sources
 RESEND_API_KEY="${RESEND_API_KEY:-}"
+if [ -z "$RESEND_API_KEY" ]; then
+    # Try common environment files if running in cron
+    for env_file in "/opt/addypin/.env" "/opt/addypin-staging/.env" "/root/.env"; do
+        if [ -f "$env_file" ] && grep -q "RESEND_API_KEY" "$env_file"; then
+            RESEND_API_KEY=$(grep "RESEND_API_KEY" "$env_file" | head -1 | cut -d'=' -f2 | tr -d '"' | tr -d "'" | xargs)
+            break
+        fi
+    done
+fi
 
 # Function: Send email notification
 send_backup_notification() {
@@ -160,8 +194,13 @@ send_backup_notification() {
     
     # Only send emails in auto mode and if API key is available
     if [ "$AUTO_MODE" = false ] || [ -z "$RESEND_API_KEY" ]; then
+        if [ "$AUTO_MODE" = true ] && [ -z "$RESEND_API_KEY" ]; then
+            log_message "WARNING: Email notification skipped - RESEND_API_KEY not available"
+        fi
         return 0
     fi
+    
+    log_message "Sending email notification: $status - $summary"
     
     local subject=""
     local emoji=""
