@@ -149,13 +149,22 @@ echo -e "${BLUE}═════════════════════�
 echo -e "${BLUE}🚀 Pushing to GitHub${NC}"
 echo -e "${BLUE}═══════════════════════════════════════${NC}"
 
-echo -e "${CYAN}Pushing to origin/$CURRENT_BRANCH...${NC}"
+echo -e "${CYAN}Auto-pushing to staging branch (default)...${NC}"
 
-# Push with progress indication
-if git push origin "$CURRENT_BRANCH" 2>&1 | grep -q "Everything up-to-date"; then
+# Sync with GitHub first (pull latest changes)
+echo -e "${CYAN}Syncing with GitHub first...${NC}"
+if git pull origin staging --rebase 2>/dev/null; then
+    echo -e "${GREEN}✓ Synced with remote staging${NC}"
+else
+    echo -e "${YELLOW}⚠ No remote changes to sync${NC}"
+fi
+
+# Always push to staging branch (not current branch)
+echo -e "${CYAN}Pushing to staging branch...${NC}"
+if git push origin staging 2>&1 | grep -q "Everything up-to-date"; then
     echo -e "${YELLOW}ℹ Everything already up-to-date on GitHub${NC}"
 else
-    echo -e "${GREEN}✓ Successfully pushed to GitHub${NC}"
+    echo -e "${GREEN}✓ Successfully pushed to GitHub staging${NC}"
 fi
 
 echo ""
@@ -181,6 +190,8 @@ echo -e "   ${YELLOW}• AddyPin Manual Deploy${NC} - For production"
 echo ""
 echo -e "${CYAN}4. Click 'Run workflow' button${NC}"
 echo -e "${CYAN}5. Select 'staging' branch and click 'Run workflow'${NC}"
+echo ""
+echo -e "${BLUE}💡 Note: This script automatically synced and pushed to staging branch${NC}"
 echo ""
 
 echo -e "${BLUE}═══════════════════════════════════════${NC}"
