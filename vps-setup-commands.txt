@@ -1,0 +1,36 @@
+## Transfer AddyPin Backup System to VPS
+
+### Step 1: Download the backup system to VPS
+```bash
+# SSH to your VPS
+ssh root@155.94.144.191
+
+# Download the backup system archive
+cd /opt
+wget https://replit.com/@your-username/your-repl-name/raw/main/addypin-backup-system.tar.gz
+
+# Create the backup directory and extract
+mkdir -p /opt/addypin-foundation-backup
+cd /opt/addypin-foundation-backup
+tar -xzf ../addypin-backup-system.tar.gz
+
+# Set proper permissions
+chmod +x scripts/backup-foundation.sh
+chown -R root:root .
+```
+
+### Step 2: Test with dry-run (SAFE)
+```bash
+# Run dry-run test to verify everything works
+cd /opt/addypin-foundation-backup/scripts/
+./backup-foundation.sh --dry-run
+```
+
+### Step 3: Create first real backup (after dry-run succeeds)
+```bash
+# Create golden master backup
+./backup-foundation.sh --golden
+
+# Or create versioned backup
+./backup-foundation.sh
+```
