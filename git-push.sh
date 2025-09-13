@@ -7,8 +7,8 @@
 # Date: February 2025
 #================================================================
 
-# Exit on any error to prevent partial operations
-set -Eeuo pipefail
+# Exit on any error to prevent partial operations  
+set -e
 
 #----------------------------------------------------------------
 # Color codes for better readability in terminal
@@ -68,10 +68,19 @@ echo -e "${BLUE}═════════════════════�
 echo -e "${BLUE}📋 Current Git Status${NC}"
 echo -e "${BLUE}═══════════════════════════════════════${NC}"
 
-# Show modified files
-MODIFIED_FILES=$(git status --porcelain | grep "^ M" | wc -l)
-UNTRACKED_FILES=$(git status --porcelain | grep "^??" | wc -l)
-DELETED_FILES=$(git status --porcelain | grep "^ D" | wc -l)
+# Show modified files (handle git lock gracefully)
+if ! GIT_STATUS=$(git status --porcelain 2>/dev/null); then
+    echo -e "${YELLOW}⚠ Git status unavailable (repository may be locked)${NC}"
+    echo -e "${CYAN}Proceeding with push attempt anyway...${NC}"
+    MODIFIED_FILES=0
+    UNTRACKED_FILES=0 
+    DELETED_FILES=0
+    GIT_STATUS=""
+else
+    MODIFIED_FILES=$(echo "$GIT_STATUS" | grep "^ M" | wc -l)
+    UNTRACKED_FILES=$(echo "$GIT_STATUS" | grep "^??" | wc -l)
+    DELETED_FILES=$(echo "$GIT_STATUS" | grep "^ D" | wc -l)
+fi
 
 echo -e "${CYAN}Modified files: ${YELLOW}$MODIFIED_FILES${NC}"
 echo -e "${CYAN}Untracked files: ${YELLOW}$UNTRACKED_FILES${NC}"
@@ -81,20 +90,24 @@ echo ""
 # Show the actual files that changed
 if [ "$MODIFIED_FILES" -gt 0 ] || [ "$UNTRACKED_FILES" -gt 0 ] || [ "$DELETED_FILES" -gt 0 ]; then
     echo -e "${BLUE}Changed files:${NC}"
-    git status --short | while read -r line; do
-        # Color code based on status
-        STATUS="${line:0:2}"
-        FILE="${line:3}"
-        case "$STATUS" in
-            " M") echo -e "  ${YELLOW}[M ]${NC} $FILE" ;;
-            "??") echo -e "  ${GREEN}[??]${NC} $FILE" ;;
-            " D") echo -e "  ${RED}[ D]${NC} $FILE" ;;
-            *) echo -e "  ${CYAN}[$STATUS]${NC} $FILE" ;;
-        esac
-    done
+    if [ -n "$GIT_STATUS" ]; then
+        echo "$GIT_STATUS" | while read -r line; do
+            # Color code based on status
+            STATUS="${line:0:2}"
+            FILE="${line:3}"
+            case "$STATUS" in
+                " M") echo -e "  ${YELLOW}[M ]${NC} $FILE" ;;
+                "??") echo -e "  ${GREEN}[??]${NC} $FILE" ;;
+                " D") echo -e "  ${RED}[ D]${NC} $FILE" ;;
+                *) echo -e "  ${CYAN}[$STATUS]${NC} $FILE" ;;
+            esac
+        done
+    else
+        echo -e "  ${CYAN}(Unable to list files - git locked)${NC}"
+    fi
     echo ""
 else
-    echo -e "${GREEN}✓ No changes to commit - repository is clean${NC}"
+    echo -e "${GREEN}✓ No changes detected${NC}"
     echo ""
 fi
 
