@@ -43,8 +43,13 @@ case $ALERT_TYPE in
         ;;
 esac
 
-# Generate AddyPin-branded HTML email
-cat << EMAIL_EOF | mail -a "Content-Type: text/html" -s "$SUBJECT" "$TO_EMAIL"
+# Generate AddyPin-branded HTML email using direct msmtp
+cat << EMAIL_EOF | msmtp "$TO_EMAIL"
+Subject: $SUBJECT
+From: avoidaccess@gmail.com
+To: $TO_EMAIL
+Content-Type: text/html; charset=UTF-8
+
 <!DOCTYPE html>
 <html>
 <head>
