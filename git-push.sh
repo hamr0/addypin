@@ -8,7 +8,7 @@
 #================================================================
 
 # Exit on any error to prevent partial operations
-set -e
+set -Eeuo pipefail
 
 #----------------------------------------------------------------
 # Color codes for better readability in terminal
@@ -38,6 +38,21 @@ if [ ! -d ".git" ]; then
     echo -e "${YELLOW}Please run this from the root of your AddyPin project${NC}"
     exit 1
 fi
+
+#----------------------------------------------------------------
+# Set up Git remote with authentication if GIT_URL is available
+#----------------------------------------------------------------
+if [ -n "${GIT_URL:-}" ]; then
+    echo -e "${CYAN}🔒 Setting up authenticated Git remote...${NC}"
+    git remote set-url origin "$GIT_URL" 2>/dev/null || true
+    echo -e "${GREEN}✓ Git remote configured for authentication${NC}"
+else
+    echo -e "${YELLOW}⚠ GIT_URL not found - using existing remote${NC}"
+fi
+
+# Show current remote for transparency
+echo -e "${BLUE}📡 Git remote:${NC} $(git remote get-url origin | sed 's/:.*@/:***@/')" # Hide token
+echo ""
 
 #----------------------------------------------------------------
 # Show current branch
@@ -194,18 +209,35 @@ echo -e "${BLUE}═════════════════════�
 CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 echo -e "${CYAN}Pushing current branch '${CURRENT_BRANCH}' to staging (enhanced staging-first workflow)...${NC}"
 
-# Sync with remote staging before pushing (prevent conflicts)
-echo -e "${CYAN}🔄 Syncing with remote staging branch...${NC}"
-if git ls-remote --exit-code --heads origin staging >/dev/null 2>&1; then
-    git fetch origin staging 2>/dev/null || true
-    echo -e "${GREEN}✓ Remote staging information updated${NC}"
-else
-    echo -e "${YELLOW}📋 Remote staging branch doesn't exist yet (will be created)${NC}"
+# Test Git remote connectivity first
+echo -e "${CYAN}🔄 Testing remote connectivity...${NC}"
+if ! git ls-remote origin >/dev/null 2>&1; then
+    echo -e "${RED}❌ Cannot reach remote 'origin' - check GIT_URL authentication${NC}"
+    echo -e "${YELLOW}Make sure GIT_URL secret is set with: https://username:token@github.com/...${NC}"
+    exit 1
 fi
 
-# Enhanced Push: Push current branch to staging branch (work from any branch!)
+# Fetch latest remote info 
+echo -e "${CYAN}📡 Fetching remote information...${NC}"
+git fetch origin --prune 2>/dev/null || true
+
+# Check if staging branch exists on remote
+if git ls-remote --exit-code --heads origin staging >/dev/null 2>&1; then
+    echo -e "${GREEN}✓ Remote staging branch found${NC}"
+else
+    echo -e "${YELLOW}📋 Remote staging branch will be created${NC}"
+fi
+
+# Enhanced Push with proper error detection
 echo -e "${CYAN}🚀 Pushing ${CURRENT_BRANCH} → staging...${NC}"
-if git push origin $CURRENT_BRANCH:staging 2>&1 | grep -q "Everything up-to-date"; then
+PUSH_OUTPUT=$(git push -v origin "${CURRENT_BRANCH}:staging" 2>&1) || {
+    echo -e "${RED}❌ Push failed:${NC}"
+    echo "$PUSH_OUTPUT"
+    exit 1
+}
+
+# Check push result
+if echo "$PUSH_OUTPUT" | grep -q "Everything up-to-date"; then
     echo -e "${YELLOW}ℹ Everything already up-to-date on staging branch${NC}"
 else
     echo -e "${GREEN}✓ Successfully pushed ${CURRENT_BRANCH} to staging branch${NC}"
