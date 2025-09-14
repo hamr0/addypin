@@ -1,36 +1,21 @@
 #!/bin/bash
 
-# Simple git push - let Replit handle authentication
-set -e
+# Simple git push script - foundation
 
-echo "🚀 AddyPin Git Push"
+echo "Git Push to Staging"
 echo "=================="
 
-# Stage and commit
-git add -A
-
-if git diff --cached --quiet; then
-    echo "✅ No changes to push"
-    exit 0
-fi
-
-echo "📝 Changed files:"
-git status --short
-echo ""
+# Add all changes
+git add .
 
 # Get commit message
-echo -n "💬 Commit message (or Enter for auto): "
-read COMMIT_MSG
+echo -n "Commit message: "
+read MESSAGE
 
-if [ -z "$COMMIT_MSG" ]; then
-    COMMIT_MSG="Update AddyPin - $(date '+%Y-%m-%d %H:%M')"
-    echo "📝 Using: $COMMIT_MSG"
-fi
+# Commit with the message
+git commit -m "$MESSAGE"
 
-# Commit and push - let Replit handle auth
-git commit -m "$COMMIT_MSG"
-echo ""
-echo "🚀 Pushing to staging..."
+# Push to staging branch
 git push origin staging
 
-echo "✅ Done! Check GitHub staging branch"
+echo "Done!"
