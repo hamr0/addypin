@@ -161,9 +161,14 @@ fi
 WARNING_DETAILS=""
 ISSUE_DETAILS=""
 
-# Extract specific warnings from logs (last 20 lines for current run)
-RECENT_WARNINGS=$(tail -20 "$LOG_FILE" | grep "$(date '+%Y-%m-%d %H:%M')" | grep "WARNING:" | sed 's/.*WARNING: //' || echo "")
-RECENT_ISSUES=$(tail -20 "$LOG_FILE" | grep "$(date '+%Y-%m-%d %H:%M')" | grep "ERROR:" | sed 's/.*ERROR: //' || echo "")
+# Extract specific warnings from logs (from this health check run)
+# Get current date and last 5 minutes to catch warnings from this run
+CURRENT_DATE=$(date '+%Y-%m-%d %H')
+PREV_MINUTE=$(date -d '5 minutes ago' '+%Y-%m-%d %H:%M')
+
+# Collect warnings from the current health check run (last 50 lines to be safe)
+RECENT_WARNINGS=$(tail -50 "$LOG_FILE" | grep -E "($CURRENT_DATE:|$PREV_MINUTE)" | grep "WARNING:" | sed 's/.*WARNING: /• /' | tr '\n' ' ' || echo "")
+RECENT_ISSUES=$(tail -50 "$LOG_FILE" | grep -E "($CURRENT_DATE:|$PREV_MINUTE)" | grep "ERROR:" | sed 's/.*ERROR: /• /' | tr '\n' ' ' || echo "")
 
 # Summary and alerting
 echo ""
@@ -178,9 +183,13 @@ if [[ $ISSUES -gt 0 ]]; then
     if [[ -f "$ALERT_SCRIPT" ]] && command -v msmtp >/dev/null 2>&1; then
         log_message "INFO: 📧 Sending critical alert email"
         if [[ -n "$RECENT_ISSUES" ]]; then
-            "$ALERT_SCRIPT" critical "Critical infrastructure issues detected: $RECENT_ISSUES"
+            "$ALERT_SCRIPT" critical "Critical infrastructure issues detected:
+
+$RECENT_ISSUES
+
+Health check found $ISSUES critical issues and $WARNINGS warnings."
         else
-            "$ALERT_SCRIPT" critical "Health check found $ISSUES critical infrastructure issues and $WARNINGS warnings"
+            "$ALERT_SCRIPT" critical "Health check found $ISSUES critical infrastructure issues and $WARNINGS warnings. Check /var/log/addypin-health.log for details."
         fi
     fi
     
@@ -191,9 +200,13 @@ elif [[ $WARNINGS -gt 0 ]]; then
     if [[ -f "$ALERT_SCRIPT" ]] && command -v msmtp >/dev/null 2>&1; then
         log_message "INFO: 📧 Sending warning alert email"
         if [[ -n "$RECENT_WARNINGS" ]]; then
-            "$ALERT_SCRIPT" warning "Infrastructure warnings detected: $RECENT_WARNINGS"
+            "$ALERT_SCRIPT" warning "Infrastructure warnings detected:
+
+$RECENT_WARNINGS
+
+Health check found $WARNINGS total warnings requiring attention."
         else
-            "$ALERT_SCRIPT" warning "Health check found $WARNINGS warnings requiring attention"
+            "$ALERT_SCRIPT" warning "Health check found $WARNINGS warnings requiring attention. Check /var/log/addypin-health.log for details."
         fi
     fi
     
