@@ -96,34 +96,39 @@ export async function sendOTPEmail({ to, code }: OTPEmailParams): Promise<{ succ
                 justify-content: center;
                 margin-bottom: 8px;
               }
+              .logo-pin {
+                display: inline-block;
+                width: 24px;
+                height: 30px;
+                background: #4A90E2;
+                border-radius: 50% 50% 50% 0;
+                transform: rotate(-45deg);
+                position: relative;
+                margin-right: 8px;
+                border: 2px solid white;
+                box-shadow: 0 2px 6px rgba(74, 144, 226, 0.3);
+              }
+              .logo-pin::after {
+                content: '✓';
+                position: absolute;
+                color: white;
+                font-size: 12px;
+                font-weight: bold;
+                top: 2px;
+                left: 2px;
+                transform: rotate(45deg);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 16px;
+                height: 16px;
+              }
               .logo-text {
+                font-family: 'Corben', serif;
                 font-size: 24px;
                 font-weight: 700;
                 color: white;
                 letter-spacing: -0.025em;
-              }
-              .logo-pin {
-                display: inline-block;
-                width: 16px;
-                height: 16px;
-                background: #00BCD4;
-                border-radius: 50% 50% 50% 0;
-                transform: rotate(-45deg);
-                position: relative;
-                margin: 0 3px;
-                border: 2px solid white;
-                box-shadow: 0 1px 4px rgba(0, 188, 212, 0.3);
-              }
-              .logo-pin::after {
-                content: '';
-                position: absolute;
-                width: 4px;
-                height: 4px;
-                background: white;
-                border-radius: 50%;
-                top: 3px;
-                left: 3px;
-                transform: rotate(45deg);
               }
             </style>
           </head>
@@ -131,9 +136,8 @@ export async function sendOTPEmail({ to, code }: OTPEmailParams): Promise<{ succ
             <div class="container">
               <div class="header">
                 <div class="addypin-logo">
-                  <span class="logo-text">addy</span>
                   <div class="logo-pin"></div>
-                  <span class="logo-text">in</span>
+                  <span class="logo-text">addypin</span>
                 </div>
                 <p>Location sharing made simple</p>
               </div>
