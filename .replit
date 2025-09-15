@@ -4,7 +4,7 @@ hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
 
 [nix]
 channel = "stable-24_05"
-packages = ["sshpass", "gh", "openssh", "docker_26"]
+packages = ["sshpass", "gh", "openssh", "docker_26", "tengine", "docker-compose_1", "netcat-gnu"]
 
 [deployment]
 deploymentTarget = "autoscale"
