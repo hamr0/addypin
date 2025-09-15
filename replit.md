@@ -162,6 +162,7 @@ Preferred communication style: Simple, everyday language.
 
 ## Automated Monitoring Schedule
 - **Live Health Monitoring**: Every 10 minutes via cron (`*/10 * * * * /opt/addypin/scripts/enhanced-health-check.sh`)
+- **SSH Tunnel Monitoring**: Integrated into system health checks with automatic recovery
 - **Foundation Backup**: Bi-weekly Sundays at 2:00 AM via cron (`0 2 * * 0 backup-foundation-msmtp.sh --auto --biweekly`)
 - **Email Alerts**: Automatic notifications for critical issues, warnings, and backup completion
 - **Manual Commands**:
@@ -169,6 +170,7 @@ Preferred communication style: Simple, everyday language.
   - Manual alert: `/opt/addypin/health-manager.sh alert 'message'`
   - Manual backup: `/opt/addypin-foundation-backup/scripts/backup-foundation-msmtp.sh --auto`
   - Health status: `/opt/addypin/health-manager.sh status`
+  - SSH tunnel status: `./scripts/ssh-tunnel-monitor.sh --report`
 
 ## Development Tools
 - **Package Manager**: npm with lock file for dependency consistency
