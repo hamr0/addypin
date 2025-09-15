@@ -51,7 +51,7 @@ TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
 
     echo "=== Health Check Finished at $(date '+%Y-%m-%d %H:%M:%S') ==="
     echo "" # Adds a blank line for readability
-} | tee -a "$LOG_FILE" # Show on terminal AND log to file
+} >> "$LOG_FILE" 2>&1 # Append all output to the log file
 
 # Optional: Rotate log file if it gets too large (e.g., > 10MB)
 LOG_SIZE=$(wc -c < "$LOG_FILE")
