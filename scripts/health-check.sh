@@ -217,44 +217,6 @@ check_system_resources() {
     return 0
 }
 
-# Development environment check
-check_dev_environment() {
-    status "INFO" "Checking development environment..."
-    
-    # SSH tunnel check
-    local tunnel_count=$(ps aux | grep -v grep | grep "ssh.*155.94.144.191.*5432" | wc -l)
-    if [ $tunnel_count -gt 0 ]; then
-        status "SUCCESS" "SSH tunnels detected: $tunnel_count active"
-        
-        # Test tunnel connectivity
-        if nc -z localhost 5432 2>/dev/null; then
-            status "SUCCESS" "SSH tunnel connectivity verified"
-            
-            # Test dev database connection if tunnel is active
-            status "INFO" "Testing dev database connectivity..."
-            if sudo -u postgres psql -d addypin_dev -c "SELECT 1;" > /dev/null 2>&1; then
-                status "SUCCESS" "Dev database (addypin_dev) connection successful"
-                
-                # Check dev database size
-                local dev_db_size=$(sudo -u postgres psql -d addypin_dev -t -c "SELECT pg_size_pretty(pg_database_size('addypin_dev'));" 2>/dev/null | xargs)
-                if [ -n "$dev_db_size" ]; then
-                    status "INFO" "Dev database size: $dev_db_size"
-                fi
-            elif sudo -u postgres psql -d addypin -c "SELECT 1;" > /dev/null 2>&1; then
-                status "SUCCESS" "Dev database (addypin) connection successful"
-            else
-                status "WARNING" "Dev database connection failed"
-            fi
-        else
-            status "WARNING" "SSH tunnel processes exist but port 5432 not accessible"
-        fi
-    else
-        status "INFO" "No SSH tunnels detected (normal for production-only mode)"
-    fi
-    
-    return 0
-}
-
 # Log file check
 check_logs() {
     status "INFO" "Checking recent logs for errors..."
@@ -294,9 +256,6 @@ main() {
     echo
     
     check_database || overall_status=1
-    echo
-    
-    check_dev_environment || true  # Non-blocking for dev environment
     echo
     
     check_http_endpoints
