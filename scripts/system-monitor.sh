@@ -93,6 +93,38 @@ check_services() {
     return 0
 }
 
+check_ssh_tunnels() {
+    echo "🔐 Checking SSH tunnel status..."
+    
+    # Check for active SSH tunnels to development environments
+    local tunnel_count=$(ps aux | grep -v grep | grep "ssh.*155.94.144.191.*5432" | wc -l)
+    
+    if [ $tunnel_count -gt 0 ]; then
+        echo -e "${GREEN}✅ SSH tunnels: $tunnel_count active${NC}"
+        
+        # Show tunnel details
+        ps aux | grep -v grep | grep "ssh.*155.94.144.191.*5432" | while read line; do
+            local pid=$(echo "$line" | awk '{print $2}')
+            local runtime=$(ps -o etime= -p $pid 2>/dev/null | tr -d ' ')
+            echo -e "${GREEN}   └─ PID $pid (running for $runtime)${NC}"
+        done
+        
+        # Test tunnel connectivity
+        if nc -z localhost 5432 2>/dev/null; then
+            echo -e "${GREEN}✅ Tunnel connectivity: PORT 5432 ACCESSIBLE${NC}"
+        else
+            echo -e "${YELLOW}⚠️ Tunnel connectivity: PORT 5432 NOT ACCESSIBLE${NC}"
+            return 1
+        fi
+        
+        return 0
+    else
+        echo -e "${YELLOW}⚠️ SSH tunnels: NO ACTIVE TUNNELS DETECTED${NC}"
+        echo -e "${YELLOW}   (This is normal for production-only monitoring)${NC}"
+        return 0
+    fi
+}
+
 check_resources() {
     echo "📊 Checking system resources..."
     
@@ -123,6 +155,9 @@ send_alert() {
     echo -e "${RED}🚨 ALERT: $message${NC}"
     
     # Here you would integrate with your preferred alerting system
+    
+    # Send email alert (if configured)
+    # echo "$message" | mail -s "AddyPin Alert" $ALERT_EMAIL
     # Examples: Email, Slack, PagerDuty, etc.
     echo "Alert would be sent: $message"
 }
@@ -142,6 +177,9 @@ main() {
     echo ""
     
     check_services || ((failed_checks++))
+    echo ""
+    
+    check_ssh_tunnels || ((failed_checks++))
     echo ""
     
     check_resources || ((failed_checks++))

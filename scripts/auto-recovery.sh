@@ -74,6 +74,36 @@ check_and_fix_nginx() {
     fi
 }
 
+check_and_fix_ssh_tunnels() {
+    echo "🔐 Checking SSH tunnel connectivity..."
+    
+    # Check for development SSH tunnels (for monitoring when dev environments connect)
+    local tunnel_count=$(ps aux | grep -v grep | grep "ssh.*155.94.144.191.*5432" | wc -l)
+    
+    if [ $tunnel_count -gt 0 ]; then
+        echo -e "${GREEN}✅ SSH tunnels detected: $tunnel_count active${NC}"
+        
+        # Test tunnel connectivity
+        if ! nc -z localhost 5432 2>/dev/null; then
+            echo -e "${YELLOW}⚠️ SSH tunnel processes exist but port 5432 is not accessible${NC}"
+            echo -e "${YELLOW}⚠️ This may indicate tunnel authentication issues${NC}"
+            
+            # Kill potentially broken tunnels
+            echo "🔧 Cleaning up potentially broken tunnel processes..."
+            pkill -f "ssh.*155.94.144.191.*5432" 2>/dev/null && echo "✅ Cleaned up tunnel processes" || echo "ℹ️ No tunnel processes to clean"
+            
+            log_action "SSH tunnel connectivity issues detected and processes cleaned"
+            return 1
+        else
+            echo -e "${GREEN}✅ SSH tunnel connectivity verified${NC}"
+            return 0
+        fi
+    else
+        echo -e "${GREEN}✅ No SSH tunnels detected (normal for production-only monitoring)${NC}"
+        return 0
+    fi
+}
+
 check_and_fix_docker() {
     echo "🐳 Checking Docker container..."
     
@@ -177,6 +207,9 @@ main() {
     echo ""
     
     check_and_fix_docker || recovery_needed=true
+    echo ""
+    
+    check_and_fix_ssh_tunnels || recovery_needed=true
     echo ""
     
     # Clean up resources if needed
