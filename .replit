@@ -43,13 +43,4 @@ task = "shell.exec"
 args = "npm run dev"
 waitForPort = 5000
 
-[[workflows.workflow]]
-name = "ssh_restart"
-mode = "sequential"
-author = 46301053
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "bash -c 'export ADDYPIN_DB_PASSWORD=\"UBih+0YllInCRul3liIlMXHiezktiq8vGXbZ9CiAljA=\" && ./tunnel_manager.sh && npm run dev'"
-
 [agent]
