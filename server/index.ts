@@ -1,6 +1,9 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { log, serveStatic } from "./static";
+import { spawn } from "child_process";
+import { promisify } from "util";
+import net from "net";
 
 const app = express();
 app.use(express.json());
@@ -36,8 +39,51 @@ app.use((req, res, next) => {
   next();
 });
 
+// 🎯 Terribic Method: Auto-bootstrap SSH tunnel in development
+async function ensureTunnel() {
+  if (process.env.NODE_ENV !== 'development') return;
+  
+  console.log("🔧 Checking SSH tunnel status (Terribic Method)...");
+  
+  // Check if port 5432 is accessible
+  const isPortOpen = await new Promise(resolve => {
+    const client = new net.Socket();
+    client.setTimeout(1000);
+    client.on('connect', () => {
+      client.end();
+      resolve(true);
+    });
+    client.on('error', () => resolve(false));
+    client.on('timeout', () => {
+      client.destroy();
+      resolve(false);
+    });
+    client.connect(5432, 'localhost');
+  });
+  
+  if (!isPortOpen) {
+    console.log("🚀 Starting SSH tunnel (auto-bootstrap)...");
+    const tunnelProcess = spawn('./tunnel_manager.sh', [], {
+      stdio: 'inherit',
+      shell: true
+    });
+    
+    // Wait for tunnel to establish
+    await new Promise(resolve => {
+      tunnelProcess.on('close', resolve);
+    });
+    
+    console.log("✅ Tunnel bootstrap complete!");
+  } else {
+    console.log("✅ Tunnel already active!");
+  }
+}
+
 (async () => {
   try {
+    // 🎯 TERRIBIC METHOD: Auto-start tunnel before server
+    await ensureTunnel();
+    
     console.log("🔄 Starting server initialization...");
     const server = await registerRoutes(app);
     console.log("✅ Routes registered successfully!");
