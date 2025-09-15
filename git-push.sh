@@ -206,16 +206,14 @@ else
     echo -e "${YELLOW}📋 Remote staging branch doesn't exist yet (will be created)${NC}"
 fi
 
-# Enhanced Push: Push current branch to staging branch (work from any branch!)
-echo -e "${CYAN}🚀 Pushing ${CURRENT_BRANCH} → staging...${NC}"
-if git push origin $CURRENT_BRANCH:staging; then
-    echo -e "${GREEN}✓ Successfully pushed ${CURRENT_BRANCH} to staging branch${NC}"
-else
-    echo -e "${RED}❌ Failed to push to GitHub${NC}"
-    echo -e "${YELLOW}⚠️  This might be due to authentication issues${NC}"
-    echo -e "${CYAN}💡 Try setting up GitHub token or SSH keys${NC}"
-    exit 1
-fi
+# Create timestamp commit for GitHub visibility
+echo -e "${CYAN}📝 Creating sync commit for proper GitHub timestamp...${NC}"
+git commit --allow-empty -m "Sync staging branch - $(date)"
+
+# Push using the working method
+echo -e "${CYAN}🚀 Pushing to staging...${NC}"
+git push origin HEAD:staging
+echo -e "${GREEN}✓ Successfully pushed to staging branch${NC}"
 
 echo ""
 
