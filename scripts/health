@@ -1,0 +1,131 @@
+#!/bin/bash
+
+# 🖥️ AddyPin Health Check - Clean Summary
+# Simple health overview with SSH tunnel and dev database monitoring
+# Usage: ./scripts/health or install as `/usr/local/bin/health`
+
+set -e
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+# Status tracking
+overall_healthy=true
+issues=()
+
+# Helper function for status
+check_status() {
+    local name="$1"
+    local command="$2"
+    local success_msg="$3"
+    local fail_msg="$4"
+    
+    if eval "$command" >/dev/null 2>&1; then
+        echo -e "✅ ${name}: ${success_msg}"
+        return 0
+    else
+        echo -e "❌ ${name}: ${fail_msg}"
+        overall_healthy=false
+        issues+=("$name")
+        return 1
+    fi
+}
+
+echo "🖥️ AddyPin Health Check"
+echo "=============================="
+echo "📅 $(date '+%Y-%m-%d %H:%M:%S')"
+echo ""
+
+# Core Services
+echo "🔍 Checking Core Services..."
+check_status "Nginx" "systemctl is-active --quiet nginx" "Running" "Stopped"
+check_status "Docker" "systemctl is-active --quiet docker" "Running" "Stopped"
+echo ""
+
+# Containers
+echo "📦 Checking Containers..."
+check_status "Production" "docker ps | grep -q 'addypin.*3000'" "Running" "Stopped"
+check_status "Staging" "docker ps | grep -q 'addypin.*8080'" "Running" "Stopped" 
+check_status "Database" "systemctl is-active --quiet postgresql" "Running" "Stopped"
+echo ""
+
+# SSH Tunnels (Development Support)
+echo "🔐 Checking SSH Tunnels..."
+local tunnel_count=$(ps aux | grep -v grep | grep "ssh.*155.94.144.191.*5432" | wc -l)
+if [ $tunnel_count -gt 0 ]; then
+    if nc -z localhost 5432 2>/dev/null; then
+        echo "✅ Dev Tunnels: $tunnel_count active"
+    else
+        echo "⚠️ Dev Tunnels: $tunnel_count processes (port inaccessible)"
+        issues+=("SSH Tunnel Connectivity")
+    fi
+else
+    echo "ℹ️ Dev Tunnels: None (normal for production)"
+fi
+echo ""
+
+# Development Database (if tunnel active)
+if [ $tunnel_count -gt 0 ] && nc -z localhost 5432 2>/dev/null; then
+    echo "🗄️ Checking Development Database..."
+    if [ -n "$ADDYPIN_DB_PASSWORD" ]; then
+        if PGPASSWORD="$ADDYPIN_DB_PASSWORD" psql -h localhost -p 5432 -U addypin_user -d addypin_dev -c "SELECT 1;" >/dev/null 2>&1; then
+            echo "✅ Dev Database: Connected (addypin_dev)"
+        elif PGPASSWORD="$ADDYPIN_DB_PASSWORD" psql -h localhost -p 5432 -U addypin_user -d addypin -c "SELECT 1;" >/dev/null 2>&1; then
+            echo "✅ Dev Database: Connected (addypin)"
+        else
+            echo "❌ Dev Database: Connection failed"
+            overall_healthy=false
+            issues+=("Dev Database")
+        fi
+    else
+        echo "⚠️ Dev Database: ADDYPIN_DB_PASSWORD not set"
+        issues+=("Dev Database Config")
+    fi
+    echo ""
+fi
+
+# Health Endpoints
+echo "🏥 Checking Health Endpoints..."
+check_status "Production API" "curl -f -s --max-time 5 http://localhost:3000/api/health" "Healthy" "Unhealthy"
+check_status "Staging API" "curl -f -s --max-time 5 http://localhost:8080/api/health" "Healthy" "Unhealthy"
+echo ""
+
+# System Resources
+echo "💾 System Resources..."
+local disk_usage=$(df / | tail -1 | awk '{print $5}' | sed 's/%//')
+local mem_usage=$(free | grep '^Mem:' | awk '{printf("%.0f", ($3/$2) * 100)}')
+
+if [ $disk_usage -lt 85 ]; then
+    echo "✅ Disk Space: ${disk_usage}% used"
+else
+    echo "⚠️ Disk Space: ${disk_usage}% used (HIGH)"
+    issues+=("High Disk Usage")
+fi
+
+if [ $mem_usage -lt 80 ]; then
+    echo "✅ Memory: ${mem_usage}% used"
+else
+    echo "⚠️ Memory: ${mem_usage}% used (HIGH)"
+    issues+=("High Memory Usage")
+fi
+echo ""
+
+# Overall Status
+echo "=============================="
+if $overall_healthy && [ ${#issues[@]} -eq 0 ]; then
+    echo -e "${GREEN}✅ OVERALL STATUS: HEALTHY${NC}"
+    echo -e "${GREEN}🎉 All critical systems operational${NC}"
+    exit 0
+elif [ ${#issues[@]} -le 2 ]; then
+    echo -e "${YELLOW}⚠️ OVERALL STATUS: DEGRADED${NC}"
+    echo -e "${YELLOW}⚠️ Issues detected: ${issues[*]}${NC}"
+    exit 1
+else
+    echo -e "${RED}❌ OVERALL STATUS: UNHEALTHY${NC}"
+    echo -e "${RED}❌ Multiple issues detected: ${issues[*]}${NC}"
+    exit 2
+fi

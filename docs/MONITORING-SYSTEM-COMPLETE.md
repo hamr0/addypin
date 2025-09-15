@@ -50,6 +50,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
 - ✅ PostgreSQL service active
 - ✅ Nginx service active
 - ✅ Database connectivity
+- ✅ SSH tunnel connectivity (development environments)
 - ✅ Disk space (alert at 90%)
 - ✅ Memory usage
 - ✅ External API reachability
@@ -59,8 +60,9 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
 1. **PostgreSQL down** → `systemctl start postgresql`
 2. **Nginx down** → Test config + `systemctl start nginx`
 3. **Container down** → `docker start addypin` or recreate
-4. **Disk full** → Clean Docker images + old logs
-5. **Health verification** → Re-test all endpoints
+4. **SSH tunnels broken** → Clean up tunnel processes, auto-restart
+5. **Disk full** → Clean Docker images + old logs
+6. **Health verification** → Re-test all endpoints
 
 ### **Layer 5: External Monitoring**
 **Independent monitoring from outside your infrastructure**:
@@ -78,6 +80,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
 scripts/
 ├── system-monitor.sh       # Comprehensive health checks
 ├── auto-recovery.sh        # Automatic service recovery
+├── ssh-tunnel-monitor.sh   # SSH tunnel connectivity monitoring
 ├── setup-monitoring.sh     # Full monitoring installation
 └── external-monitor-setup.sh # External service guide
 ```
@@ -196,6 +199,21 @@ systemctl list-timers | grep addypin
 
 # Manually trigger monitoring
 systemctl start addypin-monitor.service
+```
+
+### **SSH Tunnel Monitoring (Development)**
+```bash
+# Check SSH tunnel status (development environments)
+./scripts/ssh-tunnel-monitor.sh --report
+
+# Quick process check
+./scripts/ssh-tunnel-monitor.sh --processes
+
+# Test connectivity only
+./scripts/ssh-tunnel-monitor.sh --connectivity
+
+# Clean health summary (includes SSH tunnels and dev database)
+./scripts/health
 ```
 
 ---
