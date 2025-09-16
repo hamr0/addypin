@@ -899,3 +899,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   console.log("✅ HTTP server created, returning to main...");
   return httpServer;
 }
+// 🚨 SECURITY: Block config file access
+app.use('/.env', (req, res) => res.status(404).json({ error: 'Not found' }));
+app.use('/api/.env', (req, res) => res.status(404).json({ error: 'Not found' }));
+app.use('/*config*', (req, res) => res.status(404).json({ error: 'Not found' }));
+app.use('/vendor/*', (req, res) => res.status(404).json({ error: 'Not found' }));
