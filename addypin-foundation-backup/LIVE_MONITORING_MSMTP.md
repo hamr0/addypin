@@ -133,6 +133,43 @@ crontab -l | grep health
 - ✅ **Email System**: MSMTP configuration verification
 - ✅ **SSL Certificates**: Certificate expiration monitoring
 
+### 🎆 **NEW: API Health Endpoints (September 16, 2025)**
+- ✅ **Production Health**: `https://addypin.com/api/health` - Basic health check
+- ✅ **Production System**: `https://addypin.com/api/health/system` - Detailed system info
+- ✅ **Staging Health**: `https://staging.addypin.com/api/health` - Staging health check
+- ✅ **Staging System**: `https://staging.addypin.com/api/health/system` - Staging system info
+
+#### Health Endpoint Features
+**What They Provide**:
+- ✅ **Real-time Database Connectivity**: PostgreSQL response time monitoring (3ms typical)
+- ✅ **Memory Usage Tracking**: Heap usage in MB (19MB typical production)
+- ✅ **System Information**: Node.js version, platform, architecture
+- ✅ **Service Uptime**: Container uptime tracking
+- ✅ **HTTP Status Codes**: 200 (healthy) / 503 (unhealthy) for load balancers
+- ✅ **JSON Response Format**: Machine-readable for monitoring systems
+
+**Example Production Response**:
+```json
+{
+  "status": "healthy",
+  "timestamp": "2025-09-16T13:04:24.200Z",
+  "uptime": 700.7,
+  "version": "1.0.0",
+  "environment": "production",
+  "checks": [
+    {"name": "postgresql", "status": "healthy", "responseTime": 3},
+    {"name": "memory", "status": "healthy", "responseTime": 19}
+  ]
+}
+```
+
+**Integration Benefits**:
+- 📊 **External Monitoring**: UptimeRobot, Better Uptime, Pingdom integration
+- 🔄 **Load Balancer Health Checks**: NGINX upstream validation
+- 📈 **Grafana/Prometheus**: Automated metrics scraping
+- 🚀 **CI/CD Validation**: Deploy script health verification
+- 💡 **Granular Failure Detection**: Identifies exact failing components
+
 ## 🔍 Troubleshooting
 
 ### Common Issues
@@ -230,6 +267,51 @@ crontab -l | grep -E "(health|backup)"
 
 ---
 
+## 🎆 **ENHANCED MONITORING COMMANDS (Updated September 16, 2025)**
+
+### API Health Endpoint Commands
+```bash
+# Test production health endpoints
+curl -s https://addypin.com/api/health | jq
+curl -s https://addypin.com/api/health/system | jq
+
+# Test staging health endpoints  
+curl -s https://staging.addypin.com/api/health | jq
+curl -s https://staging.addypin.com/api/health/system | jq
+
+# Check specific components
+curl -s https://addypin.com/api/health | jq '.checks[] | select(.name=="postgresql")'
+curl -s https://addypin.com/api/health | jq '.checks[] | select(.name=="memory")'
+
+# Monitor response times
+curl -w "Response time: %{time_total}s\n" -s https://addypin.com/api/health -o /dev/null
+```
+
+### Integration with Existing Commands
+```bash
+# Combined system and API health check
+health && echo "\n--- API Health Endpoints ---" && \
+curl -s https://addypin.com/api/health | jq '.status, .checks'
+
+# Enhanced monitoring with API validation
+/opt/addypin/enhanced-health-check-msmtp.sh && \
+echo "API Health:" && curl -s https://addypin.com/api/health | jq '.status'
+```
+
+### Monitoring Dashboard Integration
+```bash
+# Prometheus-style metrics extraction
+curl -s https://addypin.com/api/health | jq -r '.checks[] | "\(.name)_status \(.status == "healthy" | if . then 1 else 0 end)"'
+curl -s https://addypin.com/api/health | jq -r '.checks[] | select(.responseTime) | "\(.name)_response_time_ms \(.responseTime)"'
+
+# Status summary for external monitoring
+curl -sf https://addypin.com/api/health > /dev/null && echo "HEALTHY" || echo "UNHEALTHY"
+```
+
+---
+
 **📧 All monitoring alerts sent to: avoidaccess@gmail.com**  
 **⏰ Automated monitoring: Every 10 minutes**  
-**🔧 Manual commands available via health-manager.sh**
+**🔧 Manual commands available via health-manager.sh**  
+**🎆 NEW: API health endpoints provide real-time application status**  
+**📊 Enhanced with comprehensive health API monitoring (September 16, 2025)**

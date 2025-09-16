@@ -10,31 +10,64 @@
 
 ## **🛡️ ENHANCED MONITORING ARCHITECTURE (2025-09-16 UPDATE)**
 
-### **Layer 1: Application Health Checks**
-**Enhanced `/api/health` endpoint** with dependency validation:
+### **Layer 1: Application Health Checks (ENHANCED September 16, 2025)**
+**Comprehensive `/api/health` endpoints** with real-time dependency validation:
+
+#### **Basic Health Endpoint**: `/api/health`
 ```json
 {
   "status": "healthy",
-  "timestamp": "2025-09-16T07:13:03.705Z",
-  "uptime": 227944.501382425,
+  "timestamp": "2025-09-16T13:04:24.200Z",
+  "uptime": 700.7,
   "version": "1.0.0",
   "environment": "production",
   "checks": [
     {
       "name": "postgresql",
       "status": "healthy", 
-      "responseTime": 5
+      "responseTime": 3
     },
     {
       "name": "memory",
       "status": "healthy",
-      "responseTime": 20
+      "responseTime": 19
     }
   ]
 }
 ```
 
-**Returns HTTP 503 if ANY dependency fails** → Perfect for external monitors
+#### **System Health Endpoint**: `/api/health/system`
+```json
+{
+  "status": "healthy",
+  "timestamp": "2025-09-16T13:04:24.717Z",
+  "system": {
+    "nodeVersion": "v20.19.5",
+    "platform": "linux",
+    "arch": "x64",
+    "uptime": 701.25,
+    "memory": {
+      "used": 19,
+      "total": 20,
+      "rss": 81
+    },
+    "cpu": {
+      "user": 801985,
+      "system": 171804
+    }
+  },
+  "database": "healthy (3ms)",
+  "environment": "production"
+}
+```
+
+**🎆 KEY ENHANCEMENTS**:
+- ✅ **Returns HTTP 503 if ANY dependency fails** → Perfect for load balancers
+- ✅ **Real-time database connectivity** (3ms response time monitoring)
+- ✅ **Memory usage tracking** (19MB used of 20MB allocated)
+- ✅ **System metrics** (Node.js v20.19.5, Linux x64 platform)
+- ✅ **CPU usage statistics** (user/system time tracking)
+- ✅ **Both environments available**: Production + Staging endpoints
 
 ### **Layer 2: Docker Container Health**
 ```dockerfile
@@ -276,9 +309,24 @@ health
 # SSH-specific security check
 /opt/addypin/ssh-health.sh
 
-# Database connectivity verification
-curl -s http://localhost:3000/api/health | jq '.checks[] | select(.name=="postgresql")'
-curl -s http://localhost:8080/api/health | jq '.checks[] | select(.name=="postgresql")'
+# NEW: API Health Endpoint Testing (September 16, 2025)
+# Production health endpoints
+curl -s https://addypin.com/api/health | jq
+curl -s https://addypin.com/api/health/system | jq
+
+# Staging health endpoints
+curl -s https://staging.addypin.com/api/health | jq
+curl -s https://staging.addypin.com/api/health/system | jq
+
+# Database connectivity verification (NEW: External access)
+curl -s https://addypin.com/api/health | jq '.checks[] | select(.name=="postgresql")'
+curl -s https://staging.addypin.com/api/health | jq '.checks[] | select(.name=="postgresql")'
+
+# Memory usage monitoring
+curl -s https://addypin.com/api/health | jq '.checks[] | select(.name=="memory")'
+
+# Response time monitoring
+curl -w "Response time: %{time_total}s\n" -s https://addypin.com/api/health -o /dev/null
 ```
 
 ### **Monitoring Logs**
@@ -457,3 +505,101 @@ Overall System Status: ✅ HEALTHY
 5. **Comprehensive system health validation** with detailed logging
 
 **Your site monitoring is now enterprise-grade and trustworthy! 🚀**
+
+---
+
+## **🎆 API HEALTH ENDPOINTS INTEGRATION (Added September 16, 2025)**
+
+### **Comprehensive Health API Coverage**
+**Production Endpoints**:
+- `https://addypin.com/api/health` - Basic health check with dependency validation
+- `https://addypin.com/api/health/system` - Detailed system metrics and performance data
+
+**Staging Endpoints**:
+- `https://staging.addypin.com/api/health` - Staging environment health validation
+- `https://staging.addypin.com/api/health/system` - Staging system performance metrics
+
+### **What These Endpoints Add to Your Monitoring**
+
+#### **1. External Monitoring Integration**
+```bash
+# UptimeRobot / Pingdom / Better Uptime integration
+GET https://addypin.com/api/health
+# Returns 200 (healthy) or 503 (unhealthy) - perfect for external monitors
+```
+
+#### **2. Load Balancer Health Checks**
+```nginx
+# NGINX upstream health check configuration
+upstream addypin_backend {
+    server 127.0.0.1:3000;
+    health_check uri=/api/health;
+}
+```
+
+#### **3. CI/CD Deployment Validation**
+```bash
+# Deployment script health verification
+if curl -f https://addypin.com/api/health; then
+    echo "Deployment successful - app is healthy"
+else
+    echo "Deployment failed - app unhealthy"
+    exit 1
+fi
+```
+
+#### **4. Monitoring Dashboard Metrics**
+```bash
+# Prometheus-style metrics extraction
+curl -s https://addypin.com/api/health | jq -r '.checks[] | "\(.name)_status \(.status == "healthy" | if . then 1 else 0 end)"'
+# Output: postgresql_status 1, memory_status 1
+
+curl -s https://addypin.com/api/health | jq -r '.checks[] | select(.responseTime) | "\(.name)_response_time_ms \(.responseTime)"'
+# Output: postgresql_response_time_ms 3, memory_response_time_ms 19
+```
+
+#### **5. Granular Component Monitoring**
+```bash
+# Database-specific monitoring
+curl -s https://addypin.com/api/health | jq '.checks[] | select(.name=="postgresql") | {status, responseTime}'
+# Output: {"status": "healthy", "responseTime": 3}
+
+# Memory usage tracking
+curl -s https://addypin.com/api/health/system | jq '.system.memory'
+# Output: {"used": 19, "total": 20, "rss": 81}
+
+# System uptime monitoring
+curl -s https://addypin.com/api/health/system | jq '.system.uptime'
+# Output: 701.25 (seconds)
+```
+
+### **Integration with Existing Monitoring**
+```bash
+# Combined health check: System + API validation
+health && echo "\n--- API Health Status ---" && \
+curl -s https://addypin.com/api/health | jq '{status, checks}'
+
+# Enhanced monitoring with API metrics
+/opt/addypin/enhanced-health-check-msmtp.sh && \
+echo "API Response Times:" && \
+curl -s https://addypin.com/api/health | jq '.checks[] | "\(.name): \(.responseTime)ms"'
+```
+
+### **Monitoring Automation**
+```bash
+# Add API health checks to cron monitoring
+# /etc/cron.d/api-health-monitoring
+*/5 * * * * root curl -sf https://addypin.com/api/health > /dev/null || echo "API health check failed" | mail -s "AddyPin API Alert" avoidaccess@gmail.com
+```
+
+### **Benefits Summary**
+✅ **Real-time application health**: Beyond just "is the container running"
+✅ **Database connectivity validation**: Actual PostgreSQL response time monitoring (3ms)
+✅ **Memory leak detection**: Track heap usage growth over time
+✅ **Performance degradation alerts**: Response time trending
+✅ **Load balancer integration**: HTTP status codes for traffic routing
+✅ **External monitoring compatibility**: Standard JSON health check format
+✅ **CI/CD deployment verification**: Automated health validation post-deploy
+✅ **Granular troubleshooting**: Identify specific failing components
+
+**Your monitoring system now provides 360° visibility: Infrastructure + Application + Database + Performance! 🎆**

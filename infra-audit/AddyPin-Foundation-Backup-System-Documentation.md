@@ -265,12 +265,14 @@ sudo ./setup-automated-backups.sh --uninstall
 
 ## 📈 System Status & Health
 
-### Current Status (September 13, 2025)
+### Current Status (September 16, 2025)
 - ✅ **Backup Coverage**: 16/16 files (100% coverage)
 - ✅ **Automation**: Installed and scheduled
-- ✅ **Security**: Enterprise-grade protection active
+- ✅ **Security**: Enterprise-grade protection active + NGINX security fixes
 - ✅ **Monitoring**: Email notifications configured
 - ✅ **Testing**: All systems tested and verified
+- ✅ **CI/CD**: Production deployment issues resolved
+- ✅ **API Health**: Comprehensive health endpoints active
 
 ### Infrastructure Readiness
 - **Production Ready**: All critical systems protected
@@ -317,7 +319,134 @@ sudo ./setup-automated-backups.sh --uninstall
 
 ---
 
-*Document Version: 1.0*  
-*Last Updated: September 13, 2025*  
+*Document Version: 2.0*  
+*Last Updated: September 16, 2025*  
 *System Status: Production Ready - 100% Operational*  
-*Next Scheduled Backup: September 14, 2025 at 2:00 AM EDT*
+*Next Scheduled Backup: September 28, 2025 at 2:00 AM EDT*
+
+---
+
+## 🚨 CRITICAL SECURITY & CI/CD FIXES (September 16, 2025)
+
+### **SECURITY BREACH RESOLVED**
+**Issue**: Environment files (.env) were publicly accessible via API endpoints, returning 200 OK responses with sensitive data.
+
+**Root Cause**: Missing NGINX security rules allowing direct access to:
+- `/.env` (production environment variables)
+- `/api/.env` (API-accessible environment data)
+- `/vendor/` (dependency files)
+- `/.git` (version control data)
+
+**Resolution Applied**:
+```nginx
+# Security fix in /etc/nginx/conf.d/addypin.conf
+location ~ /\.(env|git) {
+    deny all;
+    return 404;
+}
+location ~ /vendor/ {
+    deny all;
+    return 404;
+}
+```
+
+**Verification**: Both production and staging now return 404 for sensitive endpoints ✅
+
+### **CI/CD DEPLOYMENT FAILURE RESOLVED**
+**Issue**: Production API returning "Failed to create pin" while staging worked perfectly.
+
+**Root Cause Analysis**:
+- Production `.env` file contained only `APP_IMAGE=ghcr.io/amrhas82/addypin:latest`
+- Missing ALL critical environment variables:
+  - `DATABASE_URL` (no database password)
+  - `JWT_SECRET`, `GOOGLE_MAPS_API_KEY`, `RESEND_API_KEY`
+  - All authentication and API keys
+
+**Evidence**: PostgreSQL authentication error (28P01) in production logs:
+```
+FATAL Error Code: '28P01' 
+routine: 'auth_failed' 
+severity: 'FATAL'
+```
+
+**Resolution Applied**:
+1. **Environment Variable Restoration**: Added complete production `.env` configuration:
+   ```bash
+   DATABASE_URL=postgresql://addypin_user:UBih+0YllInCRul3liIlMXHiezktiq8vGXbZ9CiAljA=@host.docker.internal:5432/addypin
+   JWT_SECRET=8d138b72b518b8ba833f1fa8bfe269436072aac5a971200714327d56de611b91
+   GOOGLE_MAPS_API_KEY=AIzaSyCVryVcrhTpGnaFVv1zO4Qc4WpNeCTl3kk
+   RESEND_API_KEY=re_YEEpxspy_2zkWUtuc3aVw4fcbYCFqD2mK
+   # Plus all other required variables
+   ```
+
+2. **Container Restart**: Redeployed production containers with new environment variables
+
+3. **Functionality Verification**: 
+   - **Production**: ✅ Pin creation working (shortcode: DR90GH, 1BU02L)
+   - **Staging**: ✅ Pin creation working (shortcode: RH0Q1I, 7453BI)
+
+### **DOCKER BUILD VERIFICATION**
+**Investigation Results**:
+- ✅ Frontend files exist in both containers: `/app/dist/public/index.html`
+- ✅ Docker multi-stage build process working correctly
+- ✅ Vite build outputs to correct location
+- ✅ NGINX serving frontend files properly
+
+**Build Status**:
+- **Production Container**: 2514 bytes index.html ✅
+- **Staging Container**: 2541 bytes index.html ✅
+
+### **API HEALTH MONITORING ENHANCEMENT**
+**New Comprehensive Health Endpoints**:
+
+1. **Basic Health**: `https://addypin.com/api/health`
+   ```json
+   {
+     "status": "healthy",
+     "timestamp": "2025-09-16T13:04:24.200Z",
+     "uptime": 700.7,
+     "version": "1.0.0",
+     "environment": "production",
+     "checks": [
+       {"name": "postgresql", "status": "healthy", "responseTime": 3},
+       {"name": "memory", "status": "healthy", "responseTime": 19}
+     ]
+   }
+   ```
+
+2. **Detailed System Health**: `https://addypin.com/api/health/system`
+   ```json
+   {
+     "status": "healthy",
+     "system": {
+       "nodeVersion": "v20.19.5",
+       "platform": "linux",
+       "memory": {"used": 19, "total": 20, "rss": 81},
+       "uptime": 701.25
+     },
+     "database": "healthy (3ms)",
+     "environment": "production"
+   }
+   ```
+
+**Health Endpoint Benefits**:
+- ✅ **Load Balancer Integration**: NGINX can use for upstream health checks
+- ✅ **Monitoring Systems**: Prometheus/Grafana can scrape automatically
+- ✅ **CI/CD Validation**: Deploy scripts can verify app health
+- ✅ **HTTP Status Codes**: Returns 503 if unhealthy, 200 if healthy
+- ✅ **Granular Detection**: Identifies exact component failures
+- ✅ **Real-time Monitoring**: Database connectivity (3ms response time)
+- ✅ **Memory Tracking**: Current usage (19MB used of 20MB allocated)
+- ✅ **System Information**: Node.js version, platform, CPU usage
+
+### **DEPLOYMENT SUCCESS VERIFICATION**
+**Final Status (September 16, 2025)**:
+- ✅ **Production API**: Fully functional pin creation
+- ✅ **Staging API**: Fully functional pin creation  
+- ✅ **Security**: Environment files protected (404 responses)
+- ✅ **Database**: PostgreSQL authentication working (3ms response)
+- ✅ **Health Monitoring**: Comprehensive endpoints active
+- ✅ **Docker Containers**: Both environments running correctly
+- ✅ **CI/CD Pipeline**: Deployment issues resolved
+
+**Infrastructure Integrity**: All 16 critical infrastructure files remain protected and functional.
