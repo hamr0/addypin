@@ -1,26 +1,27 @@
 #!/bin/bash
-# tunnel_manager.sh - AddyPin SSH Tunnel Auto-Restart
-# Based on successful Terribic implementation
+# tunnel_manager.sh - Auto-restart SSH Tunnel for AddyPin Database
+# Adapted from Terribic Unified API successful implementation
 
 echo "🔧 AddyPin SSH Tunnel Manager"
-echo "=============================="
+echo "============================="
 
-# ===== ADDYPIN CONFIGURATION =====
-VPS_USER="root"
-VPS_IP="155.94.144.191"
-SSH_KEY_PATH="$HOME/.ssh/addypin_replit"
-REMOTE_DB_PORT="5432"
-LOCAL_TUNNEL_PORT="5432"
-TUNNEL_LOG="tunnel.log"
-DATABASE_NAME="addypin_dev"
-DATABASE_USER="addypin_user"
-DATABASE_PASSWORD="$ADDYPIN_DB_PASSWORD"  # From environment variable
-# =================================
+# ===== CONFIGURATION - UPDATE THESE VALUES =====
+VPS_USER="root"                        # Your VPS username
+VPS_IP="155.94.144.191"               # Your VPS IP address
+SSH_KEY_PATH="$HOME/.ssh/addypin_replit"  # SSH key path
+REMOTE_DB_PORT="5432"                 # Database port on VPS (PostgreSQL: 5432)
+LOCAL_TUNNEL_PORT="5432"              # Local port to forward to
+TUNNEL_LOG="tunnel.log"               # Log file for debugging
+DATABASE_NAME="addypin"               # Database name
+DATABASE_USER="addypin_user"          # Database user
+DATABASE_PASSWORD=""                  # Will extract from DATABASE_URL
+# ==============================================
 
 # Function to check if tunnel is alive
 check_tunnel() {
     echo -n "🔍 Checking tunnel status... "
     
+    # Check if local port is open using netcat
     if nc -z localhost $LOCAL_TUNNEL_PORT 2>/dev/null; then
         echo "✅ ACTIVE (port $LOCAL_TUNNEL_PORT open)"
         return 0
@@ -38,7 +39,7 @@ start_tunnel() {
     # Kill any existing SSH processes to avoid conflicts
     pkill -f "ssh.*$VPS_IP.*$LOCAL_TUNNEL_PORT:localhost:$REMOTE_DB_PORT" 2>/dev/null
     
-    # Start tunnel with nohup for persistence (Terribic method)
+    # Start tunnel with nohup for persistence
     nohup ssh -i $SSH_KEY_PATH \
         -o StrictHostKeyChecking=no \
         -o ExitOnForwardFailure=yes \
@@ -51,7 +52,7 @@ start_tunnel() {
     echo "   Started with PID: $tunnel_pid"
     
     # Give it time to establish
-    sleep 3
+    sleep 2
     
     # Verify it started successfully
     if check_tunnel >/dev/null 2>&1; then
@@ -65,52 +66,48 @@ start_tunnel() {
     fi
 }
 
-# Function to test database connectivity
-test_database() {
-    echo "🧪 Testing AddyPin database connectivity..."
-    
-    if [ -z "$DATABASE_PASSWORD" ]; then
-        echo "❌ ADDYPIN_DB_PASSWORD environment variable not set"
-        return 1
-    fi
-    
-    # Test PostgreSQL connection
-    if PGPASSWORD="$DATABASE_PASSWORD" psql -h localhost -p $LOCAL_TUNNEL_PORT -U $DATABASE_USER -d $DATABASE_NAME -c "SELECT 'AddyPin DB Connected' as status;" 2>/dev/null | grep -q "AddyPin DB Connected"; then
-        echo "✅ AddyPin PostgreSQL database connection successful"
-        return 0
-    else
-        echo "❌ AddyPin database connection failed"
-        echo "   Manual test: PGPASSWORD='***' psql -h localhost -p $LOCAL_TUNNEL_PORT -U $DATABASE_USER -d $DATABASE_NAME"
-        return 1
-    fi
+# Function to show comprehensive status
+show_status() {
+    echo ""
+    echo "📊 Current Status:"
+    echo "   SSH Key: $(test -f $SSH_KEY_PATH && echo "✅ Present" || echo "❌ Missing")"
+    echo "   VPS: $VPS_USER@$VPS_IP"
+    echo "   Local Port: $LOCAL_TUNNEL_PORT"
+    echo "   Remote Port: $REMOTE_DB_PORT"
+    check_tunnel
+    echo ""
 }
 
-# Main execution
-echo "$(date): Starting AddyPin tunnel management..."
+# Main execution flow
+echo "$(date): Starting tunnel management..."
+
+# Show current status
+show_status
 
 # Check if tunnel is running
 if ! check_tunnel >/dev/null 2>&1; then
     echo "🔄 Tunnel not running, starting new one..."
+    start_tunnel
     
-    if start_tunnel; then
+    if [ $? -eq 0 ]; then
         echo ""
         echo "🏁 Tunnel management complete"
-        check_tunnel
-        test_database
+        show_status
     else
         echo ""
         echo "❌ Tunnel startup failed"
-        echo "🔧 Troubleshooting:"
-        echo "   1. SSH key: chmod 600 $SSH_KEY_PATH"
-        echo "   2. VPS test: ssh -i $SSH_KEY_PATH $VPS_USER@$VPS_IP 'echo test'"
-        echo "   3. Port check: lsof -i :$LOCAL_TUNNEL_PORT"
-        echo "   4. Log: cat $TUNNEL_LOG"
+        echo "🔧 Troubleshooting tips:"
+        echo "   1. Check SSH key permissions: chmod 600 $SSH_KEY_PATH"
+        echo "   2. Test VPS connectivity: ssh -i $SSH_KEY_PATH $VPS_USER@$VPS_IP 'echo test'"
+        echo "   3. Check if port $LOCAL_TUNNEL_PORT is already in use: lsof -i :$LOCAL_TUNNEL_PORT"
+        echo "   4. Review tunnel log: cat $TUNNEL_LOG"
         exit 1
     fi
 else
-    echo "✅ Tunnel already running"
-    check_tunnel
-    test_database
+    echo "✅ Tunnel already running, nothing to do"
+    echo ""
+    echo "🏁 Tunnel management complete"
+    show_status
 fi
 
 echo ""

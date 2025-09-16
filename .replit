@@ -4,7 +4,7 @@ hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
 
 [nix]
 channel = "stable-24_05"
-packages = ["sshpass", "gh", "openssh", "docker_26", "tengine", "docker-compose_1", "netcat-gnu", "dig"]
+packages = ["sshpass", "gh", "openssh", "docker_26", "tengine", "docker-compose_1", "netcat-gnu", "dig", "unixtools.ping"]
 
 [deployment]
 deploymentTarget = "autoscale"
@@ -18,6 +18,10 @@ externalPort = 3000
 [[ports]]
 localPort = 5000
 externalPort = 80
+
+[[ports]]
+localPort = 38397
+externalPort = 3001
 
 [env]
 PORT = "5000"
