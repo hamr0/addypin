@@ -221,7 +221,7 @@ MISSING_MEDIUM=0
 MISSING_LOW=0
 
 # Email notification settings
-NOTIFY_EMAIL="admin@addypin.com"
+NOTIFY_EMAIL="avoidaccess@gmail.com"
 # Try to load RESEND_API_KEY from multiple sources
 RESEND_API_KEY="${RESEND_API_KEY:-}"
 if [ -z "$RESEND_API_KEY" ]; then
