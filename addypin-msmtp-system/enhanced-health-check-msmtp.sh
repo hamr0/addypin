@@ -74,7 +74,24 @@ echo ""
 echo "🔧 System Services:"
 check_service "nginx" "Web server and reverse proxy"
 check_service "docker" "Container runtime platform"
-check_service "postgresql" "Database service"
+check_database_connectivity() {
+    local endpoint="$1"
+    local name="$2"
+    
+    if curl -sf "$endpoint" | grep -q '"postgresql","status":"healthy"' >/dev/null 2>&1; then
+        log_message "INFO: ✅ $name database connectivity healthy"
+        echo "✅ $name Database: Connected"
+        return 0
+    else
+        log_message "ERROR: ❌ $name database connectivity FAILED"
+        echo "❌ $name Database: Connection Failed"
+        ((ISSUES++))
+        return 1
+    fi
+}
+
+check_database_connectivity "http://localhost:3000/api/health" "Production"
+check_database_connectivity "http://localhost:8080/api/health" "Staging"
 
 # Check Docker containers
 echo ""

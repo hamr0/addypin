@@ -76,11 +76,26 @@ health_check() {
         echo -e "${YELLOW}⚠️ Staging: Not running${NC}"
     fi
     
-    # Database
-    if docker ps --filter name=addypin-postgres --filter status=running -q | grep -q .; then
-        echo "✅ Database: Running"
+    # Database Connectivity (via API health checks)
+    prod_db_status="❌"
+    staging_db_status="❌"
+    
+    # Check production database via API
+    if curl -sf http://localhost:3000/api/health | grep -q '"postgresql","status":"healthy"'; then
+        prod_db_status="✅"
+        echo "✅ Production Database: Connected"
     else
-        echo -e "${YELLOW}⚠️ Database: Not running${NC}"
+        echo -e "${RED}❌ Production Database: Failed${NC}"
+        all_healthy=false
+    fi
+    
+    # Check staging database via API  
+    if curl -sf http://localhost:8080/api/health | grep -q '"postgresql","status":"healthy"'; then
+        staging_db_status="✅"
+        echo "✅ Staging Database: Connected"
+    else
+        echo -e "${RED}❌ Staging Database: Failed${NC}"
+        all_healthy=false
     fi
     
     # 3. Health Endpoints
@@ -146,7 +161,7 @@ quick_status() {
     
     curl -sf http://localhost:3000/api/health >/dev/null 2>&1 && prod_status="✅"
     curl -sf http://localhost:8080/api/health >/dev/null 2>&1 && staging_status="✅"
-    docker ps --filter name=addypin-postgres --filter status=running -q | grep -q . && db_status="✅"
+    curl -sf http://localhost:3000/api/health | grep -q '"postgresql","status":"healthy"' && db_status="✅"
     
     echo "🖥️ AddyPin Status: Production $prod_status | Staging $staging_status | Database $db_status"
 }
