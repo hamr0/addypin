@@ -142,20 +142,10 @@ declare -A INFRASTRUCTURE_FILES=(
     # System Configuration (Critical)
     ["/var/spool/cron/root"]="system/root-crontab"
     
-    # Monitoring Scripts (High Priority) - ENHANCED LIVE MONITORING
+    # Monitoring Scripts (High Priority)
     ["/opt/addypin/scripts/health-check.sh"]="monitoring/health-check.sh"
     ["/opt/addypin/scripts/enhanced-health-check.sh"]="monitoring/enhanced-health-check.sh"
     ["/opt/addypin/scripts/health-check-email.js"]="monitoring/health-check-email.js"
-    ["/usr/local/bin/health"]="monitoring/health-command-symlink"
-    ["/opt/addypin/universal-health.sh"]="monitoring/universal-health.sh"
-    ["/opt/addypin/ssh-health.sh"]="monitoring/ssh-health.sh"
-    ["/opt/addypin/enhanced-health-check-msmtp.sh"]="monitoring/enhanced-health-check-msmtp.sh"
-    
-    # Backup System Scripts (Critical: Backup the backup system itself)
-    ["/opt/addypin-foundation-backup/scripts/backup-foundation.sh"]="backup-system/backup-foundation.sh"
-    ["/opt/addypin-foundation-backup/scripts/setup-automated-backups.sh"]="backup-system/setup-automated-backups.sh"
-    ["/opt/addypin-foundation-backup/scripts/backup-status-monitor.sh"]="backup-system/backup-status-monitor.sh"
-    ["/opt/addypin-foundation-backup/scripts/restore-foundation.sh"]="backup-system/restore-foundation.sh"
     
     # Nginx Configuration (High Priority)
     ["/etc/nginx/nginx.conf"]="nginx/nginx.conf"
@@ -180,20 +170,10 @@ declare -A FILE_PRIORITIES=(
     ["/opt/addypin-staging/.env"]="CRITICAL"
     ["/var/spool/cron/root"]="CRITICAL"
     
-    # High priority files (should exist) - ENHANCED LIVE MONITORING
+    # High priority files (should exist)
     ["/opt/addypin/scripts/health-check.sh"]="HIGH"
     ["/opt/addypin/scripts/enhanced-health-check.sh"]="HIGH"
     ["/opt/addypin/scripts/health-check-email.js"]="HIGH"
-    ["/usr/local/bin/health"]="CRITICAL"
-    ["/opt/addypin/universal-health.sh"]="CRITICAL"
-    ["/opt/addypin/ssh-health.sh"]="HIGH"
-    ["/opt/addypin/enhanced-health-check-msmtp.sh"]="CRITICAL"
-    
-    # Backup System Scripts (Critical: Must preserve backup capability)
-    ["/opt/addypin-foundation-backup/scripts/backup-foundation.sh"]="CRITICAL"
-    ["/opt/addypin-foundation-backup/scripts/setup-automated-backups.sh"]="CRITICAL"
-    ["/opt/addypin-foundation-backup/scripts/backup-status-monitor.sh"]="HIGH"
-    ["/opt/addypin-foundation-backup/scripts/restore-foundation.sh"]="CRITICAL"
     ["/etc/nginx/nginx.conf"]="HIGH"
     ["/etc/nginx/conf.d/addypin.conf"]="HIGH"
     
@@ -403,7 +383,6 @@ create_backup_structure() {
         "$BACKUP_DIR/docker"
         "$BACKUP_DIR/environment"
         "$BACKUP_DIR/monitoring"
-        "$BACKUP_DIR/backup-system"
         "$BACKUP_DIR/nginx"
         "$BACKUP_DIR/ssl"
         "$BACKUP_DIR/system"
