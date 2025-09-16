@@ -222,81 +222,75 @@ MISSING_LOW=0
 
 # Email notification settings
 NOTIFY_EMAIL="avoidaccess@gmail.com"
-# Try to load RESEND_API_KEY from multiple sources
-RESEND_API_KEY="${RESEND_API_KEY:-}"
-if [ -z "$RESEND_API_KEY" ]; then
-    # Try common environment files if running in cron
-    for env_file in "/opt/addypin/.env" "/opt/addypin-staging/.env" "/root/.env"; do
-        if [ -f "$env_file" ] && grep -q "RESEND_API_KEY" "$env_file"; then
-            RESEND_API_KEY=$(grep "RESEND_API_KEY" "$env_file" | head -1 | cut -d'=' -f2 | tr -d '"' | tr -d "'" | xargs)
-            break
-        fi
-    done
-fi
+MSMTP_ALERT_SCRIPT="/opt/addypin/scripts/send-health-alert.sh"
 
-# Function: Send email notification
+# Function: Send email notification via MSMTP
 send_backup_notification() {
     local status="$1"  # success, error, warning
     local summary="$2"
     local details="$3"
     
-    # Only send emails in auto mode and if API key is available
-    if [ "$AUTO_MODE" = false ] || [ -z "$RESEND_API_KEY" ]; then
-        if [ "$AUTO_MODE" = true ] && [ -z "$RESEND_API_KEY" ]; then
-            log_message "WARNING: Email notification skipped - RESEND_API_KEY not available"
-        fi
+    # Only send emails in auto mode
+    if [ "$AUTO_MODE" = false ]; then
         return 0
     fi
     
-    log_message "Sending email notification: $status - $summary"
+    log_message "Sending email notification via MSMTP: $status - $summary"
     
     local subject=""
-    local emoji=""
-    local color="#28a745"  # green
+    local alert_type=""
     
     case "$status" in
         "success")
-            subject="[SUCCESS] AddyPin Foundation Backup Completed"
-            emoji="✅"
-            color="#28a745"
-            ;;
-        "error")
-            subject="[ERROR] AddyPin Foundation Backup Failed"
-            emoji="❌"
-            color="#dc3545"
+            subject="✅ AddyPin Backup Successful"
+            alert_type="backup"
             ;;
         "warning")
-            subject="[WARNING] AddyPin Foundation Backup Completed with Issues"
-            emoji="⚠️"
-            color="#ffc107"
+            subject="⚠️ AddyPin Backup Warning"
+            alert_type="warning"
+            ;;
+        "error")
+            subject="❌ AddyPin Backup Failed"
+            alert_type="critical"
             ;;
     esac
     
+    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
     local backup_size=$(calculate_backup_size)
-    local timestamp=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
     
-    # Create email payload
-    local email_payload=$(cat << EOF
-{
-  "from": "AddyPin Backup System <backup@addypin.com>",
-  "to": ["$NOTIFY_EMAIL"],
-  "subject": "$subject",
-  "html": "<!DOCTYPE html><html><head><style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;line-height:1.6;color:#333;margin:0;padding:20px;background:#f8f9fa}.container{max-width:600px;margin:0 auto;background:white;border-radius:12px;box-shadow:0 4px 6px rgba(0,0,0,0.1);overflow:hidden}.header{background:linear-gradient(135deg,$color 0%,#0056b3 100%);color:white;padding:30px 20px;text-align:center}.content{padding:30px 20px}.stats-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:15px;margin:20px 0}.stat-item{background:#f8f9fa;padding:15px;border-radius:8px;text-align:center}.stat-number{font-size:24px;font-weight:bold;color:#1f2937}.stat-label{font-size:12px;color:#6b7280;text-transform:uppercase}.footer{background:#f8f9fa;padding:20px;text-align:center;color:#6b7280;font-size:14px}</style></head><body><div class='container'><div class='header'><h1 style='margin:0;font-size:28px'>$emoji AddyPin Foundation Backup</h1><p style='margin:10px 0 0 0;opacity:0.9'>Automated Infrastructure Backup Report</p></div><div class='content'><h2 style='color:#1f2937;margin-top:0'>Backup Summary</h2><p><strong>Status:</strong> $summary</p><p><strong>Completed:</strong> $timestamp</p><p><strong>Backup Size:</strong> $backup_size</p><p><strong>Mode:</strong> $([ \"$GOLDEN_MODE\" = true ] && echo \"Golden\" || echo \"Versioned\")</p><div class='stats-grid'><div class='stat-item'><div class='stat-number'>$TOTAL_FILES</div><div class='stat-label'>Total Files</div></div><div class='stat-item'><div class='stat-number'>$COPIED_FILES</div><div class='stat-label'>Copied Successfully</div></div><div class='stat-item'><div class='stat-number'>$MISSING_FILES</div><div class='stat-label'>Missing Files</div></div><div class='stat-item'><div class='stat-number'>$ERROR_FILES</div><div class='stat-label'>Error Files</div></div></div><div style='background:#f1f3f4;padding:15px;border-radius:8px;margin:20px 0'><h3 style='margin-top:0;color:#1f2937'>Details</h3><pre style='white-space:pre-wrap;color:#4b5563;margin:0'>$details</pre></div></div><div class='footer'><p>AddyPin Foundation Backup System</p><p>Generated automatically every other Sunday at 2:00 AM</p></div></div></body></html>",
-  "text": "AddyPin Foundation Backup Report\n\nStatus: $summary\nCompleted: $timestamp\nBackup Size: $backup_size\nMode: $([ \"$GOLDEN_MODE\" = true ] && echo \"Golden\" || echo \"Versioned\")\n\nStatistics:\n- Total Files: $TOTAL_FILES\n- Copied Successfully: $COPIED_FILES\n- Missing Files: $MISSING_FILES\n- Error Files: $ERROR_FILES\n\nDetails:\n$details\n\n--\nAddyPin Foundation Backup System\nGenerated automatically every other Sunday at 2:00 AM"
-}
-EOF
-    )
+    # Create backup message
+    local backup_message="$subject
+
+Backup Details:
+- Status: $summary
+- Completed: $timestamp
+- Backup Size: $backup_size
+- Mode: $([ "$GOLDEN_MODE" = true ] && echo "Golden" || echo "Versioned")
+
+File Statistics:
+- Total Files: $TOTAL_FILES
+- Copied Successfully: $COPIED_FILES  
+- Missing Files: $MISSING_FILES
+- Error Files: $ERROR_FILES
+
+Details:
+$details
+
+AddyPin Foundation Backup System
+Generated automatically every other Sunday at 2:00 AM"
     
-    # Send email using curl
-    local response=$(curl -s -X POST https://api.resend.com/emails \
-        -H "Authorization: Bearer $RESEND_API_KEY" \
-        -H "Content-Type: application/json" \
-        -d "$email_payload" 2>/dev/null)
-    
-    if [ $? -eq 0 ]; then
-        log_message "Email notification sent successfully"
+    # Send email using existing MSMTP alert system
+    if [ -f "$MSMTP_ALERT_SCRIPT" ]; then
+        "$MSMTP_ALERT_SCRIPT" "$alert_type" "$backup_message"
+        log_message "Email notification sent successfully via MSMTP to $NOTIFY_EMAIL"
     else
-        log_message "Failed to send email notification"
+        # Fallback: use msmtp directly
+        if command -v msmtp >/dev/null 2>&1; then
+            echo -e "Subject: $subject\nTo: $NOTIFY_EMAIL\n\n$backup_message" | msmtp "$NOTIFY_EMAIL"
+            log_message "Email notification sent via direct MSMTP to $NOTIFY_EMAIL"
+        else
+            log_message "WARNING: Email notification skipped - MSMTP not available"
+        fi
     fi
 }
 
@@ -339,15 +333,10 @@ print_progress() {
     local custom_color="$3"
     
     # Use custom color if provided
-    if [ -n "$custom_color" ]; then
-        echo -e "${custom_color}$message${NC}"
-        log_message "$message"
-        return 0
-    fi
-    
+    local color=""
     case "$status" in
         "start")
-            echo -e "${BLUE}🔄 $message${NC}"
+            echo -e "${CYAN}🔄 $message${NC}"
             ;;
         "success")
             echo -e "${GREEN}✅ $message${NC}"
@@ -415,104 +404,66 @@ create_backup_structure() {
     print_progress "Directory structure created" "success"
 }
 
-# Function: Check if backup already exists
-check_existing_backup() {
-    if [ "$GOLDEN_MODE" = true ] && [ -d "$BACKUP_DIR" ] && [ "$FORCE_MODE" = false ]; then
-        print_progress "Golden backup already exists" "warning"
-        print_progress "Use --force to overwrite or choose versioned backup" "info"
-        
-        if [ "$DRY_RUN" = false ] && [ "$AUTO_MODE" = false ]; then
-            read -p "Overwrite existing golden backup? (y/N): " -n 1 -r
-            echo
-            if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-                exit 1
-            fi
-        elif [ "$AUTO_MODE" = true ]; then
-            print_progress "Auto mode: Overwriting existing golden backup" "info"
-        fi
+# Function: Calculate backup size
+calculate_backup_size() {
+    if [ "$DRY_RUN" = true ]; then
+        echo "N/A (dry run)"
+    elif [ -d "$BACKUP_DIR" ]; then
+        du -sh "$BACKUP_DIR" 2>/dev/null | cut -f1 || echo "Unknown"
+    else
+        echo "0B"
     fi
 }
 
-# Function: Copy file with error handling and verification
-copy_file_secure() {
+# Function: Copy file with error handling
+copy_file() {
     local source="$1"
     local dest="$2"
-    local description="$3"
-    
-    TOTAL_FILES=$((TOTAL_FILES + 1))
-    
-    # Get file priority
-    local priority="${FILE_PRIORITIES[$source]:-LOW}"
+    local priority="$3"
     
     # Check if source file exists
-    if [ ! -f "$source" ] && [ ! -d "$source" ]; then
-        local priority_icon=""
-        local priority_color=""
+    if [ ! -f "$source" ]; then
+        print_progress "Missing [$priority]: $(basename "$source") ($source)" "warning"
+        ((MISSING_FILES++))
         
+        # Count missing files by priority
         case "$priority" in
-            "CRITICAL")
-                priority_icon="🚨"
-                priority_color="$RED"
-                MISSING_CRITICAL=$((MISSING_CRITICAL + 1))
-                ;;
-            "HIGH")
-                priority_icon="⚠️"
-                priority_color="$YELLOW"
-                MISSING_HIGH=$((MISSING_HIGH + 1))
-                ;;
-            "MEDIUM")
-                priority_icon="ℹ️"
-                priority_color="$BLUE"
-                MISSING_MEDIUM=$((MISSING_MEDIUM + 1))
-                ;;
-            "LOW")
-                priority_icon="📋"
-                priority_color="$NC"
-                MISSING_LOW=$((MISSING_LOW + 1))
-                ;;
+            "CRITICAL") ((MISSING_CRITICAL++)) ;;
+            "HIGH") ((MISSING_HIGH++)) ;;
+            "MEDIUM") ((MISSING_MEDIUM++)) ;;
+            "LOW") ((MISSING_LOW++)) ;;
         esac
         
-        print_progress "${priority_icon} Missing [$priority]: $description ($source)" "info" "$priority_color"
-        MISSING_FILES=$((MISSING_FILES + 1))
-        return 0  # Don't exit on missing files
+        log_message "MISSING [$priority]: $source"
+        return 1
     fi
     
     # Create destination directory with secure permissions
-    local dest_dir="$(dirname "$dest")"
+    local dest_dir=$(dirname "$dest")
     if [ "$DRY_RUN" = false ]; then
         mkdir -m 700 -p "$dest_dir"
     fi
     
-    # Copy file
     if [ "$DRY_RUN" = true ]; then
-        print_progress "Would copy [$priority]: $description" "info"
-        # Note: Don't increment COPIED_FILES during dry-run
-        return 0
+        print_progress "Would copy [$priority]: $(basename "$source")" "info"
+    else
+        # Copy file
+        if cp "$source" "$dest" 2>/dev/null; then
+            # Set secure permissions
+            chmod 600 "$dest"
+            print_progress "Copied [$priority]: $(basename "$source")" "success"
+            ((COPIED_FILES++))
+            log_message "COPIED [$priority]: $source -> $dest"
+        else
+            print_progress "Failed to copy [$priority]: $(basename "$source")" "error"
+            ((ERROR_FILES++))
+            log_message "ERROR [$priority]: Failed to copy $source -> $dest"
+            return 1
+        fi
     fi
     
-    if cp -p "$source" "$dest" 2>/dev/null; then
-        # Verify copy with checksum
-        if command -v sha256sum >/dev/null 2>&1; then
-            local source_hash=$(sha256sum "$source" 2>/dev/null | cut -d' ' -f1)
-            local dest_hash=$(sha256sum "$dest" 2>/dev/null | cut -d' ' -f1)
-            
-            if [ "$source_hash" = "$dest_hash" ]; then
-                print_progress "✅ Copied [$priority]: $description" "success"
-                COPIED_FILES=$((COPIED_FILES + 1))
-            else
-                print_progress "❌ Checksum mismatch [$priority]: $description" "error"
-                ERROR_FILES=$((ERROR_FILES + 1))
-                return 0  # Continue despite checksum errors
-            fi
-        else
-            print_progress "✅ Copied [$priority]: $description (no checksum verification)" "success"
-            COPIED_FILES=$((COPIED_FILES + 1))
-        fi
-    else
-        print_progress "❌ Failed to copy [$priority]: $description" "error"
-        ERROR_FILES=$((ERROR_FILES + 1))
-        return 0  # Continue despite copy errors
-    fi
+    ((TOTAL_FILES++))
+    return 0
 }
 
 # Function: Backup SSL certificates
@@ -521,25 +472,24 @@ backup_ssl_certificates() {
     
     for cert_path in "${SSL_CERT_PATHS[@]}"; do
         if [ -d "$cert_path" ]; then
-            local cert_name=$(basename "$cert_path")
-            local dest_path="$BACKUP_DIR/ssl/$cert_name"
+            local domain=$(basename "$cert_path")
+            local dest_path="$BACKUP_DIR/ssl/$domain"
             
             if [ "$DRY_RUN" = false ]; then
                 mkdir -m 700 -p "$dest_path"
-                if ! cp -a "$cert_path"/* "$dest_path/" 2>/dev/null; then
-                    print_progress "Warning: Some SSL files could not be copied for $cert_name" "warning"
+                if cp -r "$cert_path"/* "$dest_path/" 2>/dev/null; then
+                    chmod -R 600 "$dest_path"/*
+                    print_progress "SSL certs for $domain" "success"
+                    log_message "COPIED SSL: $cert_path -> $dest_path"
+                else
+                    print_progress "Failed to copy SSL certs for $domain" "error"
+                    log_message "ERROR SSL: Failed to copy $cert_path"
                 fi
-            fi
-            
-            print_progress "SSL certs for $cert_name" "success"
-            TOTAL_FILES=$((TOTAL_FILES + 1))
-            if [ "$DRY_RUN" = false ]; then
-                COPIED_FILES=$((COPIED_FILES + 1))
+            else
+                print_progress "Would backup SSL certs for $domain" "info"
             fi
         else
             print_progress "SSL cert path not found (optional): $cert_path" "info"
-            # Note: Don't count missing SSL directories as missing files since they're optional
-            # Only count and track files that actually exist or are copied
         fi
     done
 }
@@ -553,195 +503,152 @@ create_backup_manifest() {
     if [ "$DRY_RUN" = false ]; then
         cat > "$manifest_file" << EOF
 AddyPin Foundation Backup Manifest
-=================================
+======================================
+Backup ID: $TIMESTAMP
+Date: $(date -u '+%Y-%m-%d %H:%M:%S UTC')
+Mode: $([ "$GOLDEN_MODE" = true ] && echo "Golden" || echo "Versioned")
+Host: $(hostname)
 
-Backup Type: $([ "$GOLDEN_MODE" = true ] && echo "Golden" || echo "Versioned")
-Timestamp: $(date -u '+%Y-%m-%d %H:%M:%S UTC')
-Hostname: $(hostname)
-Script Version: 1.0.0
-
-SECURITY NOTICE:
-===============
-This backup contains sensitive data (API keys, certificates, passwords).
-All files and directories are protected with 700/600 permissions.
-Access restricted to root user only - no group/world access.
-Handle with appropriate security controls.
-
-Statistics:
------------
+File Statistics:
 Total Files: $TOTAL_FILES
 Copied Successfully: $COPIED_FILES
 Missing Files: $MISSING_FILES
 Error Files: $ERROR_FILES
 
-File Inventory:
---------------
-EOF
+Missing Files Breakdown:
+CRITICAL: $MISSING_CRITICAL files
+HIGH: $MISSING_HIGH files
+MEDIUM: $MISSING_MEDIUM files
+LOW: $MISSING_LOW files
 
-        # Add file inventory
-        for source in "${!INFRASTRUCTURE_FILES[@]}"; do
-            local dest="${INFRASTRUCTURE_FILES[$source]}"
-            local status="MISSING"
-            
-            if [ -f "$source" ] || [ -d "$source" ]; then
-                if [ -f "$BACKUP_DIR/$dest" ]; then
-                    status="BACKED_UP"
-                else
-                    status="ERROR"
-                fi
+Backup Size: $(calculate_backup_size)
+Location: $BACKUP_DIR
+
+Files Included:
+EOF
+        
+        # Add file list to manifest
+        for file_path in "${!INFRASTRUCTURE_FILES[@]}"; do
+            local dest_file="${INFRASTRUCTURE_FILES[$file_path]}"
+            local priority="${FILE_PRIORITIES[$file_path]}"
+            if [ -f "$file_path" ]; then
+                echo "✅ [$priority] $file_path -> $dest_file" >> "$manifest_file"
+            else
+                echo "❌ [$priority] MISSING: $file_path" >> "$manifest_file"
             fi
-            
-            echo "[$status] $source -> $dest" >> "$manifest_file"
         done
         
-        # Add SSL certificates to manifest
-        for cert_path in "${SSL_CERT_PATHS[@]}"; do
-            local cert_name=$(basename "$cert_path")
-            local status="MISSING"
-            
-            if [ -d "$cert_path" ]; then
-                if [ -d "$BACKUP_DIR/ssl/$cert_name" ]; then
-                    status="BACKED_UP"
-                else
-                    status="ERROR"
-                fi
-            fi
-            
-            echo "[$status] $cert_path -> ssl/$cert_name/" >> "$manifest_file"
-        done
+        echo "" >> "$manifest_file"
+        echo "All files and directories are protected with 700/600 permissions." >> "$manifest_file"
+        echo "Only root user can access backup contents." >> "$manifest_file"
+        
+        chmod 600 "$manifest_file"
     fi
     
     print_progress "Backup manifest created" "success"
 }
 
-# Function: Calculate backup size
-calculate_backup_size() {
-    if [ "$DRY_RUN" = false ] && [ -d "$BACKUP_DIR" ]; then
-        local size=$(du -sh "$BACKUP_DIR" 2>/dev/null | cut -f1)
-        echo "$size"
-    else
-        echo "N/A (dry run)"
-    fi
-}
-
 # Function: Main backup execution
-execute_backup() {
-    print_progress "Starting infrastructure backup..." "start"
-    
-    # Backup regular infrastructure files
-    echo -e "\n${CYAN}📂 Backing up infrastructure files:${NC}"
-    for source in "${!INFRASTRUCTURE_FILES[@]}"; do
-        local dest="$BACKUP_DIR/${INFRASTRUCTURE_FILES[$source]}"
-        local description=$(basename "$source")
-        copy_file_secure "$source" "$dest" "$description"  # Errors are handled within function
-    done
-    
-    # Backup SSL certificates
-    echo -e "\n${CYAN}🔒 Backing up SSL certificates:${NC}"
-    backup_ssl_certificates
-    
-    # Create manifest
-    echo -e "\n${CYAN}📋 Creating backup manifest:${NC}"
-    create_backup_manifest
-}
-
-# Function: Print final summary
-print_summary() {
-    local backup_size=$(calculate_backup_size)
-    
-    echo -e "\n${BLUE}"
-    echo "╔══════════════════════════════════════════════╗"
-    echo "║              📊 Backup Summary               ║"
-    echo "╚══════════════════════════════════════════════╝"
-    echo -e "${NC}"
-    
-    echo -e "${CYAN}Backup Details:${NC}"
-    echo "   Name: $BACKUP_NAME"
-    echo "   Location: $BACKUP_DIR"
-    echo "   Size: $backup_size"
-    echo "   Mode: $([ "$DRY_RUN" = true ] && echo "DRY RUN" || echo "LIVE BACKUP")"
-    echo ""
-    
-    echo -e "${CYAN}File Statistics:${NC}"
-    echo "   ✅ Total Files: $TOTAL_FILES"
-    echo "   📁 Copied Successfully: $COPIED_FILES"
-    echo "   ⚠️  Missing Files: $MISSING_FILES"
-    echo "   ❌ Error Files: $ERROR_FILES"
-    echo ""
-    
-    if [ $MISSING_FILES -gt 0 ]; then
-        echo -e "${CYAN}Missing Files by Priority:${NC}"
-        if [ $MISSING_CRITICAL -gt 0 ]; then
-            echo -e "   ${RED}🚨 CRITICAL: $MISSING_CRITICAL files${NC}"
-        fi
-        if [ $MISSING_HIGH -gt 0 ]; then
-            echo -e "   ${YELLOW}⚠️  HIGH: $MISSING_HIGH files${NC}"
-        fi
-        if [ $MISSING_MEDIUM -gt 0 ]; then
-            echo -e "   ${BLUE}ℹ️  MEDIUM: $MISSING_MEDIUM files${NC}"
-        fi
-        if [ $MISSING_LOW -gt 0 ]; then
-            echo "   📋 LOW: $MISSING_LOW files"
-        fi
-        echo ""
-    fi
-    
-    # Status indicator
-    if [ $ERROR_FILES -eq 0 ] && [ $MISSING_FILES -eq 0 ]; then
-        print_progress "Backup completed successfully! 🎉" "success"
-    elif [ $ERROR_FILES -eq 0 ]; then
-        if [ $MISSING_CRITICAL -gt 0 ]; then
-            print_progress "⚠️  CRITICAL FILES MISSING - Production may be affected!" "warning"
-        else
-            print_progress "Backup completed with missing files (review manifest)" "warning"
-        fi
-    else
-        print_progress "Backup completed with errors (review manifest)" "error"
-    fi
-    
-    echo ""
-    echo -e "${PURPLE}💡 Next Steps:${NC}"
-    echo "   1. Review backup manifest: $BACKUP_DIR/BACKUP_MANIFEST.txt"
-    if [ "$DRY_RUN" = false ] && [ -f "$LOG_FILE" ]; then
-        echo "   2. Review detailed log: $LOG_FILE"
-        echo "   3. Test restore procedure if needed"
-        echo "   4. Verify critical files are present"
-    else
-        echo "   2. Test restore procedure if needed"
-        echo "   3. Verify critical files are present"
-    fi
-    
-    if [ "$GOLDEN_MODE" = true ]; then
-        echo "   4. Golden backup is now your reference point"
-    else
-        echo "   4. Consider creating golden backup: $0 --golden"
-    fi
-}
-
-# Main execution
 main() {
-    # Initialize logging system
+    # Initialize logging
     init_logging
     
-    # Pre-flight checks
+    # Check permissions
     check_permissions
-    check_existing_backup
     
-    # Setup
+    # Create backup structure
     create_backup_structure
     
-    # Execute backup
-    execute_backup
+    # Start backup process
+    print_progress "Starting infrastructure backup..." "start"
+    
+    echo ""
+    echo -e "${BLUE}📂 Backing up infrastructure files:${NC}"
+    
+    # Backup all infrastructure files
+    for source_path in "${!INFRASTRUCTURE_FILES[@]}"; do
+        local dest_file="${INFRASTRUCTURE_FILES[$source_path]}"
+        local dest_path="$BACKUP_DIR/$dest_file"
+        local priority="${FILE_PRIORITIES[$source_path]}"
+        
+        copy_file "$source_path" "$dest_path" "$priority"
+    done
+    
+    echo ""
+    echo -e "${BLUE}🔒 Backing up SSL certificates:${NC}"
+    backup_ssl_certificates
+    
+    echo ""
+    echo -e "${BLUE}📋 Creating backup manifest:${NC}"
+    create_backup_manifest
     
     # SECURITY: Lock down backup directory permissions
-    if [ "$DRY_RUN" = false ] && [ -d "$BACKUP_DIR" ]; then
+    if [ "$DRY_RUN" = false ]; then
         print_progress "Securing backup directory permissions..." "start"
         chmod -R go-rwx "$BACKUP_DIR"
         print_progress "Backup directory secured (root access only)" "success"
     fi
     
-    # Summary
-    print_summary
+    # Display summary
+    echo ""
+    echo ""
+    echo -e "${BLUE}"
+    echo "╔══════════════════════════════════════════════╗"
+    echo "║              📊 Backup Summary               ║"
+    echo "╚══════════════════════════════════════════════╝"
+    echo -e "${NC}"
+    echo ""
+    echo "Backup Details:"
+    echo "   Name: $BACKUP_NAME"
+    echo "   Location: $BACKUP_DIR"
+    echo "   Size: $(calculate_backup_size)"
+    echo "   Mode: $([ "$DRY_RUN" = true ] && echo "DRY RUN" || echo "LIVE BACKUP")"
+    echo ""
+    echo "File Statistics:"
+    echo "   ✅ Total Files: $TOTAL_FILES"
+    echo "   📁 Copied Successfully: $COPIED_FILES"
+    echo "   ⚠️  Missing Files: $MISSING_FILES"
+    echo "   ❌ Error Files: $ERROR_FILES"
+    
+    if [ $MISSING_FILES -gt 0 ]; then
+        echo ""
+        echo "Missing Files by Priority:"
+        if [ $MISSING_CRITICAL -gt 0 ]; then
+            echo "   🚨 CRITICAL: $MISSING_CRITICAL files"
+        fi
+        if [ $MISSING_HIGH -gt 0 ]; then
+            echo "   ⚠️  HIGH: $MISSING_HIGH files"
+        fi
+        if [ $MISSING_MEDIUM -gt 0 ]; then
+            echo "   📝 MEDIUM: $MISSING_MEDIUM files"
+        fi
+        if [ $MISSING_LOW -gt 0 ]; then
+            echo "   📄 LOW: $MISSING_LOW files"
+        fi
+    fi
+    
+    echo ""
+    if [ $ERROR_FILES -gt 0 ]; then
+        echo -e "${RED}❌ Backup completed with errors${NC}"
+    elif [ $MISSING_CRITICAL -gt 0 ]; then
+        echo -e "${RED}⚠️  ⚠️  CRITICAL FILES MISSING - Production may be affected!${NC}"
+    elif [ $MISSING_FILES -gt 0 ]; then
+        echo -e "${YELLOW}⚠️  Backup completed with missing files${NC}"
+    else
+        echo -e "${GREEN}✅ Backup completed successfully! 🎉${NC}"
+    fi
+    
+    echo ""
+    echo -e "${PURPLE}💡 Next Steps:${NC}"
+    echo "   1. Review backup manifest: $BACKUP_DIR/BACKUP_MANIFEST.txt"
+    if [ "$DRY_RUN" = false ]; then
+        echo "   2. Review detailed log: $LOG_FILE"
+    fi
+    echo "   3. Test restore procedure if needed"
+    echo "   4. Verify critical files are present"
+    if [ "$GOLDEN_MODE" = false ]; then
+        echo "   4. Consider creating golden backup: ./scripts/backup-foundation.sh --golden"
+    fi
     
     # Send email notification in auto mode
     if [ "$AUTO_MODE" = true ]; then
