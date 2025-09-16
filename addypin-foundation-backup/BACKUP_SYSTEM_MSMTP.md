@@ -21,8 +21,8 @@ The AddyPin Foundation Backup System provides comprehensive infrastructure backu
 ## 🔧 Script Locations
 
 ### Primary Backup Scripts
-- **MSMTP Backup Script**: `/opt/addypin-foundation-backup/scripts/backup-foundation-msmtp.sh` - New MSMTP version
-- **Original Backup Script**: `/opt/addypin-foundation-backup/scripts/backup-foundation.sh` - Legacy Resend API version (replaced)
+- **MSMTP Backup Script**: `/opt/addypin-foundation-backup/scripts/backup-foundation.sh` - ✅ **UPDATED** with MSMTP integration
+- **MSMTP Alert System**: `/opt/addypin/scripts/send-health-alert.sh` - Professional email notifications
 - **Setup Automation**: `/opt/addypin-foundation-backup/scripts/setup-automated-backups.sh` - Cron configuration
 - **Restore Script**: `/opt/addypin-foundation-backup/scripts/restore-foundation.sh` - Disaster recovery
 
@@ -36,7 +36,7 @@ The AddyPin Foundation Backup System provides comprehensive infrastructure backu
 ### Cron Configuration
 ```bash
 # Foundation backup (bi-weekly, every other Sunday at 2:00 AM)
-0 2 * * 0 "/opt/addypin-foundation-backup/scripts/backup-foundation-msmtp.sh" --auto --biweekly >> /var/log/addypin-backup-cron.log 2>&1
+0 2 * * 0 "/opt/addypin-foundation-backup/scripts/backup-foundation.sh" --auto --biweekly >> /var/log/addypin-backup-cron.log 2>&1
 ```
 
 ### Schedule Details
@@ -94,20 +94,20 @@ The AddyPin Foundation Backup System provides comprehensive infrastructure backu
 
 ### Standard Backup Operations
 ```bash
-# Full backup with email notification
-/opt/addypin-foundation-backup/scripts/backup-foundation-msmtp.sh --auto
+# Full backup with email notification (✅ WORKING - sends to avoidaccess@gmail.com)
+/opt/addypin-foundation-backup/scripts/backup-foundation.sh --auto
 
 # Test backup (dry-run, no actual copying)
-/opt/addypin-foundation-backup/scripts/backup-foundation-msmtp.sh --dry-run
+/opt/addypin-foundation-backup/scripts/backup-foundation.sh --dry-run
 
 # Force overwrite existing backup
-/opt/addypin-foundation-backup/scripts/backup-foundation-msmtp.sh --auto --force
+/opt/addypin-foundation-backup/scripts/backup-foundation.sh --auto --force
 
 # Create golden backup (immutable reference)
-/opt/addypin-foundation-backup/scripts/backup-foundation-msmtp.sh --auto --golden
+/opt/addypin-foundation-backup/scripts/backup-foundation.sh --auto --golden
 
 # Manual backup without email notifications
-/opt/addypin-foundation-backup/scripts/backup-foundation-msmtp.sh
+/opt/addypin-foundation-backup/scripts/backup-foundation.sh
 ```
 
 ### Backup Management Commands
@@ -190,10 +190,10 @@ systemctl status crond
 crontab -l | grep backup
 
 # Check script permissions
-ls -la /opt/addypin-foundation-backup/scripts/backup-foundation-msmtp.sh
+ls -la /opt/addypin-foundation-backup/scripts/backup-foundation.sh
 
 # Run manual test
-/opt/addypin-foundation-backup/scripts/backup-foundation-msmtp.sh --dry-run
+/opt/addypin-foundation-backup/scripts/backup-foundation.sh --dry-run
 ```
 
 #### Email Notifications Not Sending
@@ -208,7 +208,7 @@ ls -la /root/.msmtprc
 /opt/addypin/scripts/send-health-alert.sh backup "Test backup notification"
 
 # Check backup script uses MSMTP
-grep -i "msmtp\|send-health-alert" /opt/addypin-foundation-backup/scripts/backup-foundation-msmtp.sh
+grep -i "msmtp\|send-health-alert" /opt/addypin-foundation-backup/scripts/backup-foundation.sh
 ```
 
 #### Missing Files in Backup
@@ -282,5 +282,5 @@ tail -20 /opt/addypin-foundation-backup/logs/backup_*.log
 
 **📧 All backup notifications sent to: avoidaccess@gmail.com**  
 **⏰ Automated backups: Bi-weekly Sunday 2:00 AM**  
-**🔧 Manual commands available via backup-foundation-msmtp.sh**  
+**🔧 Manual commands available via backup-foundation.sh**  
 **📁 Perfect coverage: 16/16 critical infrastructure files**

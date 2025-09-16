@@ -9,7 +9,7 @@ The automated backup system performs comprehensive backups of critical infrastru
 ## Features
 
 - **Bi-weekly Schedule**: Backups run every other Sunday at 2:00 AM
-- **Email Notifications**: Success/failure notifications via Resend API
+- **Email Notifications**: Success/failure notifications via MSMTP Gmail SMTP
 - **Enhanced Monitoring Integration**: All live monitoring scripts included
 - **SSH Security Monitoring**: SSH health scripts backed up
 - **Self-Preserving System**: Backup scripts back up themselves
@@ -126,10 +126,11 @@ Each automated backup includes:
 ## Email Notification System
 
 ### Email Configuration
-- **Service**: Resend API (api.resend.com)
-- **Recipient**: `admin@addypin.com`
+- **Service**: MSMTP Gmail SMTP (smtp.gmail.com:587) with TLS encryption
+- **Recipient**: `avoidaccess@gmail.com`
 - **Format**: Professional HTML-formatted emails with AddyPin branding
 - **Trigger**: Only in automated mode (`--auto` flag)
+- **Authentication**: Gmail App Password with 2FA requirement
 
 ### Email Types
 
@@ -140,6 +141,8 @@ Content: Backup completed successfully
          22/22 files backed up
          Location: /opt/addypin-foundation-backup/versioned/TIMESTAMP
          Size: [backup size]
+         Mode: Versioned
+         Sent via MSMTP to avoidaccess@gmail.com
 ```
 
 #### ⚠️ Warning Email (missing files)
@@ -158,9 +161,11 @@ Content: Backup completed with errors
 ```
 
 ### Email Requirements
-- **Environment Variable**: `RESEND_API_KEY` must be set
-- **API Key Sources**: Checks `/opt/addypin-staging/.env`, `/root/.env`
+- **MSMTP Configuration**: `/root/.msmtprc` must be configured with Gmail SMTP
+- **Gmail App Password**: 16-character app password with 2FA enabled
+- **Email Script**: Uses `/opt/addypin/scripts/send-health-alert.sh` for sending
 - **Mode**: Only sends emails in automated mode (`--auto`)
+- **Status**: ✅ **WORKING** - Emails successfully sent to avoidaccess@gmail.com
 
 ## Security Features
 
@@ -243,12 +248,15 @@ cat /opt/addypin-foundation-backup/versioned/*/BACKUP_MANIFEST.txt
 
 #### Email Notifications Not Sending
 ```bash
-# Check if RESEND_API_KEY is set
-echo $RESEND_API_KEY
+# Check MSMTP configuration
+ls -la /root/.msmtprc
+cat /root/.msmtprc
 
-# Check environment files
-grep RESEND_API_KEY /opt/addypin-staging/.env
-grep RESEND_API_KEY /root/.env
+# Test MSMTP directly
+echo "Test backup email" | msmtp avoidaccess@gmail.com
+
+# Test via health alert script
+/opt/addypin/scripts/send-health-alert.sh backup "Test backup notification"
 
 # Test email manually
 ./scripts/backup-foundation.sh --auto
@@ -308,7 +316,7 @@ journalctl -u crond | grep backup
 ========================
 Backup Success Rate: ✅ 100% (22/22 files)
 Missing Files: ✅ 0 (no false warnings)
-Email System: ✅ Configured (Resend API)
+Email System: ✅ Configured (MSMTP Gmail SMTP) - WORKING ✅
 Monitoring Scripts: ✅ All 6 scripts backed up
 Backup Scripts: ✅ All 4 scripts backed up (self-preserving)
 Security: ✅ 700/600 permissions (root-only access)
