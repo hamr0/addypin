@@ -40,7 +40,7 @@ cd /opt/addypin
 # Set up environment variables (CRITICAL - UPDATE THESE VALUES)
 cat > .env << 'EOF'
 DATABASE_URL=postgresql://addypin:addypin_password@172.17.0.1:5432/addypin_db
-RESEND_API_KEY=re_your_actual_resend_key_here
+# RESEND_API_KEY=re_your_actual_resend_key_here  # No longer needed - using MSMTP
 UMAMI_APP_SECRET=your_actual_umami_secret_here
 UMAMI_HASH_SALT=your_actual_umami_salt_here
 EOF
@@ -109,7 +109,7 @@ nano .env
 
 # Replace these placeholder values:
 DATABASE_URL=postgresql://addypin:addypin_password@172.17.0.1:5432/addypin_db
-RESEND_API_KEY=re_your_actual_resend_key_here
+# RESEND_API_KEY=re_your_actual_resend_key_here  # No longer needed - using MSMTP
 UMAMI_APP_SECRET=your_actual_umami_secret_here  
 UMAMI_HASH_SALT=your_actual_umami_salt_here
 ```

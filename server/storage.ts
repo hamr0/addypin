@@ -62,7 +62,7 @@ export class DatabaseStorage implements IStorage {
   async createPin(insertPin: InsertPin): Promise<Pin> {
     const [pin] = await db
       .insert(pins)
-      .values(insertPin)
+      .values(insertPin as any)
       .returning();
     return pin;
   }

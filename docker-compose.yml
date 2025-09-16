@@ -1,37 +1,16 @@
 version: '3.8'
 services:
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: addypin-frontend
+  app:
+    image: ${APP_IMAGE:-ghcr.io/amrhas82/addypin:latest}
     ports:
-      - "3000:80"
-    depends_on:
-      - backend
-
-  backend:
-    build: ./backend
-    container_name: addypin-backend
-    ports:
-      - "5000:5000"
-    depends_on:
-      - db
+      - "127.0.0.1:3000:3000"  # Production
+      # - "127.0.0.1:8080:3000"  # Staging (use different compose file for staging)
     environment:
-      - DATABASE_URL=postgresql://addypin:${VPS_DATABASE_PASSWORD}@db:5432/addypin
-      - RESEND_API_KEY=${RESEND_API_KEY}
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://addypin_user:${DB_PASSWORD}@host.docker.internal:5432/addypin
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
 
-  db:
-    image: postgres:13
-    container_name: addypin-db
-    environment:
-      POSTGRES_DB: addypin
-      POSTGRES_USER: addypin
-      POSTGRES_PASSWORD: ${VPS_DATABASE_PASSWORD}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-
-volumes:
-  postgres_data:
+# No postgres service definition - using native PostgreSQL
+# No volumes or networks section needed for single service
