@@ -136,7 +136,6 @@ declare -A INFRASTRUCTURE_FILES=(
     ["/opt/addypin-staging/docker-compose.yml"]="docker/staging-docker-compose.yml"
     
     # Environment Files (Critical: Contains API keys)
-    ["/opt/addypin/.env"]="environment/production.env"
     ["/opt/addypin-staging/.env"]="environment/staging.env"
     
     # System Configuration (Critical)
@@ -145,7 +144,6 @@ declare -A INFRASTRUCTURE_FILES=(
     # Monitoring Scripts (High Priority) - ENHANCED LIVE MONITORING
     ["/opt/addypin/scripts/health-check.sh"]="monitoring/health-check.sh"
     ["/opt/addypin/scripts/enhanced-health-check.sh"]="monitoring/enhanced-health-check.sh"
-    ["/opt/addypin/scripts/health-check-email.js"]="monitoring/health-check-email.js"
     ["/usr/local/bin/health"]="monitoring/health-command-symlink"
     ["/opt/addypin/universal-health.sh"]="monitoring/universal-health.sh"
     ["/opt/addypin/ssh-health.sh"]="monitoring/ssh-health.sh"
@@ -176,14 +174,12 @@ declare -A FILE_PRIORITIES=(
     # Critical files (must exist in production)
     ["/opt/addypin/docker-compose.yml"]="CRITICAL"
     ["/opt/addypin-staging/docker-compose.yml"]="CRITICAL"
-    ["/opt/addypin/.env"]="CRITICAL"
     ["/opt/addypin-staging/.env"]="CRITICAL"
     ["/var/spool/cron/root"]="CRITICAL"
     
     # High priority files (should exist) - ENHANCED LIVE MONITORING
     ["/opt/addypin/scripts/health-check.sh"]="HIGH"
     ["/opt/addypin/scripts/enhanced-health-check.sh"]="HIGH"
-    ["/opt/addypin/scripts/health-check-email.js"]="HIGH"
     ["/usr/local/bin/health"]="CRITICAL"
     ["/opt/addypin/universal-health.sh"]="CRITICAL"
     ["/opt/addypin/ssh-health.sh"]="HIGH"
