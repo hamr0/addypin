@@ -7,7 +7,7 @@ services:
       # - "127.0.0.1:8080:3000"  # Staging (use different compose file for staging)
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=postgresql://addypin_user:${DB_PASSWORD}@host.docker.internal:5432/addypin
+      - DATABASE_URL=postgresql://addypin_user:${DB_PASSWORD}@172.17.0.1:5432/addypin?sslmode=require
     extra_hosts:
       - "host.docker.internal:host-gateway"
     restart: unless-stopped
