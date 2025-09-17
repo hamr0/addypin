@@ -44,16 +44,6 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "npm run dev"
-waitForPort = 5000
-
-[[workflows.workflow]]
-name = "backend server"
-mode = "sequential"
-author = 46301053
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
 args = "bash -c \"./tunnel_manager.sh && npm run dev\""
 
 [agent]
