@@ -41,6 +41,12 @@ function invalidateStatsCache() {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   console.log("🚀 Starting route registration...");
+
+  // 🚨 SECURITY: Block config file access
+  app.use("/.env", (req, res) => res.status(404).json({ error: "Not found" }));
+  app.use("/api/.env", (req, res) => res.status(404).json({ error: "Not found" }));
+  app.use("/*config*", (req, res) => res.status(404).json({ error: "Not found" }));
+  app.use("/vendor/*", (req, res) => res.status(404).json({ error: "Not found" }));
   
   // Enhanced health endpoint with dependency checks
   app.get("/api/health", async (req, res) => {
@@ -892,11 +898,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // 🚨 SECURITY: Block config file access
-  app.use('/.env', (req, res) => res.status(404).json({ error: 'Not found' }));
-  app.use('/api/.env', (req, res) => res.status(404).json({ error: 'Not found' }));
-  app.use('/*config*', (req, res) => res.status(404).json({ error: 'Not found' }));
-  app.use('/vendor/*', (req, res) => res.status(404).json({ error: 'Not found' }));
 
   console.log("✅ All routes registered successfully! Creating HTTP server...");
   
