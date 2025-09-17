@@ -7,7 +7,6 @@ import { EditModal } from "@/components/EditModal";
 import { UserPinsList } from "@/components/UserPinsList";
 import { QuickStats } from "@/components/QuickStats";
 import { ContactForm } from "@/components/ContactForm";
-import OpenInSection from "@/components/OpenInSection";
 import type { Pin } from "@shared/schema";
 
 export default function Home() {
@@ -50,11 +49,8 @@ export default function Home() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        {/* Mobile: Flex column, Desktop: Grid layout */}
-        <div className="flex flex-col gap-4 lg:grid lg:grid-cols-3 lg:gap-4">
-          
-          {/* Map Section - Mobile: 1st, Desktop: Left side */}
-          <div className="order-1 lg:col-span-2 lg:order-none">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="lg:col-span-2">
             <MapSection 
               coordinates={coordinates}
               onCoordinatesChange={setCoordinates}
@@ -75,62 +71,41 @@ export default function Home() {
               }}
             />
           </div>
-          
-          {/* Desktop Sidebar - Contains all right-side components */}
-          <div className="lg:col-span-1 lg:space-y-4 contents lg:block">
-            
-            {/* Generate addypin - Mobile: 2nd, Desktop: 1st in sidebar */}
-            <div className="order-2 lg:order-none">
-              <Sidebar 
-                coordinates={coordinates}
-                generatedLink={generatedLink}
-                onLinkGenerated={setGeneratedLink}
-                isMapWidth={false}
-              />
-            </div>
-            
-            {/* Open in - Mobile: 3rd, Desktop: 2nd in sidebar */}
-            <div className="order-3 lg:order-none">
-              <OpenInSection coordinates={coordinates} />
-            </div>
-            
-            {/* My addypins - Mobile: 4th, Desktop: 3rd in sidebar */}
-            <div className="order-4 lg:order-none">
-              <UserPinsList
-                onPinSelect={(pin) => {
-                  // Reset editing state when selecting a new pin
-                  setIsEditing(false);
-                  setEditingPin(pin);
-                  setOriginalCoordinates({
-                    lat: Number(pin.latitude),
-                    lng: Number(pin.longitude)
-                  });
-                  setCoordinates({
-                    lat: Number(pin.latitude),
-                    lng: Number(pin.longitude)
-                  });
-                  // Clear any existing generated link
-                  setGeneratedLink(null);
-                }}
-                onStartEditing={() => {
-                  setIsEditing(true);
-                  // Force immediate UI update
-                  setCoordinates(prevCoords => prevCoords ? {...prevCoords} : prevCoords);
-                }}
-                onAuthChange={(email, otp, isAuth) => {
-                  setUserEmail(email);
-                  setOtpCode(otp);
-                }}
-              />
-            </div>
-            
-            {/* Quick Stats - Mobile: 5th, Desktop: 4th in sidebar */}
-            <div className="order-5 lg:order-none">
-              <QuickStats />
-            </div>
-            
+          <div className="space-y-4">
+            <QuickStats />
+            <Sidebar 
+              coordinates={coordinates}
+              generatedLink={generatedLink}
+              onLinkGenerated={setGeneratedLink}
+              isMapWidth={false}
+            />
+            <UserPinsList
+              onPinSelect={(pin) => {
+                // Reset editing state when selecting a new pin
+                setIsEditing(false);
+                setEditingPin(pin);
+                setOriginalCoordinates({
+                  lat: Number(pin.latitude),
+                  lng: Number(pin.longitude)
+                });
+                setCoordinates({
+                  lat: Number(pin.latitude),
+                  lng: Number(pin.longitude)
+                });
+                // Clear any existing generated link
+                setGeneratedLink(null);
+              }}
+              onStartEditing={() => {
+                setIsEditing(true);
+                // Force immediate UI update
+                setCoordinates(prevCoords => prevCoords ? {...prevCoords} : prevCoords);
+              }}
+              onAuthChange={(email, otp, isAuth) => {
+                setUserEmail(email);
+                setOtpCode(otp);
+              }}
+            />
           </div>
-          
         </div>
       </main>
 
