@@ -16,19 +16,10 @@ export async function trackPageVisit(page: string) {
   try {
     const sessionId = getOrCreateSessionId();
     
-    // Note: /api/analytics/visit endpoint doesn't exist - commenting out to fix fetch errors
-    // Send a simple visit tracking event
-    // await fetch('/api/analytics/visit', {
-    //   method: 'POST',
-    //   headers: {
-    //     'Content-Type': 'application/json',
-    //   },
-    //   body: JSON.stringify({
-    //     page,
-    //     sessionId,
-    //     timestamp: new Date().toISOString(),
-    //   }),
-    // });
+    // Note: /api/analytics/visit endpoint doesn't exist on server
+    // This functionality needs to be implemented if page visit tracking is desired
+    // For now, just generate session ID for other analytics uses
+    console.log('Session ID generated for page:', page, sessionId);
   } catch (error) {
     // Silently fail analytics - don't break user experience
     console.warn('Analytics tracking failed:', error);
