@@ -430,21 +430,6 @@ export default function MapSection({ coordinates, onCoordinatesChange, generated
               href={mapLinks[app.name] || "#"}
               target="_blank"
               rel="noopener noreferrer"
-              onClick={async (e) => {
-                // Track map app click analytics
-                if (coordinates) {
-                  try {
-                    await apiRequest("POST", "/api/analytics/map-click", {
-                      appName: app.name,
-                      latitude: coordinates.lat,
-                      longitude: coordinates.lng
-                    });
-                    console.log(`Tracked click for ${app.name}`);
-                  } catch (error) {
-                    console.log("Analytics tracking failed:", error);
-                  }
-                }
-              }}
               className="flex items-center justify-center p-2 bg-addypin-light hover:bg-addypin-cyan hover:text-white transition-all duration-200 rounded-lg text-xs font-medium text-addypin-dark group"
               data-testid={`link-${app.name.toLowerCase().replace(/\s+/g, '-')}`}
             >
