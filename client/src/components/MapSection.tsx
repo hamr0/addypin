@@ -139,7 +139,7 @@ export default function MapSection({ coordinates, onCoordinatesChange, generated
     const initialLat = geoLocation?.coords.latitude || 52.247904;
     const initialLng = geoLocation?.coords.longitude || 4.761194;
 
-    const map = L.map(mapContainerRef.current).setView([initialLat, initialLng], 13);
+    const map = L.map(mapContainerRef.current).setView([initialLat, initialLng], 15);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors',
