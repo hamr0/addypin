@@ -6,8 +6,19 @@ import Logo from "@/components/Logo";
 import { EditModal } from "@/components/EditModal";
 import { UserPinsList } from "@/components/UserPinsList";
 import { QuickStats } from "@/components/QuickStats";
-import { ContactForm } from "@/components/ContactForm";
-import type { Pin } from "@shared/schema";
+// Local type definition to avoid import issues
+type Pin = {
+  id: string;
+  shortcode: string;
+  latitude: string;
+  longitude: string;
+  createdAt: Date;
+  userEmail?: string;
+  isActive: boolean;
+  userId?: string;
+  createdBy?: string;
+  expiresAt?: Date;
+};
 
 export default function Home() {
   const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
@@ -15,7 +26,6 @@ export default function Home() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingPin, setEditingPin] = useState<Pin | undefined>();
   const [isEditing, setIsEditing] = useState(false);
-  const [originalCoordinates, setOriginalCoordinates] = useState<{ lat: number; lng: number } | null>(null);
   const [userEmail, setUserEmail] = useState<string>("");
   const [otpCode, setOtpCode] = useState<string>("");
 
@@ -72,7 +82,6 @@ export default function Home() {
             />
           </div>
           <div className="space-y-4">
-            <QuickStats />
             <Sidebar 
               coordinates={coordinates}
               generatedLink={generatedLink}
@@ -84,10 +93,6 @@ export default function Home() {
                 // Reset editing state when selecting a new pin
                 setIsEditing(false);
                 setEditingPin(pin);
-                setOriginalCoordinates({
-                  lat: Number(pin.latitude),
-                  lng: Number(pin.longitude)
-                });
                 setCoordinates({
                   lat: Number(pin.latitude),
                   lng: Number(pin.longitude)
@@ -100,11 +105,12 @@ export default function Home() {
                 // Force immediate UI update
                 setCoordinates(prevCoords => prevCoords ? {...prevCoords} : prevCoords);
               }}
-              onAuthChange={(email, otp, isAuth) => {
+              onAuthChange={(email, otp) => {
                 setUserEmail(email);
                 setOtpCode(otp);
               }}
             />
+            <QuickStats />
           </div>
         </div>
       </main>
@@ -162,10 +168,6 @@ export default function Home() {
         onClose={() => setShowEditModal(false)}
         onPinSelect={(pin) => {
           setEditingPin(pin);
-          setOriginalCoordinates({
-            lat: Number(pin.latitude),
-            lng: Number(pin.longitude)
-          });
           setCoordinates({
             lat: Number(pin.latitude),
             lng: Number(pin.longitude)

@@ -108,12 +108,10 @@ export default function MapSection({ coordinates, onCoordinatesChange, generated
     
     debounceTimerRef.current = setTimeout(async () => {
       try {
-        const response = await fetch(`/api/map-links/${coords.lat}/${coords.lng}`);
-        if (response.ok) {
-          const newMapLinks = await response.json();
-          setMapLinks(newMapLinks);
-          mapLinksCache.current.set(cacheKey, newMapLinks);
-        }
+        const response = await apiRequest("GET", `/api/map-links/${coords.lat}/${coords.lng}`, undefined);
+        const newMapLinks = await response.json();
+        setMapLinks(newMapLinks);
+        mapLinksCache.current.set(cacheKey, newMapLinks);
       } catch (error) {
         console.error("Error fetching map links:", error);
       } finally {
@@ -141,7 +139,7 @@ export default function MapSection({ coordinates, onCoordinatesChange, generated
     const initialLat = geoLocation?.coords.latitude || 52.247904;
     const initialLng = geoLocation?.coords.longitude || 4.761194;
 
-    const map = L.map(mapContainerRef.current).setView([initialLat, initialLng], 13);
+    const map = L.map(mapContainerRef.current).setView([initialLat, initialLng], 15);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap contributors',
@@ -430,21 +428,6 @@ export default function MapSection({ coordinates, onCoordinatesChange, generated
               href={mapLinks[app.name] || "#"}
               target="_blank"
               rel="noopener noreferrer"
-              onClick={async (e) => {
-                // Track map app click analytics
-                if (coordinates) {
-                  try {
-                    await apiRequest("POST", "/api/analytics/map-click", {
-                      appName: app.name,
-                      latitude: coordinates.lat,
-                      longitude: coordinates.lng
-                    });
-                    console.log(`Tracked click for ${app.name}`);
-                  } catch (error) {
-                    console.log("Analytics tracking failed:", error);
-                  }
-                }
-              }}
               className="flex items-center justify-center p-2 bg-addypin-light hover:bg-addypin-cyan hover:text-white transition-all duration-200 rounded-lg text-xs font-medium text-addypin-dark group"
               data-testid={`link-${app.name.toLowerCase().replace(/\s+/g, '-')}`}
             >

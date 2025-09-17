@@ -546,3 +546,65 @@ Error: connect ECONNREFUSED 127.0.0.1:5432
 - **VPS Access**: New SSH public keys must be added to VPS authorized_keys manually
 - **Monitoring**: Tunnel status monitored through application health endpoints
 - **Backup Protection**: tunnel_manager.sh script included in foundation backup system
+
+### **SSH TUNNEL TROUBLESHOOTING GUIDE (September 17, 2025)**
+
+**Issue Identification**: When SSH tunnel fails to establish, causing database connectivity errors.
+
+**Diagnostic Commands**:
+```bash
+# Check if tunnel is running
+nc -z localhost 5432 && echo "✓ Tunnel working" || echo "✗ Tunnel down"
+
+# Check for SSH authentication errors
+cat tunnel.log
+```
+
+**Common Error Patterns**:
+1. **SSH Key Missing**: `No such file or directory: ~/.ssh/addypin_replit`
+2. **Authentication Failed**: `Permission denied (publickey)`
+3. **Tunnel Process Stopped**: No SSH process in `ps aux | grep ssh`
+
+**Resolution Process**:
+
+**Step 1: SSH Key Regeneration** (Automatic)
+```bash
+# Generate new SSH key (automatically done by tunnel_manager.sh)
+ssh-keygen -t ed25519 -f ~/.ssh/addypin_replit -N ""
+```
+
+**Step 2: VPS Authorization** (⚠️ **MANUAL REQUIRED**)
+```bash
+# Connect to VPS and add new public key
+ssh root@155.94.144.191
+
+# Add the new key to authorized_keys (on VPS)
+echo 'ssh-ed25519 [NEW_KEY_HERE]' >> ~/.ssh/authorized_keys
+
+# Exit VPS
+exit
+```
+
+**Step 3: Verification**
+```bash
+# Test SSH connectivity
+ssh -i ~/.ssh/addypin_replit root@155.94.144.191 "echo 'SSH working'"
+
+# Test database health
+curl -s http://localhost:5000/api/health
+```
+
+**Expected Results After Fix**:
+- ✅ SSH authentication: Success
+- ✅ Tunnel status: Port 5432 accessible
+- ✅ Database connectivity: PostgreSQL healthy (400-500ms response)
+- ✅ Application functionality: Pin creation and data retrieval working
+
+**Critical Manual Step**: 
+**⚠️ Every time Replit regenerates SSH keys, the new public key must be manually added to VPS authorized_keys file. This cannot be automated from Replit's security model.**
+
+**Workflow Integration Status**:
+- **Command Updated**: `bash -c "./tunnel_manager.sh && npm run dev"`
+- **Automatic Detection**: tunnel_manager.sh handles key regeneration
+- **Manual Intervention**: Only required for VPS key authorization
+- **Verification**: Health endpoints confirm successful connectivity

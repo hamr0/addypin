@@ -378,10 +378,15 @@ export default function RedirectPage() {
                       // Track map app click analytics without preventing default
                       if (coordinates) {
                         // Fire and forget - don't await to avoid blocking the link
-                        apiRequest("POST", "/api/analytics/map-click", {
-                          appName: appName,
-                          latitude: coordinates.lat,
-                          longitude: coordinates.lng
+                        fetch("/api/map-click", {
+                          method: "POST",
+                          headers: {
+                            "Content-Type": "application/json",
+                          },
+                          body: JSON.stringify({
+                            shortcode: shortcode,
+                            mapApp: appName
+                          })
                         }).catch(error => {
                           console.log("Analytics tracking failed:", error);
                         });
