@@ -108,12 +108,10 @@ export default function MapSection({ coordinates, onCoordinatesChange, generated
     
     debounceTimerRef.current = setTimeout(async () => {
       try {
-        const response = await fetch(`/api/map-links/${coords.lat}/${coords.lng}`);
-        if (response.ok) {
-          const newMapLinks = await response.json();
-          setMapLinks(newMapLinks);
-          mapLinksCache.current.set(cacheKey, newMapLinks);
-        }
+        const response = await apiRequest("GET", `/api/map-links/${coords.lat}/${coords.lng}`, undefined);
+        const newMapLinks = await response.json();
+        setMapLinks(newMapLinks);
+        mapLinksCache.current.set(cacheKey, newMapLinks);
       } catch (error) {
         console.error("Error fetching map links:", error);
       } finally {
