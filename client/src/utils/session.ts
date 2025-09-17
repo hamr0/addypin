@@ -16,18 +16,19 @@ export async function trackPageVisit(page: string) {
   try {
     const sessionId = getOrCreateSessionId();
     
+    // Note: /api/analytics/visit endpoint doesn't exist - commenting out to fix fetch errors
     // Send a simple visit tracking event
-    await fetch('/api/analytics/visit', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        page,
-        sessionId,
-        timestamp: new Date().toISOString(),
-      }),
-    });
+    // await fetch('/api/analytics/visit', {
+    //   method: 'POST',
+    //   headers: {
+    //     'Content-Type': 'application/json',
+    //   },
+    //   body: JSON.stringify({
+    //     page,
+    //     sessionId,
+    //     timestamp: new Date().toISOString(),
+    //   }),
+    // });
   } catch (error) {
     // Silently fail analytics - don't break user experience
     console.warn('Analytics tracking failed:', error);
