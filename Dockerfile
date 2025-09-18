@@ -8,6 +8,11 @@ RUN npm ci
 
 # Copy source code and build
 COPY . .
+
+# Accept build-time environment variables for frontend
+ARG VITE_API_BASE_URL=""
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+
 RUN npm run build # This runs 'vite build' and 'esbuild'
 
 # Stage 2: Production stage
