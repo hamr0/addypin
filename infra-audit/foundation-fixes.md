@@ -801,6 +801,175 @@ addypin-staging-app-1   Up 2 hours      ghcr.io/amrhas82/addypin:staging-latest
 
 ---
 
-**Document Status:** Complete ✅ with Phase 3 Production Restoration
-**Last Updated:** September 19, 2025 (Phase 3 Complete)
-**Resolution Status:** Both environments fully operational with latest image deployment and comprehensive safety systems
+## Phase 5: Live Monitoring System Verification & Cleanup
+
+**Date:** September 19, 2025 (Post-Deployment)
+**Status:** ✅ MONITORING FULLY OPERATIONAL - Historical Log Issues Resolved
+**Critical Achievement:** Verified and cleaned live monitoring system
+
+### Executive Summary - Phase 5
+
+Completed comprehensive monitoring system verification revealing that apparent PostgreSQL monitoring errors were historical log entries from September 15th. Current monitoring infrastructure is fully operational with native PostgreSQL service checking and automated health verification every 10 minutes.
+
+### Monitoring Issue Investigation
+
+#### Initial Problem Discovery
+**Issue:** PostgreSQL monitoring showing container errors in health check output
+```
+❌ CONTAINER 'addypin-postgres' IS DOWN!
+```
+
+**Impact:** Confusing monitoring reports suggesting database issues despite perfect operational status
+
+#### Root Cause Analysis
+**Investigation Results:**
+- **Error Source:** Historical log entries from `/var/log/infra-health-check.log`
+- **Timestamp Analysis:** All PostgreSQL errors dated `2025-09-15 10:56:46` (4 days old)
+- **Current Status:** No new monitoring errors since September 15th
+- **Architecture Discovery:** Current monitoring correctly checks native PostgreSQL service
+
+### Current Monitoring Architecture Verification
+
+#### Active Monitoring System Status
+**Primary Script:** `/opt/addypin/scripts/enhanced-health-check.sh`
+- **Execution:** Every 10 minutes via crontab (`*/10 * * * * /opt/addypin/scripts/enhanced-health-check.sh`)
+- **PostgreSQL Check:** Native service monitoring (`systemctl is-active postgresql`)
+- **Container Discovery:** Dynamic detection of actual running containers only
+- **Log Location:** `/var/log/addypin-health.log`
+
+#### Monitoring Script Verification Results
+**Manual Execution Test (September 19, 2025):**
+```
+🔧 System Services:
+✅ nginx: Running (Web server and reverse proxy)
+✅ docker: Running (Container runtime platform)  
+✅ postgresql: Running (Database service)
+
+🐳 Docker Containers:
+✅ Container addypin-app-1: Running
+✅ Container addypin-staging-app-1: Running
+
+📊 Resource Usage:
+✅ Disk: 68% (Normal)
+✅ Memory: 26% (Normal)
+✅ Load Average: 0.01 (Normal)
+
+📋 Health Check Summary:
+✅ Status: HEALTHY (All systems operational)
+Issues: 0, Warnings: 0
+```
+
+### Monitoring System Cleanup Implementation
+
+#### Historical Log Archival
+**Problem:** Old PostgreSQL container errors causing confusion
+**Solution Applied:**
+```bash
+# Archive old logs containing historical errors
+sudo mv /var/log/infra-health-check.log /var/log/infra-health-check.log.old
+sudo touch /var/log/infra-health-check.log
+sudo chown root:root /var/log/infra-health-check.log
+```
+
+**Results:**
+- ✅ Historical errors archived and preserved
+- ✅ Clean log file created for current monitoring
+- ✅ No impact on live monitoring functionality
+
+#### Monitoring Architecture Comparison
+
+**Before Cleanup:**
+- ❌ Historical errors showing PostgreSQL container issues (Sep 15th)
+- ✅ Current monitoring working correctly but obscured by old logs
+- ⚠️ Confusing mixed signals in monitoring reports
+
+**After Cleanup:**
+- ✅ Clean monitoring logs with current status only
+- ✅ Clear verification that PostgreSQL service monitoring is correct
+- ✅ No false alarms from historical container architecture
+
+### Current Monitoring Coverage
+
+#### Service Level Monitoring
+- **nginx:** Web server and reverse proxy status
+- **docker:** Container runtime platform health
+- **postgresql:** Native database service (not containerized)
+
+#### Container Level Monitoring  
+- **Dynamic Discovery:** Only checks actually running containers
+- **Production:** `addypin-app-1` health and status
+- **Staging:** `addypin-staging-app-1` health and status
+- **No Phantom Checks:** Eliminated non-existent container monitoring
+
+#### Resource Monitoring
+- **Disk Usage:** Current 68% utilization
+- **Memory Usage:** Current 26% utilization  
+- **Load Average:** Current 0.01 (optimal)
+
+#### Infrastructure Monitoring
+- **Backup System:** Automated backup status verification
+- **Email Alerts:** MSMTP configuration confirmation
+- **Health Endpoints:** Production and staging API health verification
+
+### Monitoring System Performance Metrics
+
+#### Execution Performance
+- **Script Runtime:** Sub-second execution time
+- **Resource Impact:** Minimal system resource usage
+- **Monitoring Frequency:** Every 10 minutes via cron
+- **Log Rotation:** Automated log management in place
+
+#### Alert Configuration
+- **Email System:** MSMTP integration for critical alerts
+- **Threshold Monitoring:** Resource usage thresholds configured
+- **Service Recovery:** Automatic service restart capabilities (nginx)
+- **Manual Override:** Health manager available for manual alerts
+
+#### Verification Results
+**Dual Command Verification:**
+- **Enhanced Script:** `/opt/addypin/scripts/enhanced-health-check.sh` ✅ 
+- **Health Command:** `health` command ✅
+- **Status Consistency:** Both show identical healthy status
+- **No Discrepancies:** Perfect monitoring alignment
+
+### Monitoring Infrastructure Summary
+
+#### Current Active Components
+1. **Primary Health Check:** Enhanced monitoring script with native PostgreSQL support
+2. **Backup Monitoring:** `health` command for manual verification  
+3. **Automated Scheduling:** Cron-based execution every 10 minutes
+4. **Clean Logging:** Fresh log files with no historical noise
+5. **Email Integration:** MSMTP alerting for critical issues
+
+#### Monitoring Best Practices Established
+1. **Native Service Integration:** PostgreSQL monitored as system service, not container
+2. **Dynamic Container Discovery:** Only monitors actually running containers
+3. **Resource Threshold Management:** Proactive disk and memory monitoring
+4. **Historical Log Management:** Regular log archival prevents confusion
+5. **Dual Verification Systems:** Multiple monitoring approaches for redundancy
+
+### Resolution Verification - Phase 5
+
+**What Was Accomplished:**
+1. ✅ **Issue Investigation** - Identified historical vs. current monitoring data
+2. ✅ **Root Cause Resolution** - Confirmed PostgreSQL monitoring architecture is correct
+3. ✅ **Log Cleanup** - Archived confusing historical errors (Sep 15th entries)
+4. ✅ **System Verification** - Confirmed 100% operational monitoring status
+5. ✅ **Architecture Documentation** - Mapped current monitoring infrastructure
+6. ✅ **Performance Validation** - Verified monitoring script efficiency and accuracy
+
+**Current Monitoring Status:**
+- **Live Monitoring:** 100% operational with 10-minute intervals
+- **PostgreSQL Check:** Native service monitoring working perfectly
+- **Container Discovery:** Dynamic detection of actual running containers
+- **Resource Monitoring:** All thresholds within normal ranges
+- **Alert System:** MSMTP email integration ready for critical issues
+- **Log Management:** Clean logging with historical data properly archived
+
+**No Further Monitoring Fixes Required:** System is fully operational and correctly configured.
+
+---
+
+**Document Status:** Complete ✅ with Phase 5 Monitoring Verification
+**Last Updated:** September 19, 2025 (Phase 5 Complete)
+**Resolution Status:** All environments and monitoring systems fully operational with comprehensive verification completed
