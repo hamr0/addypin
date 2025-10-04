@@ -6,8 +6,8 @@ import { config } from 'dotenv';
 // Load .env file in development to override Replit Secrets
 if (process.env.NODE_ENV === 'development') {
   config({ override: true });
-  console.log('🔧 Development mode: Using local .env database configuration');
-  console.log('📍 Database host:', new URL(process.env.DATABASE_URL!).host);
+  console.log('Development mode: Using local .env database configuration');
+  console.log('Database host:', new URL(process.env.DATABASE_URL!).host);
 }
 
 if (!process.env.DATABASE_URL) {

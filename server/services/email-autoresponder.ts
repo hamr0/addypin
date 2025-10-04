@@ -51,8 +51,8 @@ export async function sendMapAutoResponse({ fromEmail, shortcode }: AutoResponse
       "🚗 TomTom": `https://www.tomtom.com/en_us/maps/map?lat=${pin.latitude}&lng=${pin.longitude}`,
       "🚇 Citymapper": `https://citymapper.com/directions?endcoord=${pin.latitude}%2C${pin.longitude}`,
       "🗺️ OsmAnd": `https://osmand.net/map#16/${pin.latitude}/${pin.longitude}`,
-      "📍 Sygic Maps": `https://www.sygic.com/en/gps-navigation-maps/sygic-maps`,
-      "📊 Badger Maps": `https://www.badgermapping.com/`
+      "Sygic Maps": `https://www.sygic.com/en/gps-navigation-maps/sygic-maps`,
+      "Badger Maps": `https://www.badgermapping.com/`
     };
 
     // Create HTML email with map links
@@ -214,7 +214,7 @@ export async function sendMapAutoResponse({ fromEmail, shortcode }: AutoResponse
       };
     }
 
-    console.log('✅ Auto-response email sent:', data?.id);
+    console.log('Auto-response email sent:', data?.id);
     return { 
       success: true, 
       message: "Location details sent to your email" 

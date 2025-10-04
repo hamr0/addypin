@@ -116,7 +116,7 @@ export function ddosProtectionMiddleware(req: Request, res: Response, next: Next
     });
 
     return res.status(429).json({
-      error: '🛡️ DDoS protection activated. Your IP has been temporarily blocked due to suspicious activity patterns.',
+      error: 'DDoS protection activated. Your IP has been temporarily blocked due to suspicious activity patterns.',
       code: 'DDOS_PROTECTION',
       retryAfter: 300, // 5 minutes
       details: 'If you believe this is an error, please wait a few minutes and try again with normal browsing behavior.'

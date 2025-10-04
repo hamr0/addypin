@@ -81,7 +81,7 @@ class AnalyticsService {
       this.flushBatch('interval');
     }, this.BATCH_FLUSH_INTERVAL);
     
-    console.log(`📊 Analytics batch flush interval started (every ${this.BATCH_FLUSH_INTERVAL / 1000 / 60} minutes)`);
+    console.log(`Analytics batch flush interval started (every ${this.BATCH_FLUSH_INTERVAL / 1000 / 60} minutes)`);
   }
 
   async trackEvent(params: TrackEventParams): Promise<void> {
@@ -105,7 +105,7 @@ class AnalyticsService {
 
       // Flush if batch is getting too large
       if (this.eventBatch.length >= this.MAX_BATCH_SIZE) {
-        console.log(`📊 Batch size reached ${this.MAX_BATCH_SIZE}, flushing...`);
+        console.log(`Batch size reached ${this.MAX_BATCH_SIZE}, flushing...`);
         await this.flushBatch('size_limit');
       }
     } catch (error) {
@@ -122,7 +122,7 @@ class AnalyticsService {
     this.eventBatch = []; // Clear batch immediately to avoid duplicates
     
     const timeSinceLastFlush = (Date.now() - this.lastFlushTime) / 1000 / 60;
-    console.log(`📊 Flushing ${batchToFlush.length} analytics events to database (reason: ${reason}, time since last flush: ${timeSinceLastFlush.toFixed(1)} minutes)`);
+    console.log(`Flushing ${batchToFlush.length} analytics events to database (reason: ${reason}, time since last flush: ${timeSinceLastFlush.toFixed(1)} minutes)`);
     
     try {
       // Write all events to database in a single transaction
@@ -134,7 +134,7 @@ class AnalyticsService {
       await this.updateDailyStats();
       
       this.lastFlushTime = Date.now();
-      console.log(`✅ Successfully flushed ${batchToFlush.length} events to database`);
+      console.log(`Successfully flushed ${batchToFlush.length} events to database`);
     } catch (error) {
       console.error("Error flushing analytics batch:", error);
       // Re-add failed events to batch for retry

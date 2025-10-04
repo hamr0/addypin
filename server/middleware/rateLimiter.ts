@@ -233,7 +233,7 @@ export function antibotMiddleware(req: Request, res: Response, next: NextFunctio
 
   // Medium suspicion - log but allow
   if (suspicionScore >= 2) {
-    console.log(`⚠️ Moderate suspicious activity from ${ip}: score ${suspicionScore}`);
+    console.log(`Moderate suspicious activity from ${ip}: score ${suspicionScore}`);
   }
 
   next();
@@ -277,13 +277,13 @@ function countSuspiciousHeaders(req: Request): number {
 export const pinCreationLimiter = createRateLimiter({
   windowMs: 60 * 60 * 1000, // 1 hour
   maxRequests: process.env.NODE_ENV === 'development' ? 50 : 5, // 50 pins per hour in dev, 5 in prod
-  message: '🚀 Wow, you\'re on fire with creating addypins! Please take a quick break (60 minutes) to prevent spam. Thanks for using addypin responsibly!'
+  message: 'Wow, you\'re on fire with creating addypins! Please take a quick break (60 minutes) to prevent spam. Thanks for using addypin responsibly!'
 });
 
 export const dailyPinLimiter = createRateLimiter({
   windowMs: 24 * 60 * 60 * 1000, // 24 hours
   maxRequests: process.env.NODE_ENV === 'development' ? 200 : 5, // 200 pins per day in dev, 5 in prod (strict for production)
-  message: '📍 You\'ve reached your daily limit of 5 addypins per day from this location. This helps us prevent spam and keep addypin fast for everyone! Try again tomorrow.'
+  message: 'You\'ve reached your daily limit of 5 addypins per day from this location. This helps us prevent spam and keep addypin fast for everyone! Try again tomorrow.'
 });
 
 export const generalLimiter = createRateLimiter({

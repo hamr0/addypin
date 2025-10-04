@@ -11,11 +11,11 @@ export async function sendOTPEmail({ to, code }: OTPEmailParams): Promise<{ succ
   try {
     // Development fallback - log to console
     if (!process.env.RESEND_API_KEY) {
-      console.log(`\n🔑 ===============================`);
-      console.log(`🔑 DEVELOPMENT MODE - OTP CODE`);
-      console.log(`🔑 Email: ${to}`);
-      console.log(`🔑 Code: ${code}`);
-      console.log(`🔑 ===============================\n`);
+      console.log(`\n===============================`);
+      console.log(`DEVELOPMENT MODE - OTP CODE`);
+      console.log(`Email: ${to}`);
+      console.log(`Code: ${code}`);
+      console.log(`===============================\n`);
       
       return { 
         success: true, 
@@ -178,12 +178,12 @@ export async function sendOTPEmail({ to, code }: OTPEmailParams): Promise<{ succ
       console.error('Resend email error:', error);
       
       // Any error - fall back to console logging
-      console.log(`\n🔑 ===============================`);
-      console.log(`🔑 EMAIL FALLBACK MODE - OTP CODE`);
-      console.log(`🔑 Email: ${to}`);
-      console.log(`🔑 Code: ${code}`);
-      console.log(`🔑 Note: Domain verification needed for email delivery`);
-      console.log(`🔑 ===============================\n`);
+      console.log(`\n===============================`);
+      console.log(`EMAIL FALLBACK MODE - OTP CODE`);
+      console.log(`Email: ${to}`);
+      console.log(`Code: ${code}`);
+      console.log(`Note: Domain verification needed for email delivery`);
+      console.log(`===============================\n`);
       
       return { 
         success: true, 
@@ -191,7 +191,7 @@ export async function sendOTPEmail({ to, code }: OTPEmailParams): Promise<{ succ
       };
     }
 
-    console.log('✅ OTP email sent successfully:', data?.id);
+    console.log('OTP email sent successfully:', data?.id);
     return { 
       success: true, 
       message: "Verification code sent to your email" 

@@ -40,7 +40,7 @@ function invalidateStatsCache() {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  console.log("🚀 Starting route registration...");
+  console.log("Starting route registration...");
 
   // 🚨 SECURITY: Block config file access
   app.use("/.env", (req, res) => res.status(404).json({ error: "Not found" }));
@@ -92,7 +92,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(statusCode).json(healthcheck);
   });
   
-  console.log("✅ Basic health endpoint registered");
+  console.log("Basic health endpoint registered");
 
   // System status endpoint for monitoring
   app.get("/api/health/system", async (req, res) => {
@@ -137,16 +137,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  console.log("✅ System health endpoint registered");
+  console.log("System health endpoint registered");
 
-  console.log("✅ About to apply middleware...");
+  console.log("About to apply middleware...");
   
   // Apply comprehensive protection to all routes
   // TEMPORARILY DISABLED FOR TESTING: Rate limiting preventing CI/CD deployment
   // app.use('/api', ddosProtectionMiddleware);
   // app.use('/api', generalLimiter);
   
-  console.log("✅ Middleware applied successfully");
+  console.log("Middleware applied successfully");
 
   // Generate shortcode helper
   function generateShortcode(): string {
@@ -158,7 +158,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return code;
   }
 
-  console.log("✅ About to register pin creation endpoint...");
+  console.log("About to register pin creation endpoint...");
   
   // Create new pin (open access with comprehensive protection)
     app.post("/api/pins", 
@@ -197,7 +197,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         if (duplicatePin.length > 0) {
           return res.status(400).json({
-            message: "🎯 You already have an addypin at these exact coordinates! Use your existing one or choose a slightly different location.",
+            message: "You already have an addypin at these exact coordinates! Use your existing one or choose a slightly different location.",
             code: "DUPLICATE_COORDINATES",
             existingShortcode: duplicatePin[0].shortcode,
             hint: `Your existing addypin: ${duplicatePin[0].shortcode}${process.env.NODE_ENV === 'development' ? ` at ${req.get('host') || 'localhost:5000'}` : '.addypin.com'}`
@@ -423,12 +423,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Log the OTP to console in development mode
       if (process.env.NODE_ENV === 'development') {
-        console.log("🔑 =================================");
-        console.log(`🔑 OTP CODE FOR ${email.toUpperCase()}: ${otp}`);
+        console.log("=================================");
+        console.log(`OTP CODE FOR ${email.toUpperCase()}: ${otp}`);
         if (isAnalyticsAccess) {
-          console.log("🔑 ANALYTICS ACCESS REQUEST");
+          console.log("ANALYTICS ACCESS REQUEST");
         }
-        console.log("🔑 =================================");
+        console.log("=================================");
       }
 
       if (emailResult.success) {
@@ -582,12 +582,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Check if we have valid cached data
       if (statsCache && (now - statsCacheTimestamp) < STATS_CACHE_DURATION) {
-        console.log("📊 Serving cached stats data");
+        console.log("Serving cached stats data");
         return res.json(statsCache);
       }
       
       // Fetch fresh data from database
-      console.log("🔄 Fetching fresh stats from database");
+      console.log("Fetching fresh stats from database");
       const stats = await storage.getTodaysStats();
       
       // Update cache
@@ -654,7 +654,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const ddosStatus = getDDoSStatus();
       const securityStats = {
-        message: "🛡️ DDoS Protection & Security Monitoring Active",
+        message: "DDoS Protection & Security Monitoring Active",
         ddosProtection: ddosStatus,
         rateLimiting: {
           status: "active",
@@ -776,10 +776,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = await sendMapAutoResponse({ fromEmail: from, shortcode });
       
       if (result.success) {
-        console.log(`✅ Auto-response sent successfully`);
+        console.log(`Auto-response sent successfully`);
         res.status(200).json({ status: "processed" }); // Maddy expects JSON response
       } else {
-        console.log(`❌ Auto-response failed: ${result.message}`);
+        console.log(`Auto-response failed: ${result.message}`);
         res.status(200).json({ status: "failed", message: result.message });
       }
     } catch (error) {
@@ -899,10 +899,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
 
-  console.log("✅ All routes registered successfully! Creating HTTP server...");
+  console.log("All routes registered successfully! Creating HTTP server...");
   
   const httpServer = createServer(app);
   
-  console.log("✅ HTTP server created, returning to main...");
+  console.log("HTTP server created, returning to main...");
   return httpServer;
 }

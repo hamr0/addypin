@@ -18,7 +18,7 @@ export function PinSelector({ email, onPinSelect, selectedPin }: PinSelectorProp
     queryKey: ['/api/user/pins', email],
     queryFn: async () => {
       const response = await apiRequest("GET", `/api/user/pins/${email}`);
-      return response.json() as Pin[];
+      return await response.json() as Pin[];
     },
   });
 

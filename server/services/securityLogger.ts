@@ -6,6 +6,7 @@ interface SecurityEvent {
   timestamp: Date;
   url?: string;
   headers?: Record<string, string>;
+  metadata?: Record<string, any>;
 }
 
 class SecurityLogger {

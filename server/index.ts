@@ -39,11 +39,11 @@ app.use((req, res, next) => {
   next();
 });
 
-// 🎯 Terribic Method: Auto-bootstrap SSH tunnel in development
+// Terribic Method: Auto-bootstrap SSH tunnel in development
 async function ensureTunnel() {
   if (process.env.NODE_ENV !== 'development') return;
   
-  console.log("🔧 Checking SSH tunnel status (Terribic Method)...");
+  console.log("Checking SSH tunnel status (Terribic Method)...");
   
   // Check if port 5432 is accessible
   const isPortOpen = await new Promise(resolve => {
@@ -62,7 +62,7 @@ async function ensureTunnel() {
   });
   
   if (!isPortOpen) {
-    console.log("🚀 Starting SSH tunnel (auto-bootstrap)...");
+    console.log("Starting SSH tunnel (auto-bootstrap)...");
     const tunnelProcess = spawn('./tunnel_manager.sh', [], {
       stdio: 'inherit',
       shell: true
@@ -73,20 +73,20 @@ async function ensureTunnel() {
       tunnelProcess.on('close', resolve);
     });
     
-    console.log("✅ Tunnel bootstrap complete!");
+    console.log("Tunnel bootstrap complete!");
   } else {
-    console.log("✅ Tunnel already active!");
+    console.log("Tunnel already active!");
   }
 }
 
 (async () => {
   try {
-    // 🎯 TERRIBIC METHOD: Auto-start tunnel before server
+    // TERRIBIC METHOD: Auto-start tunnel before server
     await ensureTunnel();
     
-    console.log("🔄 Starting server initialization...");
+    console.log("Starting server initialization...");
     const server = await registerRoutes(app);
-    console.log("✅ Routes registered successfully!");
+    console.log("Routes registered successfully!");
 
     app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
@@ -120,7 +120,7 @@ async function ensureTunnel() {
       log(`serving on port ${port}`);
     });
   } catch (error) {
-    console.error("❌ FATAL ERROR during server initialization:");
+    console.error("FATAL ERROR during server initialization:");
     console.error(error);
     process.exit(1);
   }
