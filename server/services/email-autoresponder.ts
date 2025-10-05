@@ -27,11 +27,112 @@ export async function sendMapAutoResponse({ fromEmail, shortcode }: AutoResponse
 
     // Get pin details
     const pin = await storage.getPinByShortcode(shortcode);
-    
+
     if (!pin) {
-      return { 
-        success: false, 
-        message: "Pin not found" 
+      // Send helpful response for invalid/expired pins
+      const { data, error } = await resend.emails.send({
+        from: 'addypin <noreply@addypin.com>',
+        to: [fromEmail],
+        subject: `${shortcode} - addypin not found`,
+        html: `
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <meta charset="utf-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>addypin Not Found</title>
+              <style>
+                body {
+                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                  line-height: 1.6;
+                  color: #333;
+                  background-color: #f8f9fa;
+                  margin: 0;
+                  padding: 20px;
+                }
+                .container {
+                  max-width: 600px;
+                  margin: 0 auto;
+                  background: white;
+                  border-radius: 12px;
+                  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                  overflow: hidden;
+                }
+                .header {
+                  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+                  color: white;
+                  padding: 30px 20px;
+                  text-align: center;
+                }
+                .content {
+                  padding: 30px 20px;
+                }
+                .footer {
+                  background: #f8f9fa;
+                  padding: 20px;
+                  text-align: center;
+                  color: #6b7280;
+                  font-size: 14px;
+                }
+              </style>
+            </head>
+            <body>
+              <div class="container">
+                <div class="header">
+                  <h1 style="margin: 0; font-size: 48px;">📍❌</h1>
+                  <h2 style="margin: 10px 0 0 0;">addypin Not Found</h2>
+                </div>
+                <div class="content">
+                  <p>The addypin <strong>${shortcode}</strong> doesn't exist or may have expired.</p>
+
+                  <h3>Possible reasons:</h3>
+                  <ul>
+                    <li>The addypin was deleted by its creator</li>
+                    <li>It expired after 72 hours (pins without email addresses expire automatically)</li>
+                    <li>The shortcode was mistyped</li>
+                  </ul>
+
+                  <p style="margin-top: 30px;">
+                    <strong>Want to create your own addypin?</strong><br>
+                    Visit <a href="https://addypin.com" style="color: #667eea;">addypin.com</a> to share locations simply.
+                  </p>
+                </div>
+                <div class="footer">
+                  <p>© 2025 addypin - Secure location sharing</p>
+                </div>
+              </div>
+            </body>
+          </html>
+        `,
+        text: `
+          addypin Not Found - ${shortcode}
+
+          The addypin ${shortcode} doesn't exist or may have expired.
+
+          Possible reasons:
+          - The addypin was deleted by its creator
+          - It expired after 72 hours (pins without email addresses expire automatically)
+          - The shortcode was mistyped
+
+          Want to create your own addypin?
+          Visit addypin.com to share locations simply.
+
+          © 2025 addypin - Secure location sharing
+        `
+      });
+
+      if (error) {
+        console.error('Error sending not-found email:', error);
+        return {
+          success: false,
+          message: "Pin not found and failed to send notification email"
+        };
+      }
+
+      console.log('Not-found notification email sent:', data?.id);
+      return {
+        success: true,
+        message: "Pin not found - notification email sent"
       };
     }
 
