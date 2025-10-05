@@ -76,6 +76,10 @@ export const insertPinSchema = createInsertSchema(pins).omit({
   shortcode: true,
   createdAt: true,
   isActive: true,
+}).extend({
+  // Accept both string and number for latitude/longitude (convert to string)
+  latitude: z.union([z.string(), z.number()]).transform(val => String(val)),
+  longitude: z.union([z.string(), z.number()]).transform(val => String(val)),
 });
 
 export const insertAnalyticsSchema = createInsertSchema(analytics).omit({
