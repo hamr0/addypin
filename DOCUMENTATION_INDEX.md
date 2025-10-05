@@ -12,7 +12,7 @@
 - **[CLAUDE.md](CLAUDE.md)** - AI assistant instructions
 
 ### Production Systems
-- **[EMAIL_SYSTEM_FIXED.md](EMAIL_SYSTEM_FIXED.md)** - Email system (abc123@addypin.com) ✅ Working
+- **[docs/EMAIL_SYSTEM.md](docs/EMAIL_SYSTEM.md)** - Complete email system documentation (abc123@addypin.com) ✅ Working
 - **[SUBDOMAIN_SETUP_COMPLETE.md](SUBDOMAIN_SETUP_COMPLETE.md)** - Subdomain routing (abc123.addypin.com) ✅ Working
 - **[DUAL_FORMAT_LINKS_STATUS.md](DUAL_FORMAT_LINKS_STATUS.md)** - Complete status of both access methods
 
@@ -138,7 +138,7 @@ Run `ls docs/` to see 34 total documentation files.
 → [DEPLOYMENT_READY.md](DEPLOYMENT_READY.md)
 
 **Check email system status:**
-→ [EMAIL_SYSTEM_FIXED.md](EMAIL_SYSTEM_FIXED.md)
+→ [docs/EMAIL_SYSTEM.md](docs/EMAIL_SYSTEM.md)
 
 **Check subdomain routing:**
 → [SUBDOMAIN_SETUP_COMPLETE.md](SUBDOMAIN_SETUP_COMPLETE.md)
