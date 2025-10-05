@@ -105,46 +105,66 @@ localhost:5432 → root@155.94.144.191:5432 (PostgreSQL)
 
 ---
 
-## 🚀 Deployment Commands (For VPS)
+## 🚀 Deployment Strategy
 
-### Step 1: Pull Latest Code
+### **RECOMMENDED: GitHub Actions CI/CD** ✅
+
+This is your "winning horse" - use this for all deployments:
+
+1. **Deploy to Staging:**
+   - Go to GitHub Actions tab
+   - Select "Deploy to Staging"
+   - Click "Run workflow"
+   - Verify at https://staging.addypin.com
+
+2. **Deploy to Production:**
+   - Go to GitHub Actions tab
+   - Select "Deploy to Production"
+   - Click "Run workflow"
+   - Verify at https://addypin.com
+
+**Why this is best:**
+- Fully automated (build → push → deploy → verify)
+- Uses GHCR (proven reliable)
+- Auto-rollback on failure
+- Health checks included
+- 2-minute deployment time
+
+---
+
+### **ALTERNATIVE: Manual VPS Deployment**
+
+Only use this for emergency hotfixes or CI/CD troubleshooting:
+
 ```bash
+# Step 1: Pull latest code
 cd /opt/addypin/addypin-repo
 git pull origin main
-```
 
-### Step 2: Install Clean Dependencies
-```bash
+# Step 2: Install dependencies
 npm install
-# Expected: 621 packages (down from 727)
-```
 
-### Step 3: Build Application
-```bash
+# Step 3: Build application
 npm run build
-# Expected: Frontend 636KB + Backend 89.6KB in ~4s
-```
 
-### Step 4: Restart Services
-
-**If using Docker:**
-```bash
+# Step 4: Restart Docker containers
 cd /opt/addypin
 docker-compose down
 docker-compose up -d
-```
 
-**If using systemd:**
-```bash
-sudo systemctl restart addypin
-sudo systemctl status addypin
-```
-
-### Step 5: Verify Deployment
-```bash
+# Step 5: Verify health
 curl http://localhost:3000/api/health
-# Expected: {"status":"healthy",...}
 ```
+
+**When to use manual deployment:**
+- CI/CD is broken and needs fixing
+- Emergency hotfix can't wait for CI/CD
+- Testing VPS-specific issues
+
+**When NOT to use:**
+- Regular deployments (use GitHub Actions)
+- Staging testing (use GitHub Actions)
+- Any normal development workflow
 
 ---
 

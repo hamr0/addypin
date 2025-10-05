@@ -1,4 +1,0 @@
-/usr/lib/tmpfiles.d/postgresql.conf
-/var/lib/pgsql/data/postgresql.conf
-/var/lib/docker/volumes/addypin_postgres_data/_data/postgresql.conf
-/etc/postgresql-setup/upgrade/postgresql.conf

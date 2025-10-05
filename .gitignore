@@ -9,6 +9,10 @@ attached_assets/
 *.backup
 .DS_Store
 *.log
-maddy/
-node_modules/
-.env
+
+# Archives (old backups and docs)
+archive/
+
+# SSH keys (if accidentally created in root)
+*.pem
+*.key

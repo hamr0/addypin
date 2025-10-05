@@ -1,7 +1,0 @@
-tcp        0      0 0.0.0.0:443             0.0.0.0:*               LISTEN      1977696/nginx: mast 
-tcp        0      0 0.0.0.0:8080            0.0.0.0:*               LISTEN      2058739/docker-prox 
-tcp        0      0 0.0.0.0:80              0.0.0.0:*               LISTEN      1977696/nginx: mast 
-tcp        0      0 0.0.0.0:3000            0.0.0.0:*               LISTEN      2030655/docker-prox 
-tcp        0      0 0.0.0.0:5432            0.0.0.0:*               LISTEN      1989726/postmaster  
-tcp6       0      0 :::5000                 :::*                    LISTEN      274720/node         
-tcp6       0      0 :::5432                 :::*                    LISTEN      1989726/postmaster  
