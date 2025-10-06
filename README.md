@@ -1,4 +1,4 @@
-# AddyPin - Location Sharing Application
+# addypin - Location Sharing Application
 
 A modern, full-stack location sharing application that allows users to create pins on a map with shareable links.
 
