@@ -40,7 +40,7 @@ git push
 ```
 
 ### 4. Create Pull Request
-1. Go to `https://github.com/amrhas82/addypin`
+1. Go to `https://github.com/hamr0/addypin`
 2. Click "Compare & pull request" (appears automatically)
 3. Fill out PR template:
    - **Title**: Clear, descriptive summary

@@ -1,7 +1,7 @@
 # Quick Deployment Test
 
 ## Repository Status
-✅ GitHub Repository: https://github.com/amrhas82/addypin (accessible)
+✅ GitHub Repository: https://github.com/hamr0/addypin (accessible)
 ✅ VPS Deployment Script: `/opt/addypin/deploy.sh` (ready)
 ✅ SSL Certificates: Let's Encrypt configured with auto-renewal
 

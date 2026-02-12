@@ -2,7 +2,7 @@
 
 ## Step 1: Create GitHub Repository
 
-1. **Go to GitHub**: https://github.com/amrhas82
+1. **Go to GitHub**: https://github.com/hamr0
 2. **Click "New repository"** (green button)
 3. **Repository settings**:
    - **Name**: `addypin` or `maplinker` (your choice)
@@ -18,14 +18,14 @@
 2. **If available**: 
    - Click Git/Version Control
    - Look for "Connect to GitHub" or "Add remote"
-   - Enter your repository URL: `https://github.com/amrhas82/addypin`
+   - Enter your repository URL: `https://github.com/hamr0/addypin`
    - Authenticate with GitHub
 
 ### Option B: Manual Connection (If Git panel not available)
 1. **In Replit Shell**, run these commands one by one:
    ```bash
    git init
-   git remote add origin https://github.com/amrhas82/addypin.git
+   git remote add origin https://github.com/hamr0/addypin.git
    git branch -M main
    ```
 

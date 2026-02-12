@@ -1,7 +1,7 @@
 # Push Your addypin Code to GitHub
 
 ## Current Situation
-- ✅ Your GitHub repo: `https://github.com/amrhas82/addypin`
+- ✅ Your GitHub repo: `https://github.com/hamr0/addypin`
 - ✅ Replit project has full addypin codebase
 - ⚠️ Replit Git protection prevents automated pushing
 
@@ -22,7 +22,7 @@ If Replit Git UI isn't available:
 
 2. **Clone your empty GitHub repo**:
    ```bash
-   git clone https://github.com/amrhas82/addypin.git
+   git clone https://github.com/hamr0/addypin.git
    cd addypin
    ```
 
@@ -68,7 +68,7 @@ Your complete production-ready addypin service:
 
 ## After Pushing
 Once your code is on GitHub:
-1. **Verify upload**: Check `github.com/amrhas82/addypin`
+1. **Verify upload**: Check `github.com/hamr0/addypin`
 2. **Set up protection**: Enable branch protection for main
 3. **Documentation**: Your README.md will display project info
 4. **Releases**: Tag versions for deployment tracking

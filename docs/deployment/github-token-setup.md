@@ -18,12 +18,12 @@ Run this on your VPS (replace YOUR_TOKEN with the actual token):
 
 ```bash
 # Edit the deployment script to use token authentication
-sed -i 's|git clone git@github.com:amrhas82/addypin.git|git clone https://YOUR_TOKEN@github.com/amrhas82/addypin.git|g' /opt/addypin/deploy.sh
+sed -i 's|git clone git@github.com:hamr0/addypin.git|git clone https://YOUR_TOKEN@github.com/hamr0/addypin.git|g' /opt/addypin/deploy.sh
 
 # Or manually edit with nano:
 nano /opt/addypin/deploy.sh
 # Find line 24 and change it to:
-# git clone https://YOUR_TOKEN@github.com/amrhas82/addypin.git addypin-repo
+# git clone https://YOUR_TOKEN@github.com/hamr0/addypin.git addypin-repo
 ```
 
 ### Step 3: Test Deployment
@@ -33,7 +33,7 @@ nano /opt/addypin/deploy.sh
 
 ## Example Token URL Format
 ```
-https://ghp_1234567890abcdef1234567890abcdef12345678@github.com/amrhas82/addypin.git
+https://ghp_1234567890abcdef1234567890abcdef12345678@github.com/hamr0/addypin.git
 ```
 
 This method is:

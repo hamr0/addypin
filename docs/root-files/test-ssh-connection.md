@@ -2,7 +2,7 @@
 
 ## Create Simple SSH Test Workflow
 
-1. Go to: https://github.com/amrhas82/addypin
+1. Go to: https://github.com/hamr0/addypin
 2. Create new file: `.github/workflows/test-ssh.yml`
 3. Add this content:
 

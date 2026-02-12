@@ -3,8 +3,8 @@
 ## Issue
 Deployment failed: Private repository requires authentication
 ```
-Username for 'https://github.com': amrhas82
-Password for 'https://amrhas82@github.com': 
+Username for 'https://github.com': hamr0
+Password for 'https://hamr0@github.com': 
 remote: Invalid username or token. Password authentication is not supported for Git operations.
 ```
 
@@ -48,7 +48,7 @@ EOF
 ```bash
 # Test GitHub connection
 ssh -T git@github.com
-# Should show: "Hi amrhas82! You've successfully authenticated..."
+# Should show: "Hi hamr0! You've successfully authenticated..."
 ```
 
 ### Step 4: Update Deployment Script

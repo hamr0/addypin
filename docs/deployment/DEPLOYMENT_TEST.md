@@ -1,7 +1,7 @@
 # Deployment Test Instructions
 
 ## Prerequisites Check
-- ✅ GitHub repository exists: https://github.com/amrhas82/addypin
+- ✅ GitHub repository exists: https://github.com/hamr0/addypin
 - ✅ VPS deployment script created: `/opt/addypin/deploy.sh`
 - ✅ VPS has SSL certificates and nginx configured
 
@@ -14,7 +14,7 @@ git init
 git add .
 git commit -m "Initial deployment test"
 git branch -M main
-git remote add origin https://github.com/amrhas82/addypin.git
+git remote add origin https://github.com/hamr0/addypin.git
 git push -u origin main
 ```
 

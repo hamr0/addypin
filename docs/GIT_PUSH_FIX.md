@@ -10,10 +10,10 @@
 Since we just fixed the security issue with your API key, the cleanest solution is to create a fresh GitHub repository without the compromised history.
 
 ### Step 1: Delete Current Repository
-1. **Go to**: https://github.com/amrhas82/addypin
+1. **Go to**: https://github.com/hamr0/addypin
 2. **Settings tab** → Scroll to bottom
 3. **"Delete this repository"**
-4. **Type "amrhas82/addypin"** to confirm
+4. **Type "hamr0/addypin"** to confirm
 5. **Delete repository**
 
 ### Step 2: Create New Repository

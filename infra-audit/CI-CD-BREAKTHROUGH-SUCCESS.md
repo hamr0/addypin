@@ -59,7 +59,7 @@ jobs:
           
           # Fresh code
           rm -rf addypin-repo
-          git clone https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/amrhas82/addypin.git addypin-repo
+          git clone https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/hamr0/addypin.git addypin-repo
           cd addypin-repo
           
           # Build and run

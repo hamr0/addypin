@@ -30,7 +30,7 @@
 Since the repository history contains the exposed key:
 
 **Option A: Delete and Recreate (Recommended)**
-1. Go to `https://github.com/amrhas82/addypin`
+1. Go to `https://github.com/hamr0/addypin`
 2. Click **Settings** tab
 3. Scroll to bottom → **Delete this repository**
 4. Type repository name to confirm

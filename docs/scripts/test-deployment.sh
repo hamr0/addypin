@@ -4,12 +4,12 @@
 echo "=== TESTING DEPLOYMENT WORKFLOW ==="
 
 echo "1. Testing GitHub repository access..."
-if curl -s https://github.com/amrhas82/addypin > /dev/null 2>&1; then
+if curl -s https://github.com/hamr0/addypin > /dev/null 2>&1; then
     echo "✅ GitHub repository accessible"
 else
     echo "❌ GitHub repository not found - needs to be created first"
     echo "Please:"
-    echo "1. Create repository at https://github.com/amrhas82/addypin"
+    echo "1. Create repository at https://github.com/hamr0/addypin"
     echo "2. Push code from Replit to GitHub"
     echo "3. Then run VPS deployment script"
     exit 1
@@ -30,6 +30,6 @@ ssh root@155.94.144.191 "ls -la /opt/addypin/deploy.sh" || {
 echo "✅ All prerequisites met - ready to test deployment"
 echo ""
 echo "To complete test:"
-echo "1. Create GitHub repo: https://github.com/amrhas82/addypin" 
+echo "1. Create GitHub repo: https://github.com/hamr0/addypin" 
 echo "2. Push from Replit: git push -u origin main"
 echo "3. Deploy: ssh root@155.94.144.191 '/opt/addypin/deploy.sh'"

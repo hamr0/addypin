@@ -704,9 +704,9 @@ b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
 - **Registry**: GitHub Container Registry (ghcr.io)
 - **Authentication**: Automatic via GITHUB_TOKEN
 - **Image Naming Convention**:
-  - Production: `ghcr.io/amrhas82/addypin:latest`
-  - Staging: `ghcr.io/amrhas82/addypin:staging-latest`
-  - Tagged: `ghcr.io/amrhas82/addypin:{commit-sha}`
+  - Production: `ghcr.io/hamr0/addypin:latest`
+  - Staging: `ghcr.io/hamr0/addypin:staging-latest`
+  - Tagged: `ghcr.io/hamr0/addypin:{commit-sha}`
 
 **Build and Push Process:**
 ```yaml
@@ -735,7 +735,7 @@ b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
 version: '3.8'
 services:
   app:
-    image: ${APP_IMAGE:-ghcr.io/amrhas82/addypin:latest}
+    image: ${APP_IMAGE:-ghcr.io/hamr0/addypin:latest}
     ports:
       - "3000:3000"
     environment:
@@ -757,7 +757,7 @@ networks:
 version: '3.8'
 services:
   app:
-    image: ${APP_IMAGE:-ghcr.io/amrhas82/addypin:staging-latest}
+    image: ${APP_IMAGE:-ghcr.io/hamr0/addypin:staging-latest}
     ports:
       - "8080:3000"
     environment:
@@ -1887,7 +1887,7 @@ The solution leverages Replit's built-in Git authentication system, which automa
 
 **Authentication Flow:**
 1. **Replit Environment:** Uses authenticated session with GitHub integration
-2. **Repository Access:** Automatically configured for `https://github.com/amrhas82/addypin`
+2. **Repository Access:** Automatically configured for `https://github.com/hamr0/addypin`
 3. **Push Permissions:** Leverages user's GitHub authentication through Replit's proxy
 
 **No Manual Configuration Required:**

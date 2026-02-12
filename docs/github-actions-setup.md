@@ -1,7 +1,7 @@
 # GitHub Actions Setup - Step by Step
 
 ## Step 1: Go to Your Repository
-1. Open browser and go to: https://github.com/amrhas82/addypin
+1. Open browser and go to: https://github.com/hamr0/addypin
 2. Make sure you're logged into your GitHub account
 
 ## Step 2: Create .github/workflows Directory

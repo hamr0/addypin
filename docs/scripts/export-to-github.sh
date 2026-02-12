@@ -55,7 +55,7 @@ A modern location sharing platform that generates short, memorable links for geo
 
 1. **Clone repository**:
    ```bash
-   git clone https://github.com/amrhas82/addypin.git
+   git clone https://github.com/hamr0/addypin.git
    cd addypin
    ```
 
@@ -204,7 +204,7 @@ ls -la /tmp/addypin-export/
 echo ""
 echo "🔗 Next steps:"
 echo "1. Download the export folder"
-echo "2. Upload to your GitHub repository: https://github.com/amrhas82/addypin"
+echo "2. Upload to your GitHub repository: https://github.com/hamr0/addypin"
 echo "3. Your addypin service is production-ready!"
 EOF
 

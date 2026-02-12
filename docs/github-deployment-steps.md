@@ -1,7 +1,7 @@
 # GitHub Deployment Steps
 
 ## Step 1: Access Your Repository
-1. Go to: https://github.com/amrhas82/addypin
+1. Go to: https://github.com/hamr0/addypin
 2. You should see the main branch with recent commits
 
 ## Step 2: Commit Changes via GitHub Web Interface
@@ -19,7 +19,7 @@
 4. Click "Commit changes"
 
 ## Step 3: Monitor Deployment
-1. Go to: https://github.com/amrhas82/addypin/actions
+1. Go to: https://github.com/hamr0/addypin/actions
 2. Watch the deployment workflow run
 3. Check each step: Build → Deploy → Health Check
 

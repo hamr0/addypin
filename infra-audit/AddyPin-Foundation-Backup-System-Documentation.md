@@ -356,7 +356,7 @@ location ~ /vendor/ {
 **Issue**: Production API returning "Failed to create pin" while staging worked perfectly.
 
 **Root Cause Analysis**:
-- Production `.env` file contained only `APP_IMAGE=ghcr.io/amrhas82/addypin:latest`
+- Production `.env` file contained only `APP_IMAGE=ghcr.io/hamr0/addypin:latest`
 - Missing ALL critical environment variables:
   - `DATABASE_URL` (no database password)
   - `JWT_SECRET`, `GOOGLE_MAPS_API_KEY`, `RESEND_API_KEY`

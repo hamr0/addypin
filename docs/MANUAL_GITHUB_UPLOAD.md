@@ -9,7 +9,7 @@ I've prepared your complete addypin codebase for upload to GitHub. Here's exactl
 ### Step 1: Get Your Code
 Your project files are organized and ready. All you need to do is:
 
-1. **Open GitHub**: Go to `https://github.com/amrhas82/addypin`
+1. **Open GitHub**: Go to `https://github.com/hamr0/addypin`
 2. **Upload files**: Click "uploading an existing file" or drag-and-drop
 
 ### Step 2: Upload These Key Files

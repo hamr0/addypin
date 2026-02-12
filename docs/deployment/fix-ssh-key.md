@@ -53,7 +53,7 @@ ssh -T git@github.com
 
 Expected response:
 ```
-Hi amrhas82! You've successfully authenticated, but GitHub does not provide shell access.
+Hi hamr0! You've successfully authenticated, but GitHub does not provide shell access.
 ```
 
 ### Then Run Deployment

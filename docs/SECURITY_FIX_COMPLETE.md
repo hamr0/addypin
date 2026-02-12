@@ -22,7 +22,7 @@ Since the old key will be revoked, you have two options:
 - GitHub will stop showing the security warning
 
 **Option B: Fresh Repository (More Secure)**
-- Delete current repository: https://github.com/amrhas82/addypin
+- Delete current repository: https://github.com/hamr0/addypin
 - Create new repository with same name
 - Push your code again using Replit Git panel
 

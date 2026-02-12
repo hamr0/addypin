@@ -166,7 +166,7 @@ fi
 {
   "deployment_status": "✅ SUCCESS",
   "message": "🎉 Deployment completed successfully!",
-  "repository": "amrhas82/addypin",
+  "repository": "hamr0/addypin",
   "actor": "username",
   "timestamp": "2025-08-23T08:00:00Z",
   "run_url": "https://github.com/..."

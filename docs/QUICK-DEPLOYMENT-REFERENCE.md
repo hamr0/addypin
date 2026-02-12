@@ -3,7 +3,7 @@
 ## 🚀 DEPLOY NOW (2 minutes)
 
 1. **Push your changes**: `git push origin main`
-2. **Go to**: [GitHub Actions](https://github.com/amrhas82/addypin/actions)
+2. **Go to**: [GitHub Actions](https://github.com/hamr0/addypin/actions)
 3. **Click**: "🐳 Docker-First Clean Deployment"
 4. **Click**: "Run workflow" 
 5. **Wait**: ~2 minutes

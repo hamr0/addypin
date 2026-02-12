@@ -24,7 +24,7 @@ fi
 
 if [ ! -d "addypin-repo" ]; then
     echo "Cloning repository..."
-    git clone https://${GITHUB_PERSONAL_ACCESS_TOKEN}@github.com/amrhas82/addypin.git addypin-repo
+    git clone https://${GITHUB_PERSONAL_ACCESS_TOKEN}@github.com/hamr0/addypin.git addypin-repo
 else
     echo "Updating repository..."
     cd addypin-repo && git pull origin main && cd ..
