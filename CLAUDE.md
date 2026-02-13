@@ -1,230 +1,96 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+AddyPin is a location sharing service that turns GPS coordinates into short, memorable links. Users drop pins on a map and share them as web links (`ABC123.addypin.com`) or email addresses (`ABC123@addypin.com`). Live at https://addypin.com, staging at https://staging.addypin.com.
 
-## Project Overview
+## Dev Rules
 
-AddyPin is a location sharing service that transforms GPS coordinates into short, memorable links. Users create pins on an interactive map and share them via dual formats: web links (`ABC123.addypin.com`) or email addresses (`ABC123@addypin.com`).
+**POC first.** Always validate logic with a ~15min proof-of-concept before building. Cover happy path + common edges. POC works → design properly → build with tests. Never ship the POC.
 
-**Live Production**: https://addypin.com
-**Staging**: https://staging.addypin.com
+**Build incrementally.** Break work into small independent modules. One piece at a time, each must work on its own before integrating.
 
-## Technology Stack
+**Dependency hierarchy — follow strictly:** vanilla language → standard library → external (only when stdlib can't do it in <100 lines). External deps must be maintained, lightweight, and widely adopted. Exception: always use vetted libraries for security-critical code (crypto, auth, sanitization).
 
-- **Frontend**: React 18 + TypeScript, Vite, Tailwind CSS, shadcn/ui, Leaflet.js maps
-- **Backend**: Node.js 20 + Express + TypeScript, Drizzle ORM
+**Lightweight over complex.** Fewer moving parts, fewer deps, less config. Express over NestJS, Flask over Django, unless the project genuinely needs the framework. Simple > clever. Readable > elegant.
+
+**Open-source only.** No vendor lock-in. Every line of code must have a purpose — no speculative code, no premature abstractions.
+
+For full development and testing standards, see `.claude/memory/AGENT_RULES.md`.
+
+## Tech Stack
+
+- **Frontend**: React 18, TypeScript, Vite, Tailwind CSS, shadcn/ui, Leaflet.js, Wouter, TanStack Query
+- **Backend**: Node.js 20, Express, TypeScript, Drizzle ORM, Resend (email)
 - **Database**: PostgreSQL 15 (containerized)
-- **Infrastructure**: Docker + Docker Compose, GitHub Actions CI/CD, Nginx reverse proxy
-- **Hosting**: RackNerd VPS ($2/month)
+- **Infra**: Docker + Docker Compose, GitHub Actions CI/CD (manual trigger), Nginx reverse proxy, RackNerd VPS
 
-## Development Commands
+## Commands
 
 ```bash
-# Development
-npm run dev          # Start dev server with hot reload (Vite + tsx)
-npm run check        # TypeScript type checking
-
-# Building
-npm run build        # Build frontend (vite) and backend (esbuild)
-npm run start        # Start production server
-
-# Database
-npm run db:push      # Sync database schema with Drizzle
+./dev.sh              # Start dev server (SSH tunnel + hot reload at localhost:5000)
+./dev-stop.sh         # Stop dev server
+npm run dev           # Dev server without tunnel script
+npm run check         # TypeScript type check
+npm run build         # Build frontend (Vite) + backend (ESBuild)
+npm run start         # Start production server
+npm run db:push       # Sync Drizzle schema to database
 ```
 
-## Project Structure
+## Project Layout
 
-```
-addypin/
-├── client/src/           # Frontend React application
-│   ├── components/       # React components (ui/, forms/, maps/, layout/)
-│   ├── pages/           # Route-based page components
-│   ├── hooks/           # Custom React hooks
-│   ├── lib/             # Frontend utilities
-│   └── utils/           # Helper functions
-├── server/              # Backend Node.js application
-│   ├── index.ts         # Main Express app entry point
-│   ├── routes.ts        # API route handlers (pins, analytics, health, OTP)
-│   ├── middleware/      # Rate limiting, auth, security, DDoS protection
-│   ├── services/        # Email, analytics, Umami, security logging
-│   ├── db.ts           # Drizzle database connection
-│   └── storage.ts      # Data persistence layer
-├── shared/             # Shared code between frontend/backend
-│   ├── schema.ts       # Drizzle ORM schemas (users, pins, analytics, dailyStats)
-│   └── utils.ts        # Shared utilities
-├── .github/workflows/  # CI/CD automation
-│   ├── deploy-production.yml
-│   ├── deploy-staging.yml
-│   └── rollback.yml
-└── docs/              # Extensive documentation (90+ docs)
-```
+| Path | Purpose |
+|------|---------|
+| client/src/ | React frontend (components/, pages/, hooks/, lib/) |
+| server/ | Express backend (routes.ts, middleware/, services/) |
+| shared/ | Shared code (schema.ts for Drizzle ORM, utils.ts) |
+| .github/workflows/ | CI/CD (deploy-production.yml, deploy-staging.yml, rollback.yml) |
+| docs/ | All documentation, see docs/README.md |
 
-## Database Schema
+## Key Patterns
 
-**Key Tables**:
-- `pins`: Core location data with shortcodes, lat/long, email verification, expiry
-- `analytics`: Event tracking (create, click, email_sent, visit) with user agent, IP, country
-- `dailyStats`: Aggregated metrics for dashboard
-- `users`: Authentication (username, password)
+1. **ESBuild `--packages=external`**: All node_modules treated as external. Never bundle dependencies into backend build.
+2. **Pin expiry**: Pins without email expire in 72 hours. Pins with verified email are permanent.
+3. **Rate limiting**: Pin creation 5/hour, 15/day per IP. General API 100 req/15min. Whitelists in `server/middleware/rateLimiter.ts`.
 
-**Important**: Pins without email (`createdBy`) expire after 72 hours. Pins with email are permanent.
+## Database Tables
 
-## API Architecture
+`pins` (shortcode, lat/long, email, expiry), `analytics` (events), `daily_stats` (aggregated metrics), `users` (auth)
 
-All routes defined in `server/routes.ts`:
+Schema defined in `shared/schema.ts`. UUIDs via `gen_random_uuid()`, timestamps via `defaultNow()`.
 
-### Core Endpoints
-- `POST /api/pins` - Create new pin (rate-limited: 5/hour, 15/day per IP)
-- `GET /api/pins/:shortcode` - Retrieve pin data
-- `GET /api/map-links/:lat/:lng` - Get links for 12+ map apps
-- `GET /api/health` - Health check endpoint (used by CI/CD)
+## Core API Endpoints
 
-### Security Middleware (Applied Order)
-1. Config file blocking (`.env`, `vendor/*`)
-2. DDoS protection
-3. Bot detection & timing analysis
-4. Honeypot traps
-5. Rate limiting (general: 100 req/15min)
-6. Pin-specific rate limiting (5/hour, 15/day)
+| Method | Path | Notes |
+|--------|------|-------|
+| POST | /api/pins | Create pin (rate-limited) |
+| GET | /api/pins/:shortcode | Retrieve pin |
+| GET | /api/map-links/:lat/:lng | Map app deep links |
+| GET | /api/health | Health check (used by CI/CD) |
 
-### Whitelisted IPs/Emails
-Development IPs and user's personal devices are whitelisted in `server/middleware/rateLimiter.ts`. Update when adding test environments.
+All routes in `server/routes.ts`. Security middleware: config blocking, DDoS, bot detection, honeypot, rate limiting.
 
-## CI/CD Deployment
+## Deployment
 
-**Workflow**: GitHub Actions automated deployments via Docker
+Manual trigger via GitHub Actions UI. Builds Docker image, pushes to GHCR, deploys to VPS via SSH, verifies health check, auto-rollbacks on failure. Takes ~2 minutes.
 
-### Deployment Flow
-1. Trigger: Manual via GitHub Actions UI
-2. Build: Multi-stage Dockerfile (builder → runner)
-3. Push: Image to GitHub Container Registry (GHCR)
-4. Deploy: SSH to VPS, pull image, `docker-compose up -d`
-5. Verify: Health check at `/api/health`
-6. Rollback: Automatic if health check fails
+VPS: production at /opt/addypin (port 3000), staging at /opt/addypin-staging (port 8080). Both share one PostgreSQL container (separate databases).
 
-### Key Files
-- `Dockerfile` - Multi-stage build (Node 20 Alpine, non-root user)
-- `docker-compose.yml` - Production orchestration
-- `.github/workflows/deploy-production.yml` - Production pipeline
-- `.github/workflows/deploy-staging.yml` - Staging pipeline
+## Documentation
 
-### Deployment Commands (VPS)
-```bash
-# On VPS at /opt/addypin
-docker-compose down              # Stop containers
-docker-compose up -d             # Start containers
-docker logs addypin -f           # View production logs
-docker logs addypin-staging -f   # View staging logs
-docker exec -it addypin-postgres psql -U postgres -d addypin  # Access DB
-```
+Full documentation index at `docs/README.md`. Organized as:
 
-### Environment Variables
-Required in VPS `.env`:
-- `DATABASE_URL` - PostgreSQL connection string
-- `RESEND_API_KEY` - Email service API key
-- `NODE_ENV` - production/development
-- `PORT` - Application port (3000 for prod, 8080 for staging)
-
-## Build Strategy
-
-**Critical**: The backend uses `esbuild` with `--packages=external` flag. This treats ALL `node_modules` as external dependencies to avoid "Dynamic require not supported" errors. Do NOT bundle dependencies into the backend build.
-
-Build command in `package.json`:
-```bash
-vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist
-```
-
-## Security Features
-
-### Rate Limiting
-- Pin creation: 5 per hour, 15 per day per IP
-- General API: 100 requests per 15 minutes
-- Implemented in-memory (consider Redis for horizontal scaling)
-
-### Security Middleware Stack
-- **DDoS Protection**: `server/middleware/ddosProtection.ts`
-- **Bot Detection**: User agent analysis, timing analysis
-- **Honeypot Fields**: Hidden form fields to catch bots
-- **Config Blocking**: Prevents access to sensitive files
-
-### Container Security
-- Non-root user execution (`addypin:nodejs`)
-- Localhost-only database binding (127.0.0.1)
-- Ed25519 SSH keys for CI/CD
-- Minimal Alpine base images
-
-## Testing & Monitoring
-
-### Health Checks
-- Endpoint: `GET /api/health`
-- Response: JSON with database status, uptime, response times
-- Automated: VPS cron job every 5 minutes (`/opt/infra-health-check.sh`)
-- Logs: `/var/log/infra-health-check.log`
-
-### Monitoring
-```bash
-# View health logs
-sudo tail -f /var/log/infra-health-check.log
-
-# Manual health check
-sudo /opt/infra-health-check.sh
-
-# Check specific errors
-sudo grep "ERROR" /var/log/infra-health-check.log
-```
-
-## Common Development Patterns
-
-### Adding New API Endpoint
-1. Define route in `server/routes.ts`
-2. Add schema validation with Zod if needed
-3. Apply appropriate middleware (rate limiting, auth)
-4. Update `docs/API_DOCUMENTATION.md`
-5. Test locally with `npm run dev`
-
-### Database Schema Changes
-1. Modify `shared/schema.ts` with Drizzle schema
-2. Run `npm run db:push` to sync (development)
-3. For production: Create migration, test in staging first
-4. Schema uses UUIDs with `gen_random_uuid()`, timestamps with `defaultNow()`
-
-### Frontend Components
-- Use shadcn/ui components from `client/src/components/ui/`
-- Follow Tailwind CSS utility-first approach
-- Map components in `client/src/components/maps/`
-- Forms use React Hook Form + Zod validation
-
-## Key Architectural Decisions
-
-1. **Docker-First**: All deployments containerized (vs systemd services)
-2. **Monolithic Container**: Frontend + backend in single container for simplicity
-3. **Manual CI/CD Triggers**: Prevents accidental production deployments
-4. **External Package Strategy**: ESBuild treats all node_modules as external
-5. **Dual Link Format**: Web subdomain (`ABC123.addypin.com`) + email (`ABC123@addypin.com`)
-
-## Documentation Index
-
-Essential docs in `docs/`:
-- `HIGH_LEVEL_DESIGN.md` - Complete architecture overview
-- `API_DOCUMENTATION.md` - REST API reference
-- `DEPLOYMENT-GUIDE.md` - Production deployment procedures
-- `QUICK-DEPLOYMENT-REFERENCE.md` - Quick ops reference
-- `CI-CD-BREAKTHROUGH-SUCCESS.md` - CI/CD technical breakdown
-- `ARCHITECTURE-SUMMARY.md` - Current state summary
-
-## Performance Targets
-
-- **Deployment Time**: 2 minutes (automated)
-- **Database Queries**: 3-16ms average
-- **API Response**: <100ms
-- **Memory Usage**: ~65MB per container
-- **Uptime**: 99.9% target
+| Tier | Path | Content |
+|------|------|---------|
+| Context | docs/00-context/ | Vision, system state, assumptions |
+| Product | docs/01-product/ | PRD and requirements |
+| Features | docs/02-features/ | API, email, monitoring, analytics, testing, backups |
+| Logs | docs/03-logs/ | Implementation, decisions, bugs, validation, insights |
+| Process | docs/04-process/ | Dev workflow, deployment, CI/CD, task management |
 
 ## Important Notes
 
-- Database uses Drizzle ORM - type-safe queries required
-- All pins auto-generate 6-character shortcodes (uppercase alphanumeric)
-- Email service uses Resend API (free tier limits apply)
-- Nginx reverse proxy handles SSL termination
-- Both production and staging share same PostgreSQL container (separate databases)
-- When making changes to rate limiting, update whitelists in `rateLimiter.ts`
+- Drizzle ORM requires type-safe queries
+- Shortcodes are 6 uppercase alphanumeric characters, auto-generated
+- Nginx handles SSL termination (Let's Encrypt)
+- Local dev connects to VPS PostgreSQL via SSH tunnel
+- Frontend uses React Hook Form + Zod validation
+- Map components in client/src/components/maps/
