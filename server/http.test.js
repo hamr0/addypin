@@ -156,19 +156,49 @@ test('GET /api/pins/:shortcode normalizes case', async () => {
     assert.equal(r.status, 200);
 });
 
-// ─── GET /:shortcode (placeholder until M5) ─────────────────────────────────
+// ─── GET /:shortcode → serves pin.html (the page itself does the lookup) ────
 
-test('GET /:shortcode returns text placeholder for confirmed pin', async () => {
-    await req('POST', '/api/pins', { lat: 1, lng: 2, email: 'a@b.com', shortcode: 'PAGE01' });
-    db.confirmPin('PAGE01', Math.floor(Date.now() / 1000));
-    const r = await req('GET', '/PAGE01');
+test('GET /:shortcode returns the pin viewer HTML for any valid 6-char code', async () => {
+    // We serve the same HTML for any syntactically valid code; the page
+    // fetches /api/pins/:code itself and renders 404 client-side if needed.
+    const r = await req('GET', '/ANYCD1');
     assert.equal(r.status, 200);
-    assert.match(r.body, /PAGE01/);
+    assert.match(r.body, /<!doctype html>/i);
+    assert.match(r.body, /addypin/i);
 });
 
-test('GET /:shortcode returns 404 for unknown', async () => {
-    const r = await req('GET', '/NOPE99');
+test('GET /:shortcode normalizes case before validating', async () => {
+    const r = await req('GET', '/anycd2');
+    assert.equal(r.status, 200);
+    assert.match(r.body, /<!doctype html>/i);
+});
+
+test('GET /:shortcode returns 404 for malformed shortcodes', async () => {
+    const r = await req('GET', '/!nope!');
     assert.equal(r.status, 404);
+});
+
+// ─── Static files ──────────────────────────────────────────────────────────
+
+test('GET / serves the homepage HTML', async () => {
+    const r = await req('GET', '/');
+    assert.equal(r.status, 200);
+    assert.match(r.body, /<!doctype html>/i);
+    assert.match(r.body, /addypin/i);
+});
+
+test('GET /logo.png serves the brand image', async () => {
+    const res = await fetch(baseUrl + '/logo.png');
+    assert.equal(res.status, 200);
+    assert.equal(res.headers.get('content-type'), 'image/png');
+    const buf = await res.arrayBuffer();
+    assert.ok(buf.byteLength > 100);
+});
+
+test('GET /favicon.svg serves the favicon', async () => {
+    const res = await fetch(baseUrl + '/favicon.svg');
+    assert.equal(res.status, 200);
+    assert.equal(res.headers.get('content-type'), 'image/svg+xml');
 });
 
 // ─── Unknown route ──────────────────────────────────────────────────────────

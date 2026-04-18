@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AddyPin</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+    :root {
+        --brand: #00BCD4; --brand-bright: #1ee0ff;
+        --ink: #0b1426; --ink-2: #142036; --line: #243149; --muted: #8aa0c0;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%;
+                 font-family: ui-monospace, SFMono-Regular, 'JetBrains Mono', Menlo, monospace;
+                 -webkit-font-smoothing: antialiased; color: white; }
+    #map { position: absolute; inset: 0; z-index: 0; }
+    .leaflet-tile-pane { filter: saturate(0.85); }
+
+    .topbar { position: absolute; top: 14px; left: 14px; right: 14px; z-index: 1000;
+              display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: center; }
+    .brand { background: var(--ink); color: white; padding: 8px 14px;
+             border: 1px solid var(--line); display: flex; align-items: center; gap: 10px;
+             text-decoration: none; }
+    .brand img { height: 26px; }
+    .brand .word { font-weight: 800; letter-spacing: -0.02em; font-size: 16px; }
+    .brand .accent { color: var(--brand-bright); }
+
+    .codepill { background: var(--ink); border: 1px solid var(--line); padding: 10px 14px;
+                font-size: 14px; font-weight: 800; letter-spacing: 0.06em;
+                display: flex; align-items: center; gap: 10px; justify-self: end; }
+    .codepill .label { color: var(--muted); font-size: 11px; text-transform: uppercase;
+                       letter-spacing: 0.14em; font-weight: 700; }
+    .codepill .code { color: var(--brand-bright); }
+    .codepill .copy { background: none; border: 1px solid var(--line); color: var(--muted);
+                      padding: 4px 8px; font: inherit; font-size: 11px; cursor: pointer;
+                      text-transform: uppercase; letter-spacing: 0.08em; }
+    .codepill .copy:hover { color: white; border-color: var(--brand-bright); }
+    .codepill .copy.done { color: var(--brand-bright); border-color: var(--brand-bright); }
+
+    .bottom { position: absolute; left: 14px; right: 14px; bottom: 14px; z-index: 1000;
+              background: var(--ink); border: 1px solid var(--line); padding: 14px;
+              max-height: calc(100vh - 130px); overflow-y: auto; }
+    .head { display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 12px; flex-wrap: wrap; gap: 10px; }
+    .head .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em;
+                   color: var(--brand-bright); font-weight: 700; }
+    .head .coords { font-size: 14px; color: white; font-weight: 700; }
+
+    .links { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+             gap: 8px; }
+    .links a { background: var(--ink-2); color: white; text-decoration: none;
+               padding: 12px 14px; border: 1px solid var(--line); font-size: 13px;
+               text-align: center; transition: border-color .15s, color .15s, background .15s; }
+    .links a:hover { border-color: var(--brand-bright); color: var(--brand-bright);
+                     background: var(--ink); }
+
+    .state { position: absolute; inset: 0; z-index: 1000; display: grid; place-items: center;
+             background: var(--ink); padding: 24px; text-align: center; }
+    .state h1 { font-size: 36px; margin: 0 0 8px; color: var(--brand-bright); letter-spacing: -0.02em; }
+    .state p { color: var(--muted); margin: 0 0 24px; font-size: 14px; max-width: 360px; line-height: 1.6; }
+    .state a { color: var(--brand-bright); text-decoration: none; border-bottom: 1px solid var(--brand-bright); }
+    .hide { display: none; }
+
+    @media (max-width: 720px) {
+        .topbar { gap: 8px; top: 10px; left: 10px; right: 10px; }
+        .brand { padding: 8px 10px; }
+        .brand .word { font-size: 14px; }
+        .codepill { padding: 8px 10px; }
+        .codepill .label { display: none; }
+        .bottom { left: 10px; right: 10px; bottom: 10px; padding: 10px 12px;
+                  max-height: calc(100vh - 100px); }
+        .head .coords { font-size: 13px; }
+        .links { grid-template-columns: repeat(2, 1fr); gap: 6px; }
+        .links a { padding: 11px 8px; font-size: 12px; }
+    }
+</style>
+</head>
+<body>
+<div id="loading" class="state"><p>loading...</p></div>
+<div id="notfound" class="state hide">
+    <h1>404</h1>
+    <p>This AddyPin doesn't exist, hasn't been confirmed, or has expired.</p>
+    <p><a href="/">← create one</a></p>
+</div>
+
+<div id="app" class="hide">
+    <div id="map"></div>
+    <div class="topbar">
+        <a class="brand" href="/">
+            <img src="/logo.png" alt="">
+            <span class="word">addy<span class="accent">pin</span></span>
+        </a>
+        <div class="codepill">
+            <span class="label">Pin</span>
+            <span class="code" id="codeLabel"></span>
+            <button class="copy" id="copyUrl">Copy URL</button>
+        </div>
+    </div>
+
+    <div class="bottom">
+        <div class="head">
+            <div>
+                <div class="label">Coordinates</div>
+                <div class="coords" id="coords"></div>
+            </div>
+        </div>
+        <div class="links" id="links"></div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const code = location.pathname.replace(/^\//, '').replace(/\/$/, '').toUpperCase();
+
+(async () => {
+    if (!/^[A-Z0-9]{6}$/.test(code)) { showNotFound(); return; }
+    try {
+        const res = await fetch(`/api/pins/${encodeURIComponent(code)}`);
+        if (!res.ok) { showNotFound(); return; }
+        const data = await res.json();
+        showPin(data);
+    } catch {
+        showNotFound();
+    }
+})();
+
+function showNotFound() {
+    document.getElementById('loading').classList.add('hide');
+    document.getElementById('notfound').classList.remove('hide');
+}
+
+function showPin({ lat, lng, mapLinks }) {
+    document.getElementById('loading').classList.add('hide');
+    document.getElementById('app').classList.remove('hide');
+    document.getElementById('codeLabel').textContent = code;
+    document.getElementById('coords').textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+
+    const map = L.map('map', { zoomControl: false }).setView([lat, lng], 16);
+    L.control.zoom({ position: 'bottomright' }).addTo(map);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        { attribution: '© OpenStreetMap', maxZoom: 19 }).addTo(map);
+    L.marker([lat, lng]).addTo(map);
+
+    const links = document.getElementById('links');
+    for (const [name, url] of Object.entries(mapLinks)) {
+        const a = document.createElement('a');
+        a.href = url; a.target = '_blank'; a.rel = 'noopener noreferrer';
+        a.textContent = name;
+        links.appendChild(a);
+    }
+}
+
+document.getElementById('copyUrl').addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    try { await navigator.clipboard.writeText(location.href); } catch { return; }
+    btn.classList.add('done'); btn.textContent = 'Copied';
+    setTimeout(() => { btn.classList.remove('done'); btn.textContent = 'Copy URL'; }, 1600);
+});
+</script>
+</body>
+</html>

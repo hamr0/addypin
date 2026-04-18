@@ -1,4 +1,7 @@
 import http from 'node:http';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { createRouter } from './router.js';
 import { mapLinks } from './maplinks.js';
 import {
@@ -8,15 +11,30 @@ import {
 
 const UNCONFIRMED_TTL_SEC = 72 * 60 * 60; // 72 hours
 
+// Default web/ lives next to server/ at the repo root.
+const DEFAULT_WEB_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'web');
+
+const STATIC_FILES = new Map([
+    ['/',            { file: 'index.html', type: 'text/html; charset=utf-8' }],
+    ['/logo.png',    { file: 'logo.png',   type: 'image/png' }],
+    ['/favicon.svg', { file: 'favicon.svg', type: 'image/svg+xml' }],
+    ['/favicon.ico', { file: 'favicon.svg', type: 'image/svg+xml' }],
+]);
+
 // Build an http.Server given the wired modules. Pure construction —
 // the caller decides when to listen() and on which port. This shape
 // lets integration tests spin up an ephemeral server per test.
-export function createServer({ db, crypto, limiters, now = () => Date.now() }) {
+export function createServer({ db, crypto, limiters, webDir = DEFAULT_WEB_DIR, now = () => Date.now() }) {
     const router = createRouter();
 
     // ─── Routes ────────────────────────────────────────────────────────────────
 
     router.get('/api/health', (_req, _params, _body) => json(200, { ok: true }));
+
+    // Static assets — must be registered before the catch-all /:shortcode below.
+    for (const [route, asset] of STATIC_FILES) {
+        router.get(route, () => serveStatic(webDir, asset.file, asset.type));
+    }
 
     router.post('/api/pins', (req, _params, body) => {
         if (!limiters.create.take(clientIp(req))) {
@@ -72,13 +90,15 @@ export function createServer({ db, crypto, limiters, now = () => Date.now() }) {
         return json(200, { lat, lng, mapLinks: mapLinks(lat, lng) });
     });
 
+    // /:shortcode → the pin viewer page. We serve the same HTML for any
+    // (syntactically valid) shortcode and let the page itself fetch
+    // /api/pins/:code, which renders coords + map-link buttons or a 404
+    // panel. This keeps the server stateless about page state and means
+    // the same HTML caches well at any reverse proxy layer.
     router.get('/:shortcode', (_req, params) => {
         const code = normalizeShortcode(params.shortcode);
         if (!isValidShortcode(code)) return text(404, 'Not found');
-        const pin = db.getPinByShortcode(code);
-        if (!pin || pin.status !== 'confirmed') return text(404, 'Not found');
-        // Milestone 5 will replace this with a real HTML page.
-        return text(200, `${code}\nSee /api/pins/${code}\n`);
+        return serveStatic(webDir, 'pin.html', 'text/html; charset=utf-8');
     });
 
     // ─── Server glue ───────────────────────────────────────────────────────────
@@ -86,15 +106,18 @@ export function createServer({ db, crypto, limiters, now = () => Date.now() }) {
     const server = http.createServer(async (req, res) => {
         try {
             const url = new URL(req.url, 'http://localhost');
-            const m = router.match(req.method, url.pathname);
-            if (!m) return send(res, json(404, { error: 'not_found' }));
+            // HEAD ≡ GET per HTTP spec, just no body. Route on GET, drop body in send().
+            const isHead = req.method === 'HEAD';
+            const matchMethod = isHead ? 'GET' : req.method;
+            const m = router.match(matchMethod, url.pathname);
+            if (!m) return send(res, json(404, { error: 'not_found' }), isHead);
 
             let body = null;
-            if (req.method !== 'GET' && req.method !== 'DELETE') {
+            if (req.method !== 'GET' && req.method !== 'HEAD' && req.method !== 'DELETE') {
                 body = await readJson(req);
             }
             const out = await m.handler(req, m.params, body);
-            send(res, out);
+            send(res, out, isHead);
         } catch (err) {
             console.error('[http]', err.stack || err.message);
             send(res, json(500, { error: 'internal_error' }));
@@ -114,9 +137,10 @@ function text(status, str) {
     return { status, headers: { 'content-type': 'text/plain; charset=utf-8' }, body: str };
 }
 
-function send(res, { status, headers, body }) {
+function send(res, { status, headers, body }, isHead = false) {
     res.writeHead(status, headers);
-    res.end(body);
+    if (isHead) res.end();
+    else res.end(body);
 }
 
 async function readJson(req) {
@@ -141,4 +165,20 @@ function clientIp(req) {
         return fwd.split(',')[0].trim();
     }
     return req.socket.remoteAddress || 'unknown';
+}
+
+// Read a static asset off disk. Files are tiny (< 50 KB) and the OS
+// page cache makes repeat reads effectively free, so the simplest
+// thing — readFileSync on every request — is the right shape for v2.
+// If hot-path latency ever matters, swap to a startup-time Map<path, Buffer>.
+function serveStatic(webDir, file, contentType) {
+    try {
+        const body = fs.readFileSync(path.join(webDir, file));
+        return { status: 200, headers: { 'content-type': contentType }, body };
+    } catch (e) {
+        if (e.code === 'ENOENT') {
+            return { status: 404, headers: { 'content-type': 'text/plain' }, body: 'not found' };
+        }
+        throw e;
+    }
 }

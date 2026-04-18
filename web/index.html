@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AddyPin — drop a pin, get a link</title>
+<meta name="description" content="Share a precise location with a short, memorable link.">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+    :root {
+        --brand: #00BCD4; --brand-bright: #1ee0ff;
+        --ink: #0b1426; --ink-2: #142036; --line: #243149; --muted: #8aa0c0;
+        --error: #ff6b6b;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%;
+                 font-family: ui-monospace, SFMono-Regular, 'JetBrains Mono', Menlo, monospace;
+                 -webkit-font-smoothing: antialiased; color: white; }
+    #map { position: absolute; inset: 0; z-index: 0; }
+    .leaflet-tile-pane { filter: saturate(0.85); }
+
+    .topbar { position: absolute; top: 14px; left: 14px; right: 14px; z-index: 1000;
+              display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: center; }
+
+    .tagline-strip { display: none; }
+    @media (max-width: 720px) {
+        .tagline-strip { display: block; position: absolute; left: 10px; right: 10px;
+                         top: 60px; z-index: 1000;
+                         text-align: center; font-size: 10px; letter-spacing: 0.22em;
+                         text-transform: uppercase; color: var(--muted);
+                         text-shadow: 0 0 6px rgba(11,20,38,.9), 0 0 6px rgba(11,20,38,.9); }
+        .tagline-strip .pop { color: var(--brand-bright); }
+    }
+    .brand { background: var(--ink); color: white; padding: 8px 14px;
+             border: 1px solid var(--line); display: flex; align-items: center; gap: 10px; }
+    .brand img { height: 26px; }
+    .brand .text { display: flex; flex-direction: column; line-height: 1.05; }
+    .brand .word { font-weight: 800; letter-spacing: -0.02em; font-size: 16px; }
+    .brand .accent { color: var(--brand-bright); }
+    .brand .tagline { font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.18em;
+                      color: var(--muted); margin-top: 3px; }
+    .brand .tagline .pop { color: var(--brand-bright); }
+
+    .search { position: relative; background: var(--ink); border: 1px solid var(--line);
+              display: flex; align-items: center; padding: 0 12px; }
+    .search::before { content: '⌕'; color: var(--brand-bright); font-size: 18px; margin-right: 10px; }
+    .search input { flex: 1; background: none; border: 0; outline: 0; padding: 12px 0;
+                    color: white; font: inherit; font-size: 14px; }
+    .search input::placeholder { color: var(--muted); }
+    .search .spinner { width: 14px; height: 14px; border: 2px solid var(--line);
+                       border-top-color: var(--brand-bright); border-radius: 999px;
+                       animation: spin .8s linear infinite; display: none; }
+    .search.loading .spinner { display: block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .results { position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+               background: var(--ink); border: 1px solid var(--line); max-height: 280px;
+               overflow-y: auto; display: none; }
+    .results.show { display: block; }
+    .result { padding: 10px 14px; cursor: pointer; border-bottom: 1px solid var(--line); font-size: 13px; }
+    .result:last-child { border-bottom: 0; }
+    .result:hover, .result.hot { background: var(--ink-2); color: var(--brand-bright); }
+    .result .sub { color: var(--muted); font-size: 11px; margin-top: 2px; }
+
+    .bottom { position: absolute; left: 14px; right: 14px; bottom: 14px; z-index: 1000;
+              background: var(--ink); border: 1px solid var(--line); padding: 14px; }
+    .row1 { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .row1 .tag { font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em;
+                 color: var(--brand-bright); font-weight: 700; }
+    .row1 .coords { font-size: 14px; color: white; font-weight: 700; }
+    .row1 .coords.empty { color: var(--muted); font-weight: 400; }
+
+    .expand { max-height: 0; opacity: 0; overflow: hidden;
+              transition: max-height .35s ease, opacity .25s ease, margin-top .25s ease; }
+    .bottom.active .expand { max-height: 280px; opacity: 1; margin-top: 12px; }
+
+    .row2 { display: grid; grid-template-columns: 1fr 1.5fr auto; gap: 10px; align-items: stretch; }
+    input.field { background: var(--ink-2); border: 1px solid var(--line);
+                  color: white; padding: 11px 12px; font: inherit; font-size: 14px;
+                  outline: none; width: 100%; min-width: 0; }
+    input.field::placeholder { color: var(--muted); }
+    input.field:focus { border-color: var(--brand); box-shadow: 0 0 0 2px rgba(0,188,212,.3); }
+    input.field.error { border-color: var(--error); box-shadow: 0 0 0 2px rgba(255,107,107,.25); }
+    button.go { background: var(--brand); color: var(--ink); border: 0; padding: 0 22px;
+                font: inherit; font-weight: 800; font-size: 14px; cursor: pointer;
+                text-transform: uppercase; letter-spacing: 0.08em;
+                transition: background .15s, transform .05s; }
+    button.go:hover:not(:disabled) { background: var(--brand-bright); }
+    button.go:active:not(:disabled) { transform: translateY(1px); }
+    button.go:disabled { background: var(--line); color: var(--muted); cursor: not-allowed; }
+    .footnote { font-size: 11px; color: var(--muted); margin-top: 10px; text-align: center; }
+    .footnote .dot { color: var(--brand-bright); margin: 0 6px; }
+    .errmsg { color: var(--error); font-size: 12px; margin-top: 8px; min-height: 16px; }
+
+    /* Success state — replaces .row2 + .footnote when pin is created */
+    .success { display: none; }
+    .bottom.done .expand .row2,
+    .bottom.done .expand .footnote,
+    .bottom.done .expand .errmsg { display: none; }
+    .bottom.done .expand .success { display: block; }
+    .success .links { display: grid; gap: 8px; margin-top: 12px; }
+    .success .link-row { display: grid; grid-template-columns: 78px 1fr auto; gap: 10px;
+                        align-items: center; padding: 10px 12px;
+                        background: var(--ink-2); border: 1px solid var(--line); }
+    .success .link-row .label { font-size: 11px; text-transform: uppercase;
+                                letter-spacing: 0.12em; color: var(--brand-bright); font-weight: 700; }
+    .success .link-row .val { font-size: 13px; word-break: break-all; }
+    .success .link-row .copy { background: none; border: 1px solid var(--line);
+                               color: var(--muted); padding: 6px 10px; font: inherit; font-size: 11px;
+                               cursor: pointer; text-transform: uppercase; letter-spacing: 0.08em; }
+    .success .link-row .copy:hover { color: white; border-color: var(--brand-bright); }
+    .success .link-row .copy.done { color: var(--brand-bright); border-color: var(--brand-bright); }
+    .success .note { margin-top: 14px; font-size: 12px; color: var(--muted); text-align: center; line-height: 1.5; }
+    .success .note .pop { color: var(--brand-bright); }
+    .success .new { margin-top: 14px; width: 100%; background: none; color: var(--muted);
+                    border: 1px solid var(--line); padding: 10px; font: inherit; font-size: 12px;
+                    text-transform: uppercase; letter-spacing: 0.08em; cursor: pointer; }
+    .success .new:hover { color: white; border-color: var(--brand-bright); }
+
+    @media (max-width: 720px) {
+        .topbar { gap: 8px; top: 10px; left: 10px; right: 10px; }
+        .brand { padding: 8px 10px; }
+        .brand .tagline { display: none; }
+        .brand .word { font-size: 14px; }
+        .bottom { left: 10px; right: 10px; bottom: 10px; padding: 10px 12px; }
+        .row1 .tag { font-size: 10px; }
+        .row1 .coords { font-size: 13px; }
+        .row2 { grid-template-columns: 1fr 1fr;
+                grid-template-areas: 'code email' 'go go'; gap: 8px; }
+        .row2 #code  { grid-area: code; }
+        .row2 #email { grid-area: email; }
+        .row2 .go    { grid-area: go; padding: 11px; font-size: 13px; }
+        .bottom.active .expand { max-height: 320px; margin-top: 10px; }
+        .footnote { display: none; }
+        .success .link-row { grid-template-columns: 1fr; gap: 6px; }
+        .success .link-row .copy { justify-self: start; }
+    }
+</style>
+</head>
+<body>
+<div id="map"></div>
+
+<div class="topbar">
+    <div class="brand">
+        <img src="/logo.png" alt="">
+        <div class="text">
+            <span class="word">addy<span class="accent">pin</span></span>
+            <span class="tagline">drop a pin <span class="pop">·</span> get a link</span>
+        </div>
+    </div>
+    <div class="search" id="search">
+        <input id="q" type="text" placeholder="Search address, place, or postcode..." autocomplete="off">
+        <div class="spinner"></div>
+        <div class="results" id="results"></div>
+    </div>
+</div>
+<div class="tagline-strip">drop a pin <span class="pop">·</span> get a link</div>
+
+<form class="bottom" id="bottom" onsubmit="return submit(event)">
+    <div class="row1">
+        <span class="tag">Pin</span>
+        <span class="coords empty" id="coords">click the map or search above</span>
+    </div>
+    <div class="expand">
+        <div class="row2">
+            <input class="field" id="code" placeholder="HOUSE1 (optional)" maxlength="6" pattern="[A-Za-z0-9]{6}">
+            <input class="field" id="email" type="email" required placeholder="you@example.com">
+            <button class="go" id="go" type="submit" disabled>Create</button>
+        </div>
+        <div class="errmsg" id="err"></div>
+        <div class="footnote">no accounts <span class="dot">·</span> no tracking <span class="dot">·</span> open source</div>
+        <div class="success" id="success">
+            <div class="links">
+                <div class="link-row">
+                    <span class="label">Web</span>
+                    <span class="val" id="webLink"></span>
+                    <button type="button" class="copy" data-copy="webLink">Copy</button>
+                </div>
+                <div class="link-row">
+                    <span class="label">Email</span>
+                    <span class="val" id="emailLink"></span>
+                    <button type="button" class="copy" data-copy="emailLink">Copy</button>
+                </div>
+            </div>
+            <div class="note">check your inbox <span class="pop">·</span> click the magic link to confirm <span class="pop">·</span> 72h window</div>
+            <button type="button" class="new" id="newPin">Drop another pin</button>
+        </div>
+    </div>
+</form>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const map = L.map('map', { zoomControl: false }).setView([37.7749, -122.4194], 13);
+L.control.zoom({ position: 'bottomright' }).addTo(map);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    { attribution: '© OpenStreetMap', maxZoom: 19 }).addTo(map);
+
+let pin = null, coords = null;
+function setCoords(latlng, opts = {}) {
+    coords = latlng;
+    if (pin) pin.setLatLng(latlng); else pin = L.marker(latlng).addTo(map);
+    const c = document.getElementById('coords');
+    c.classList.remove('empty');
+    c.textContent = `${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)}`;
+    document.getElementById('go').disabled = false;
+    document.getElementById('bottom').classList.add('active');
+    if (opts.fly) map.flyTo(latlng, Math.max(map.getZoom(), 15), { duration: 0.6 });
+}
+map.on('click', (e) => setCoords(e.latlng));
+
+// ─── Nominatim search ──────────────────────────────────────────────────
+const q = document.getElementById('q');
+const results = document.getElementById('results');
+const search = document.getElementById('search');
+let timer = null, abortCtl = null, hot = -1;
+
+q.addEventListener('input', () => {
+    const text = q.value.trim();
+    if (timer) clearTimeout(timer);
+    if (abortCtl) abortCtl.abort();
+    if (text.length < 3) { results.classList.remove('show'); search.classList.remove('loading'); return; }
+    timer = setTimeout(() => doSearch(text), 400);
+});
+async function doSearch(text) {
+    search.classList.add('loading');
+    abortCtl = new AbortController();
+    try {
+        const url = `https://nominatim.openstreetmap.org/search?format=json&limit=5&q=${encodeURIComponent(text)}`;
+        const res = await fetch(url, { signal: abortCtl.signal,
+            headers: { 'Accept-Language': navigator.language || 'en' } });
+        const data = await res.json();
+        renderResults(data);
+    } catch (e) {
+        if (e.name !== 'AbortError') console.error(e);
+    } finally { search.classList.remove('loading'); }
+}
+function renderResults(items) {
+    results.innerHTML = '';
+    if (!items.length) { results.classList.remove('show'); return; }
+    items.forEach((it) => {
+        const el = document.createElement('div');
+        el.className = 'result';
+        const main = it.display_name.split(',')[0];
+        const sub = it.display_name.split(',').slice(1, 4).join(',').trim();
+        el.innerHTML = `<div>${escapeHtml(main)}</div><div class="sub">${escapeHtml(sub)}</div>`;
+        el.addEventListener('click', () => choose(it));
+        results.appendChild(el);
+    });
+    hot = -1;
+    results.classList.add('show');
+}
+function choose(it) {
+    setCoords(L.latLng(parseFloat(it.lat), parseFloat(it.lon)), { fly: true });
+    q.value = it.display_name;
+    results.classList.remove('show');
+}
+q.addEventListener('keydown', (e) => {
+    const items = results.querySelectorAll('.result');
+    if (!items.length) return;
+    if (e.key === 'ArrowDown') { e.preventDefault(); hot = (hot + 1) % items.length; updateHot(items); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); hot = (hot - 1 + items.length) % items.length; updateHot(items); }
+    else if (e.key === 'Enter' && hot >= 0) { e.preventDefault(); items[hot].click(); }
+    else if (e.key === 'Escape') { results.classList.remove('show'); }
+});
+function updateHot(items) { items.forEach((el, i) => el.classList.toggle('hot', i === hot)); }
+document.addEventListener('click', (e) => {
+    if (!search.contains(e.target)) results.classList.remove('show');
+});
+function escapeHtml(s) { return s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+// ─── Submit to backend ─────────────────────────────────────────────────
+const ERRORS = {
+    invalid_coords: 'Coordinates look wrong. Click somewhere on the map.',
+    invalid_email: 'That email doesn\'t look right.',
+    invalid_shortcode: 'Codes are 6 letters or numbers — no symbols.',
+    shortcode_taken: 'That code is already in use. Try another.',
+    shortcode_reserved: 'That code is reserved. Try another.',
+    rate_limited: 'Too many pins from this address. Try again in a bit.',
+    shortcode_pool_unavailable: 'Server is briefly out of codes. Try again in a moment.',
+    internal_error: 'Server error. Please try again.',
+};
+
+async function submit(e) {
+    e.preventDefault();
+    const err = document.getElementById('err');
+    const go = document.getElementById('go');
+    err.textContent = '';
+    document.getElementById('code').classList.remove('error');
+    document.getElementById('email').classList.remove('error');
+    if (!coords) return false;
+    go.disabled = true; go.textContent = '...';
+    try {
+        const code = document.getElementById('code').value.toUpperCase() || undefined;
+        const email = document.getElementById('email').value;
+        const res = await fetch('/api/pins', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ lat: coords.lat, lng: coords.lng, shortcode: code, email }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+            err.textContent = ERRORS[data.error] || 'Something went wrong.';
+            if (data.error === 'invalid_shortcode' || data.error === 'shortcode_taken' || data.error === 'shortcode_reserved') {
+                document.getElementById('code').classList.add('error');
+            } else if (data.error === 'invalid_email') {
+                document.getElementById('email').classList.add('error');
+            }
+            return false;
+        }
+        showSuccess(data.shortcode);
+    } catch {
+        err.textContent = 'Network error. Try again.';
+    } finally {
+        go.disabled = false; go.textContent = 'Create';
+    }
+    return false;
+}
+
+function showSuccess(shortcode) {
+    const host = location.host;
+    document.getElementById('webLink').textContent = `${host}/${shortcode}`;
+    document.getElementById('emailLink').textContent = `${shortcode}@${host.replace(/^www\./, '')}`;
+    document.getElementById('bottom').classList.add('done');
+}
+document.querySelectorAll('.copy').forEach(btn => btn.addEventListener('click', async () => {
+    const targetId = btn.dataset.copy;
+    const text = document.getElementById(targetId).textContent;
+    try { await navigator.clipboard.writeText(text); } catch { return; }
+    btn.classList.add('done'); btn.textContent = 'Copied';
+    setTimeout(() => { btn.classList.remove('done'); btn.textContent = 'Copy'; }, 1600);
+}));
+document.getElementById('newPin').addEventListener('click', () => {
+    document.getElementById('bottom').classList.remove('done');
+    document.getElementById('code').value = '';
+    document.getElementById('email').value = '';
+    document.getElementById('err').textContent = '';
+});
+</script>
+</body>
+</html>
