@@ -157,7 +157,7 @@
 </div>
 <div class="tagline-strip">drop a pin <span class="pop">·</span> get a link</div>
 
-<form class="bottom" id="bottom" onsubmit="return submit(event)">
+<form class="bottom" id="bottom">
     <div class="row1">
         <span class="tag">Pin</span>
         <span class="coords empty" id="coords">click the map or search above</span>
@@ -281,14 +281,14 @@ const ERRORS = {
     internal_error: 'Server error. Please try again.',
 };
 
-async function submit(e) {
+document.getElementById('bottom').addEventListener('submit', async (e) => {
     e.preventDefault();
     const err = document.getElementById('err');
     const go = document.getElementById('go');
     err.textContent = '';
     document.getElementById('code').classList.remove('error');
     document.getElementById('email').classList.remove('error');
-    if (!coords) return false;
+    if (!coords) return;
     go.disabled = true; go.textContent = '...';
     try {
         const code = document.getElementById('code').value.toUpperCase() || undefined;
@@ -306,7 +306,7 @@ async function submit(e) {
             } else if (data.error === 'invalid_email') {
                 document.getElementById('email').classList.add('error');
             }
-            return false;
+            return;
         }
         showSuccess(data.shortcode);
     } catch {
@@ -314,8 +314,7 @@ async function submit(e) {
     } finally {
         go.disabled = false; go.textContent = 'Create';
     }
-    return false;
-}
+});
 
 function showSuccess(shortcode) {
     const host = location.host;
