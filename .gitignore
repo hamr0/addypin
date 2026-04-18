@@ -10,9 +10,12 @@ attached_assets/
 .DS_Store
 *.log
 
-# Archives (old backups and docs)
-archive/
-
 # SSH keys (if accidentally created in root)
 *.pem
 *.key
+
+# Local Claude Code agent state (sessions, memory, worktrees)
+.claude/
+
+# Dev server local pidfile
+tunnel.pid
