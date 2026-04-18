@@ -133,7 +133,7 @@ test('GET /api/pins/:shortcode returns coords + maplinks for confirmed pin', asy
     assert.equal(r.status, 200);
     assert.equal(r.body.lat, 37.7749);
     assert.equal(r.body.lng, -122.4194);
-    assert.equal(Object.keys(r.body.mapLinks).length, 13);
+    assert.equal(Object.keys(r.body.mapLinks).length, 12);
     assert.ok(r.body.mapLinks['Google Maps'].includes('37.7749'));
 });
 

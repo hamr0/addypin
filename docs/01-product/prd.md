@@ -206,3 +206,4 @@ Remaining items for the build phase (not blockers):
 - Pin expiry option for privacy-conscious users.
 - Signed audit log of edits (git-style append-only) for the tamper-evidence idea that got cut from v2.
 - Go rewrite of the server if Node proves heavy.
+- **Korea map coverage.** Add Naver Map (or KakaoMap) to the 12-app portfolio in `server/maplinks.js`. Korea is the only major region currently uncovered — Google Maps is legally limited there (no driving/transit directions due to data export restrictions), so the local apps dominate. URL pattern needs validation; the existing `mapLinks()` function takes one new entry, no other changes.
