@@ -23,7 +23,7 @@ export const APPS = [
       requiresConversion: false },
 
     // Regional champions — developing nations
-    { id: 'mappls',  name: 'Mappls',          icon: 'mappls.png', darkBg: true,
+    { id: 'mappls',  name: 'Mappls',          icon: 'mappls.png',
       url: 'https://maps.mappls.com/direction?destination={lat},{lon}',
       requiresConversion: false },
     { id: 'baidu',   name: 'Baidu Maps',      icon: 'baidu.ico',
