@@ -36,6 +36,16 @@ export function createServer({ db, crypto, limiters, webDir = DEFAULT_WEB_DIR, n
         router.get(route, () => serveStatic(webDir, asset.file, asset.type));
     }
 
+    // Map-app logos (web/maplogos/<file>). Filename whitelist prevents path
+    // traversal and rules out unexpected asset types.
+    const LOGO_TYPES = { png: 'image/png', ico: 'image/x-icon', svg: 'image/svg+xml' };
+    router.get('/maplogos/:filename', (_req, params) => {
+        const f = params.filename;
+        const m = /^([a-z0-9]+)\.(png|ico|svg)$/i.exec(f);
+        if (!m) return text(404, 'not found');
+        return serveStatic(path.join(webDir, 'maplogos'), f, LOGO_TYPES[m[2].toLowerCase()]);
+    });
+
     router.post('/api/pins', (req, _params, body) => {
         if (!limiters.create.take(clientIp(req))) {
             return json(429, { error: 'rate_limited' });

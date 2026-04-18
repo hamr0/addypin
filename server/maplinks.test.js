@@ -2,57 +2,67 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { mapLinks, APPS } from './maplinks.js';
 
-test('returns 12 providers', () => {
+test('returns 12 entries in the canonical APPS order', () => {
     const links = mapLinks(37.7749, -122.4194);
-    assert.equal(Object.keys(links).length, 12);
+    assert.equal(links.length, 12);
     assert.equal(APPS.length, 12);
+    assert.deepEqual(links.map(l => l.id), APPS.map(a => a.id));
 });
 
-test('every value is an https URL', () => {
+test('every entry has id, name, icon, url', () => {
     const links = mapLinks(0, 0);
-    for (const [name, url] of Object.entries(links)) {
-        assert.ok(url.startsWith('https://'), `${name} → ${url}`);
-        assert.doesNotThrow(() => new URL(url), `${name} → ${url}`);
+    for (const l of links) {
+        assert.equal(typeof l.id, 'string');
+        assert.equal(typeof l.name, 'string');
+        assert.equal(typeof l.url, 'string');
+        assert.equal(typeof l.icon, 'string');
+        assert.match(l.icon, /^\/maplogos\/[a-z0-9]+\.(png|ico)$/);
     }
 });
 
-test('every URL embeds the coordinate (no leftover placeholders)', () => {
+test('every URL is a valid https URL with no leftover placeholders', () => {
     const links = mapLinks(37.7749, -122.4194);
-    for (const [name, url] of Object.entries(links)) {
-        assert.ok(!url.includes('{lat}'), `${name} has unreplaced {lat}`);
-        assert.ok(!url.includes('{lon}'), `${name} has unreplaced {lon}`);
+    for (const l of links) {
+        assert.ok(l.url.startsWith('https://'), `${l.name} → ${l.url}`);
+        assert.doesNotThrow(() => new URL(l.url), `${l.name} → ${l.url}`);
+        assert.ok(!l.url.includes('{lat}'), `${l.name} has unreplaced {lat}`);
+        assert.ok(!l.url.includes('{lon}'), `${l.name} has unreplaced {lon}`);
     }
 });
 
 test('non-China inputs use WGS84 verbatim for all apps including Chinese ones', () => {
-    // SF — outside China bbox. Both Baidu/Amap should embed 37.7749 / -122.4194.
     const links = mapLinks(37.7749, -122.4194);
-    assert.ok(links['Baidu Maps'].includes('37.7749'));
-    assert.ok(links['Baidu Maps'].includes('-122.4194'));
-    assert.ok(links['Amap (Gaode)'].includes('37.7749'));
-    assert.ok(links['Amap (Gaode)'].includes('-122.4194'));
+    const baidu = links.find(l => l.id === 'baidu');
+    const amap  = links.find(l => l.id === 'amap');
+    assert.ok(baidu.url.includes('37.7749'));
+    assert.ok(baidu.url.includes('-122.4194'));
+    assert.ok(amap.url.includes('37.7749'));
+    assert.ok(amap.url.includes('-122.4194'));
 });
 
 test('China inputs trigger GCJ-02 shift for Chinese apps only', () => {
-    // Beijing — inside bbox. Baidu/Amap should NOT embed the original WGS coords.
     const lat = 39.9087, lon = 116.3975;
     const links = mapLinks(lat, lon);
-    assert.ok(!links['Baidu Maps'].includes(`${lat},${lon}`),
+    const baidu  = links.find(l => l.id === 'baidu');
+    const amap   = links.find(l => l.id === 'amap');
+    const google = links.find(l => l.id === 'google');
+    const apple  = links.find(l => l.id === 'apple');
+    assert.ok(!baidu.url.includes(`${lat},${lon}`),
               'Baidu should embed converted coords, not raw WGS');
-    assert.ok(!links['Amap (Gaode)'].includes(`${lon},${lat}`),
+    assert.ok(!amap.url.includes(`${lon},${lat}`),
               'Amap should embed converted coords, not raw WGS');
-    // But Western apps still get the original
-    assert.ok(links['Google Maps'].includes(`${lat},${lon}`),
+    assert.ok(google.url.includes(`${lat},${lon}`),
               'Google should embed WGS coords as-is');
-    assert.ok(links['Apple Maps'].includes(`${lat},${lon}`),
+    assert.ok(apple.url.includes(`${lat},${lon}`),
               'Apple should embed WGS coords as-is');
 });
 
-test('coordinate-order apps put lon first when configured', () => {
-    // Yandex / 2GIS / Amap use 'lon,lat' order.
+test('lon-first apps put lon before lat in the URL', () => {
     const links = mapLinks(37.7749, -122.4194);
-    assert.match(links['Yandex Maps'], /ll=-122\.4194,37\.7749/);
-    assert.match(links['2GIS'],        /center=-122\.4194,37\.7749/);
+    const yandex = links.find(l => l.id === 'yandex');
+    const twogis = links.find(l => l.id === '2gis');
+    assert.match(yandex.url, /ll=-122\.4194,37\.7749/);
+    assert.match(twogis.url, /center=-122\.4194,37\.7749/);
 });
 
 test('handles edges and zero', () => {
@@ -66,10 +76,4 @@ test('rejects non-finite inputs', () => {
     assert.throws(() => mapLinks(0, Infinity));
     assert.throws(() => mapLinks('37', -122));
     assert.throws(() => mapLinks(null, 0));
-});
-
-test('object key order matches APPS array order (stable for UI)', () => {
-    const links = mapLinks(0, 0);
-    const expectedOrder = APPS.map(a => a.name);
-    assert.deepEqual(Object.keys(links), expectedOrder);
 });

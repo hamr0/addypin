@@ -133,8 +133,10 @@ test('GET /api/pins/:shortcode returns coords + maplinks for confirmed pin', asy
     assert.equal(r.status, 200);
     assert.equal(r.body.lat, 37.7749);
     assert.equal(r.body.lng, -122.4194);
-    assert.equal(Object.keys(r.body.mapLinks).length, 12);
-    assert.ok(r.body.mapLinks['Google Maps'].includes('37.7749'));
+    assert.equal(r.body.mapLinks.length, 12);
+    const google = r.body.mapLinks.find(l => l.id === 'google');
+    assert.ok(google.url.includes('37.7749'));
+    assert.equal(google.icon, '/maplogos/google.ico');
 });
 
 test('GET /api/pins/:shortcode response leaks no owner info', async () => {
@@ -199,6 +201,21 @@ test('GET /favicon.svg serves the favicon', async () => {
     const res = await fetch(baseUrl + '/favicon.svg');
     assert.equal(res.status, 200);
     assert.equal(res.headers.get('content-type'), 'image/svg+xml');
+});
+
+test('GET /maplogos/<file> serves a real logo with correct content-type', async () => {
+    const res = await fetch(baseUrl + '/maplogos/google.ico');
+    assert.equal(res.status, 200);
+    assert.equal(res.headers.get('content-type'), 'image/x-icon');
+    const buf = await res.arrayBuffer();
+    assert.ok(buf.byteLength > 100);
+});
+
+test('GET /maplogos/ rejects path traversal and unknown extensions', async () => {
+    for (const path of ['/maplogos/../package.json', '/maplogos/x.exe', '/maplogos/../../etc/passwd', '/maplogos/foo']) {
+        const res = await fetch(baseUrl + path);
+        assert.equal(res.status, 404, `expected 404 for ${path}`);
+    }
 });
 
 // ─── Unknown route ──────────────────────────────────────────────────────────

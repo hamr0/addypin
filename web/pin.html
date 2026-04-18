@@ -51,10 +51,16 @@
     .links { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
              gap: 8px; }
     .links a { background: var(--ink-2); color: white; text-decoration: none;
-               padding: 12px 14px; border: 1px solid var(--line); font-size: 13px;
-               text-align: center; transition: border-color .15s, color .15s, background .15s; }
+               padding: 10px 12px; border: 1px solid var(--line); font-size: 13px;
+               display: flex; align-items: center; gap: 10px;
+               transition: border-color .15s, color .15s, background .15s; }
     .links a:hover { border-color: var(--brand-bright); color: var(--brand-bright);
                      background: var(--ink); }
+    .links a img { width: 22px; height: 22px; object-fit: contain;
+                   background: white; padding: 2px; border-radius: 3px;
+                   flex-shrink: 0; }
+    .links a .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+                   white-space: nowrap; }
 
     .state { position: absolute; inset: 0; z-index: 1000; display: grid; place-items: center;
              background: var(--ink); padding: 24px; text-align: center; }
@@ -144,10 +150,14 @@ function showPin({ lat, lng, mapLinks }) {
     L.marker([lat, lng]).addTo(map);
 
     const links = document.getElementById('links');
-    for (const [name, url] of Object.entries(mapLinks)) {
+    for (const link of mapLinks) {
         const a = document.createElement('a');
-        a.href = url; a.target = '_blank'; a.rel = 'noopener noreferrer';
-        a.textContent = name;
+        a.href = link.url; a.target = '_blank'; a.rel = 'noopener noreferrer';
+        const img = document.createElement('img');
+        img.src = link.icon; img.alt = '';
+        const nm = document.createElement('span');
+        nm.className = 'nm'; nm.textContent = link.name;
+        a.append(img, nm);
         links.appendChild(a);
     }
 }
