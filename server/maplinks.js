@@ -15,7 +15,7 @@ export const APPS = [
     { id: 'google',  name: 'Google Maps',     icon: 'google.ico',
       url: 'https://www.google.com/maps?q={lat},{lon}',
       requiresConversion: false },
-    { id: 'apple',   name: 'Apple Maps',      icon: 'apple.png',
+    { id: 'apple',   name: 'Apple Maps',      icon: 'apple.png', darkBg: true,
       url: 'https://maps.apple.com/?q={lat},{lon}',
       requiresConversion: false },
     { id: 'waze',    name: 'Waze',            icon: 'waze.ico',
@@ -23,7 +23,7 @@ export const APPS = [
       requiresConversion: false },
 
     // Regional champions — developing nations
-    { id: 'mappls',  name: 'Mappls',          icon: 'mappls.png',
+    { id: 'mappls',  name: 'Mappls',          icon: 'mappls.png', darkBg: true,
       url: 'https://maps.mappls.com/direction?destination={lat},{lon}',
       requiresConversion: false },
     { id: 'baidu',   name: 'Baidu Maps',      icon: 'baidu.ico',
@@ -53,7 +53,7 @@ export const APPS = [
       requiresConversion: false },
 
     // Strategic — Africa, MENA, LatAm
-    { id: 'yango',   name: 'Yango Maps',      icon: 'yango.png',
+    { id: 'yango',   name: 'Yango Maps',      icon: 'yango.png', darkBg: true,
       url: 'https://maps.yango.com/?ll={lon},{lat}&z=15',
       requiresConversion: false },
 ];
@@ -74,6 +74,10 @@ export function mapLinks(lat, lng) {
     return APPS.map(app => {
         const c = app.requiresConversion ? gcj : { lat, lon: lng };
         const url = app.url.replace('{lat}', String(c.lat)).replace('{lon}', String(c.lon));
-        return { id: app.id, name: app.name, icon: `/maplogos/${app.icon}`, url };
+        return {
+            id: app.id, name: app.name, url,
+            icon: `/maplogos/${app.icon}`,
+            darkBg: !!app.darkBg,  // logos that are white-on-transparent need a dark pad
+        };
     });
 }

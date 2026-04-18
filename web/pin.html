@@ -59,6 +59,8 @@
     .links a img { width: 22px; height: 22px; object-fit: contain;
                    background: white; padding: 2px; border-radius: 3px;
                    flex-shrink: 0; }
+    /* White-on-transparent logos (apple, mappls, yango) need a dark pad */
+    .links a img.dark { background: var(--ink); }
     .links a .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis;
                    white-space: nowrap; }
 
@@ -155,6 +157,7 @@ function showPin({ lat, lng, mapLinks }) {
         a.href = link.url; a.target = '_blank'; a.rel = 'noopener noreferrer';
         const img = document.createElement('img');
         img.src = link.icon; img.alt = '';
+        if (link.darkBg) img.classList.add('dark');
         const nm = document.createElement('span');
         nm.className = 'nm'; nm.textContent = link.name;
         a.append(img, nm);
