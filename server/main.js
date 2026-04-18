@@ -3,16 +3,21 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { execSync } from 'node:child_process';
 import { createDb } from './db.js';
 import { createCrypto } from './crypto.js';
 import { createRateLimiter } from './ratelimit.js';
 import { createServer } from './http.js';
+import { createMailer, msmtpTransport, consoleTransport } from './mail.js';
 
 loadDotenv();
 
 const cfg = {
     port: parseInt(process.env.PORT || '3000', 10),
     dataDir: process.env.DATA_DIR || './data',
+    baseUrl: process.env.BASE_URL || '',
+    mailFromAddress: process.env.MAIL_FROM_ADDRESS || 'noreply@addypin.com',
+    mailFromName: process.env.MAIL_FROM_NAME || 'addypin',
     dataKey: hexKey('ADDYPIN_DATA_KEY'),
     emailKey: hexKey('ADDYPIN_EMAIL_KEY'),
     signingKey: hexKey('ADDYPIN_SIGNING_KEY'),
@@ -34,7 +39,15 @@ const limiters = {
 };
 setInterval(() => { limiters.create.gc(); limiters.lookup.gc(); }, 5 * 60 * 1000).unref();
 
-const server = createServer({ db, crypto, limiters });
+// Pick the mail transport at boot. msmtp on the VPS, console fallback in dev.
+const transport = pickTransport();
+const mailer = createMailer({
+    from: cfg.mailFromAddress,
+    fromName: cfg.mailFromName,
+    transport,
+});
+
+const server = createServer({ db, crypto, limiters, mailer, baseUrl: cfg.baseUrl });
 server.listen(cfg.port, () => {
     console.log(`addypin listening on :${cfg.port}`);
 });
@@ -66,4 +79,15 @@ function hexKey(name) {
     if (!v) throw new Error(`${name} is required (see .env.example)`);
     if (!/^[0-9a-f]{64}$/i.test(v)) throw new Error(`${name} must be 64 hex chars`);
     return Buffer.from(v, 'hex');
+}
+
+function pickTransport() {
+    try {
+        execSync('command -v msmtp', { stdio: 'ignore' });
+        console.log('mail: msmtp found, using it for outbound');
+        return msmtpTransport({ from: cfg.mailFromAddress, fromName: cfg.mailFromName });
+    } catch {
+        console.log('mail: msmtp NOT found, falling back to console transport (no real emails)');
+        return consoleTransport();
+    }
 }

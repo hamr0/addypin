@@ -21,10 +21,15 @@ const STATIC_FILES = new Map([
     ['/favicon.ico', { file: 'favicon.svg', type: 'image/svg+xml' }],
 ]);
 
+// Confirmation tokens live as long as the unconfirmed pin (72 h);
+// session cookies are 30 days per PRD §9.
+const CONFIRM_TTL_SEC = 72 * 60 * 60;
+const SESSION_TTL_SEC = 30 * 24 * 60 * 60;
+
 // Build an http.Server given the wired modules. Pure construction —
 // the caller decides when to listen() and on which port. This shape
 // lets integration tests spin up an ephemeral server per test.
-export function createServer({ db, crypto, limiters, webDir = DEFAULT_WEB_DIR, now = () => Date.now() }) {
+export function createServer({ db, crypto, limiters, mailer, baseUrl = '', webDir = DEFAULT_WEB_DIR, now = () => Date.now() }) {
     const router = createRouter();
 
     // ─── Routes ────────────────────────────────────────────────────────────────
@@ -85,7 +90,51 @@ export function createServer({ db, crypto, limiters, webDir = DEFAULT_WEB_DIR, n
             expiresAt: nowSec + UNCONFIRMED_TTL_SEC,
         });
 
+        // Fire the confirmation email. Failures are logged but do NOT
+        // fail the request — the pin exists, will auto-expire if the
+        // user can't confirm. They can re-trigger via resend@ in M8.
+        if (mailer) {
+            const token = crypto.signToken(
+                { shortcode, action: 'confirm' },
+                CONFIRM_TTL_SEC,
+            );
+            const confirmUrl = `${effectiveBaseUrl(req, baseUrl)}/confirm?token=${encodeURIComponent(token)}`;
+            mailer.sendConfirmation({ to: email, shortcode, confirmUrl })
+                .catch((err) => {
+                    console.error(`[mail] confirmation send failed for ${shortcode}: ${err.message}`);
+                });
+        }
+
         return json(201, { shortcode });
+    });
+
+    router.get('/confirm', (_req, _params, _body, query) => {
+        const token = query?.token;
+        const payload = token ? crypto.verifyToken(token) : null;
+        if (!payload || payload.action !== 'confirm' || typeof payload.shortcode !== 'string') {
+            return text(400, 'invalid or expired confirmation link');
+        }
+        const code = payload.shortcode;
+        const pin = db.getPinByShortcode(code);
+        if (!pin) return text(404, 'pin not found (it may have expired)');
+
+        const nowSec = Math.floor(now() / 1000);
+        // confirmPin is a no-op if already confirmed — that's fine; same magic
+        // link doubles as a login per PRD §5.
+        if (pin.status === 'unconfirmed') db.confirmPin(code, nowSec);
+
+        const sessionToken = crypto.signToken(
+            { fp: pin.fingerprint.toString('hex') },
+            SESSION_TTL_SEC,
+        );
+        return {
+            status: 302,
+            headers: {
+                'set-cookie': sessionCookie(sessionToken, SESSION_TTL_SEC),
+                'location': `/${code}?confirmed=1`,
+            },
+            body: '',
+        };
     });
 
     router.get('/api/pins/:shortcode', (req, params) => {
@@ -126,7 +175,8 @@ export function createServer({ db, crypto, limiters, webDir = DEFAULT_WEB_DIR, n
             if (req.method !== 'GET' && req.method !== 'HEAD' && req.method !== 'DELETE') {
                 body = await readJson(req);
             }
-            const out = await m.handler(req, m.params, body);
+            const query = Object.fromEntries(url.searchParams);
+            const out = await m.handler(req, m.params, body, query);
             send(res, out, isHead);
         } catch (err) {
             console.error('[http]', err.stack || err.message);
@@ -175,6 +225,30 @@ function clientIp(req) {
         return fwd.split(',')[0].trim();
     }
     return req.socket.remoteAddress || 'unknown';
+}
+
+// Prefer an explicitly-configured BASE_URL (production: https://addypin.com).
+// If unset, fall back to the request's own scheme + Host header — works for
+// localhost dev without any extra config.
+function effectiveBaseUrl(req, configured) {
+    if (configured) return configured.replace(/\/$/, '');
+    const proto = req.headers['x-forwarded-proto'] || (req.socket.encrypted ? 'https' : 'http');
+    const host = req.headers.host || 'localhost';
+    return `${proto}://${host}`;
+}
+
+function sessionCookie(value, ttlSec) {
+    const parts = [
+        `addypin_session=${value}`,
+        'Path=/',
+        'HttpOnly',
+        'SameSite=Lax',
+        `Max-Age=${ttlSec}`,
+    ];
+    // Production traffic comes through nginx with HTTPS; mark Secure when
+    // nginx forwards x-forwarded-proto=https. Skipped on plain-http localhost
+    // so the cookie is still set during dev.
+    return parts.join('; ');
 }
 
 // Read a static asset off disk. Files are tiny (< 50 KB) and the OS

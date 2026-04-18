@@ -4,9 +4,10 @@ import crypto from 'node:crypto';
 import { createServer } from './http.js';
 import { createDb } from './db.js';
 import { createCrypto } from './crypto.js';
+import { createMailer } from './mail.js';
 import { createRateLimiter } from './ratelimit.js';
 
-let server, baseUrl, db, cryptoMod;
+let server, baseUrl, db, cryptoMod, sentEmails;
 
 function generousLimiters() {
     return {
@@ -22,7 +23,12 @@ before(async () => {
         emailKey: crypto.randomBytes(32),
         signingKey: crypto.randomBytes(32),
     });
-    server = createServer({ db, crypto: cryptoMod, limiters: generousLimiters() });
+    sentEmails = [];
+    const mailer = createMailer({
+        from: 'noreply@addypin.com',
+        transport: async (to, subject, body) => { sentEmails.push({ to, subject, body }); },
+    });
+    server = createServer({ db, crypto: cryptoMod, limiters: generousLimiters(), mailer });
     await new Promise((r) => server.listen(0, r));
     const port = server.address().port;
     baseUrl = `http://127.0.0.1:${port}`;
@@ -34,8 +40,7 @@ after(() => {
 });
 
 beforeEach(() => {
-    // Wipe all pins between tests via direct SQL — keeps tests independent.
-    // (Cheaper than recreating the whole server on every test.)
+    sentEmails.length = 0;
 });
 
 async function req(method, path, body) {
@@ -226,6 +231,114 @@ test('unknown route returns 404 json', async () => {
 });
 
 // ─── Rate limiting ──────────────────────────────────────────────────────────
+
+// ─── M6: confirmation email + /confirm route ───────────────────────────────
+
+test('POST /api/pins fires a confirmation email with a magic link', async () => {
+    const r = await req('POST', '/api/pins', { lat: 1, lng: 2, email: 'maria@example.com', shortcode: 'EMTST1' });
+    assert.equal(r.status, 201);
+    // sendConfirmation is fired but not awaited by the route — give it a tick.
+    await new Promise((res) => setTimeout(res, 30));
+    assert.equal(sentEmails.length, 1);
+    assert.equal(sentEmails[0].to, 'maria@example.com');
+    assert.match(sentEmails[0].subject, /EMTST1/);
+    assert.match(sentEmails[0].body, /\/confirm\?token=/);
+});
+
+test('GET /confirm with a valid token confirms the pin, sets a cookie, and redirects', async () => {
+    await req('POST', '/api/pins', { lat: 1, lng: 2, email: 'a@b.com', shortcode: 'CFM001' });
+    await new Promise((res) => setTimeout(res, 30));
+    // Pull the URL out of the captured email.
+    const m = sentEmails.at(-1).body.match(/\/confirm\?token=([^\s]+)/);
+    assert.ok(m, 'no confirm URL in email');
+    const tokenEncoded = m[1];
+
+    const res = await fetch(baseUrl + `/confirm?token=${tokenEncoded}`, { redirect: 'manual' });
+    assert.equal(res.status, 302);
+    assert.match(res.headers.get('location'), /^\/CFM001/);
+
+    const cookie = res.headers.get('set-cookie');
+    assert.ok(cookie, 'no Set-Cookie header');
+    assert.match(cookie, /addypin_session=/);
+    assert.match(cookie, /HttpOnly/);
+    assert.match(cookie, /SameSite=Lax/);
+    assert.match(cookie, /Max-Age=2592000/); // 30 days
+
+    // Pin should be confirmed in the DB now.
+    const pin = db.getPinByShortcode('CFM001');
+    assert.equal(pin.status, 'confirmed');
+    assert.equal(pin.expiresAt, null);
+});
+
+test('GET /confirm is idempotent (re-clicking same link still 302s)', async () => {
+    await req('POST', '/api/pins', { lat: 1, lng: 2, email: 'a@b.com', shortcode: 'CFMIDM' });
+    await new Promise((res) => setTimeout(res, 30));
+    const tokenEncoded = sentEmails.at(-1).body.match(/\/confirm\?token=([^\s]+)/)[1];
+
+    const r1 = await fetch(baseUrl + `/confirm?token=${tokenEncoded}`, { redirect: 'manual' });
+    assert.equal(r1.status, 302);
+    const r2 = await fetch(baseUrl + `/confirm?token=${tokenEncoded}`, { redirect: 'manual' });
+    assert.equal(r2.status, 302);
+    // Pin still confirmed (no error).
+    assert.equal(db.getPinByShortcode('CFMIDM').status, 'confirmed');
+});
+
+test('GET /confirm with no token returns 400', async () => {
+    const res = await fetch(baseUrl + '/confirm', { redirect: 'manual' });
+    assert.equal(res.status, 400);
+});
+
+test('GET /confirm with a malformed token returns 400', async () => {
+    const res = await fetch(baseUrl + '/confirm?token=not.a.real.token', { redirect: 'manual' });
+    assert.equal(res.status, 400);
+});
+
+test('GET /confirm with a token signed by a different key returns 400', async () => {
+    const otherCrypto = createCrypto({
+        dataKey: crypto.randomBytes(32),
+        emailKey: crypto.randomBytes(32),
+        signingKey: crypto.randomBytes(32),
+    });
+    const tok = otherCrypto.signToken({ shortcode: 'WHATEV', action: 'confirm' }, 600);
+    const res = await fetch(baseUrl + `/confirm?token=${encodeURIComponent(tok)}`, { redirect: 'manual' });
+    assert.equal(res.status, 400);
+});
+
+test('GET /confirm for a deleted pin returns 404', async () => {
+    await req('POST', '/api/pins', { lat: 1, lng: 2, email: 'a@b.com', shortcode: 'GONE01' });
+    await new Promise((res) => setTimeout(res, 30));
+    const tokenEncoded = sentEmails.at(-1).body.match(/\/confirm\?token=([^\s]+)/)[1];
+    // Delete the pin (simulating an expiry sweep that retired the shortcode).
+    db.deletePin('GONE01', Math.floor(Date.now() / 1000));
+    const res = await fetch(baseUrl + `/confirm?token=${tokenEncoded}`, { redirect: 'manual' });
+    assert.equal(res.status, 404);
+});
+
+test('mailer failure does not fail pin creation', async () => {
+    // Spin up an isolated server whose mailer always throws.
+    const tightDb = createDb({ path: ':memory:' });
+    const angryMailer = createMailer({
+        from: 'noreply@addypin.com',
+        transport: async () => { throw new Error('smtp down'); },
+    });
+    const tightServer = createServer({
+        db: tightDb, crypto: cryptoMod,
+        limiters: generousLimiters(), mailer: angryMailer,
+    });
+    await new Promise((r) => tightServer.listen(0, r));
+    const url = `http://127.0.0.1:${tightServer.address().port}`;
+
+    const r = await fetch(url + '/api/pins', {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ lat: 1, lng: 2, email: 'a@b.com', shortcode: 'MAILDN' }),
+    });
+    assert.equal(r.status, 201);
+    const data = await r.json();
+    assert.equal(data.shortcode, 'MAILDN');
+
+    tightServer.close();
+    tightDb.close();
+});
 
 test('rate limiter returns 429 after capacity exhausted', async () => {
     const tightDb = createDb({ path: ':memory:' });

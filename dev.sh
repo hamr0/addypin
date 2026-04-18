@@ -22,6 +22,7 @@ SIGNING_KEY_PATH=addypin/server/signing_key      # required, 32-byte hex
 
 PORT_PATH=addypin/server/port                    # optional, default 3000
 DATA_DIR_PATH=addypin/server/data_dir            # optional, default ./data
+BASE_URL_PATH=addypin/server/base_url            # optional; if unset the server uses the request's own host
 MAIL_FROM_ADDR_PATH=addypin/server/mail_from_address  # optional
 MAIL_FROM_NAME_PATH=addypin/server/mail_from_name     # optional
 
@@ -52,6 +53,7 @@ export ADDYPIN_SIGNING_KEY=$(ensure_hex_key "$SIGNING_KEY_PATH")
 
 export PORT=$(with_default "$PORT_PATH" 3000)
 export DATA_DIR=$(with_default "$DATA_DIR_PATH" ./data)
+export BASE_URL=$(with_default "$BASE_URL_PATH" "")
 export MAIL_FROM_ADDRESS=$(with_default "$MAIL_FROM_ADDR_PATH" noreply@addypin.com)
 export MAIL_FROM_NAME=$(with_default "$MAIL_FROM_NAME_PATH" addypin)
 
