@@ -34,15 +34,18 @@ For full development and testing standards, see `.claude/memory/AGENT_RULES.md`.
 - **Process:** systemd unit on the VPS. No Docker, no Compose.
 - **Reverse proxy:** Existing nginx with Let's Encrypt wildcard cert for `*.addypin.com`.
 
-## Commands (v2 — will be established during scaffolding)
+## Commands
 
 ```bash
-# Placeholder — populated in Milestone 1 of the rebuild plan
-npm ci              # Install deps
-npm run dev         # Local dev server
-npm test            # Run tests
-npm run build       # Bundle (if needed — target is to not need a bundle step)
+./dev.sh            # Start local dev server with --watch (canonical local-dev path)
+./dev.sh --no-watch # Same, no auto-restart
+npm test            # Run all tests (no env vars needed)
+npm start           # Production-style run; expects env vars set externally
 ```
+
+**Secrets live in `pass`, never on disk.** `dev.sh` reads three required keys and four optional values from the password store under `addypin/server/*` (paths in `dev.sh`). On first run, any missing key is generated, inserted into `pass`, and used. `pass` prompts your GPG agent on first call per shell session.
+
+Production / VPS uses environment variables loaded from a systemd `EnvironmentFile=` (or `.env` next to `main.js`). The shape is documented in `.env.example`. Never commit a real `.env`.
 
 ## Project layout (target)
 
