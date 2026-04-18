@@ -1,6 +1,32 @@
 # AddyPin v2 — Product Requirements
 
-**Status:** Draft · **Branch:** `v2-rewrite` · **Last updated:** 2026-04-18
+**Status:** In build · **Branch:** `v2-rewrite` (pushed to `origin/v2-rewrite`) · **Last updated:** 2026-04-19
+
+## Implementation status (as of 2026-04-19)
+
+| Milestone | Scope | Status |
+|---|---|---|
+| M1 | Scaffold (`package.json`, `.env.example`, layout) | ✅ shipped |
+| M2 | Crypto module (AES-GCM, HMAC fingerprint, signed tokens) | ✅ shipped |
+| M3 | DB module (SQLite, `pins` + `retired_shortcodes`) | ✅ shipped |
+| M4 | Web server core (`node:http`, routes, rate limit, shortcode) | ✅ shipped |
+| M5 | Frontend (Variant G — mono overlay + Nominatim search + 12 map buttons with logos) | ✅ shipped |
+| M6 | Email out + `/confirm` flow (msmtp or console transport, signed 30d cookie) | ✅ shipped |
+| M7 | Magic-link login + `/manage` + edit/delete | pending |
+| M8 | Email in (Postfix pipe, `login@`/`SHORTCODE@`/`resend@`) | pending |
+| M9 | Expiry cleanup worker | pending |
+| M10 | Deploy to VPS + ops must-haves (§14) | pending |
+
+No runtime dependencies have been added at any milestone. `node:sqlite` + `node:crypto` + `node:http` cover every need the design calls for.
+
+## Cutover plan
+
+Production DNS, v1 container, and data all remain untouched until M10 ships. When M10 is signed off:
+1. Rename default branch from `main` to `main-v1-archive` (preserves v1 history).
+2. Promote `v2-rewrite` to `main` (and set as default on GitHub).
+3. Cut over `addypin.com` DNS to the new v2 service on the VPS.
+
+v1 data (pins in Postgres) is **not migrated**. Per product direction, the v2 release is a clean slate — users re-create pins. This is a deliberate product call, not a technical limitation.
 
 AddyPin turns a GPS coordinate into a short, memorable link (`HOUSE1.addypin.com`) and a matching email address (`HOUSE1@addypin.com`). Both resolve to the same coordinates and map-app shortcuts. No accounts, no tracking, no feed — just a pin and a link.
 
@@ -199,6 +225,20 @@ Remaining items for the build phase (not blockers):
 - **SPF record cleanup.** Current TXT record includes `_spf.resend.com` from v1. Remove that include when v2 ships. Tighten `~all` to `-all` once DKIM on self-hosted Postfix is confirmed working.
 - **DKIM key continuity.** Confirm the existing DKIM selector on `mail.addypin.com` still signs outbound msmtp messages. If not, rotate.
 - **Postfix pipe invocation style.** Long-running Node process listening on a Unix socket, or one-shot `node script.js` per message? POC should test both and pick lower-latency.
+
+## 14. Deploy / operations must-haves (M10)
+
+Non-negotiable for production cutover. Each item replicates something v1 has running today — we lose it if we don't re-do it on the v2 service:
+
+- **TLS renewal cron.** Let's Encrypt wildcard cert for `*.addypin.com` renews every 60-90 days via certbot. Must survive the cutover. Test renewal before cutover by forcing a `certbot renew --dry-run`.
+- **Backups.** Nightly copy of `data/addypin.db` off the VPS (even just rsync to an external host). One file, cheap to move. Include the three env-var secrets in the backup plan — losing `ADDYPIN_DATA_KEY` means the backup is a brick.
+- **Disk-space watch.** Alert when `/` or the data volume drops below 15% free. SQLite WAL can grow silently under load; early warning beats a surprise.
+- **Uptime watchdog.** External HTTP probe of `https://addypin.com/api/health` every 1–5 min. If it returns non-200 for N minutes, alert (msmtp-to-self is fine, same channel we use for the app).
+- **Log retention.** `journalctl` for the systemd unit; keep at least 14 days, rotate beyond. stdout is the only log stream we emit.
+- **Process manager.** systemd unit that restarts on crash, starts on boot, drops privileges to a non-root user. Not Docker.
+- **Service identity/DKIM.** The existing DKIM selector on `mail.addypin.com` must still sign outbound msmtp from the new service (see `docs/00-context/infra-snapshot.md`). Verify before cutover.
+- **Nginx config.** Reverse proxy + HTTP→HTTPS redirect + wildcard-cert → v2 app port. The subdomain-per-shortcode lookup (`HOUSE1.addypin.com`) is v2.1 work; for v2.0 only the apex is served.
+- **Rollback plan.** Keep the v1 service running on a different port during cutover. If v2 misbehaves in the first 24 h, flip nginx back. Delete v1 only after a stable week.
 
 ## 13. Out for later (v2.1+)
 
