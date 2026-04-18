@@ -20,5 +20,8 @@ attached_assets/
 # Local Claude Code agent state (sessions, memory, worktrees)
 .claude/
 
+# barebrowse snapshots (browser MCP tool artifacts)
+.barebrowse/
+
 # Dev server local pidfile
 tunnel.pid
