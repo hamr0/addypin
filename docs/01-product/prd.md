@@ -22,6 +22,8 @@ Explicit list of things v2 will **not** do. Each of these was in v1.
 - **No map tiles we host.** OpenStreetMap + Leaflet, client-side only.
 - **No Postgres, no Docker Compose, no multi-service infra.** Single binary or single Node process + a SQLite file.
 - **No SaaS / paid services in the critical path.** Every runtime dependency (email send, email receive, DB, hosting, monitoring) must be OSS or self-hosted. Resend, Postmark, Umami, and similar are out.
+- **No shortcode re-use, ever.** Once a shortcode is retired (pin deleted or expired unconfirmed), it stays retired permanently. Prevents a freed code from pointing to a new, stranger's pin after someone still holds the old link.
+- **No Docker, no containerization.** Single Node process, systemd unit, nginx reverse proxy, Postfix for mail. All on bare metal / VPS.
 - **No CI/CD pipeline in v1.** Manual deploy to the VPS via `rsync` or `git pull`. Automate later only if it hurts.
 - **No user accounts / passwords / OAuth.** Identity is a verified email via magic link. Nothing to store beyond a hash.
 - **No end-to-end encryption.** Server must be able to decrypt coords to serve public lookups. Threat model in §7.
@@ -53,9 +55,12 @@ CREATE TABLE pins (
 CREATE INDEX idx_owner_fp ON pins (owner_email_fingerprint);
 CREATE INDEX idx_expires  ON pins (expires_at) WHERE expires_at IS NOT NULL;
 
-CREATE TABLE shortcode_cooldown (
+-- Tombstone for retired shortcodes. A shortcode is retired the moment
+-- its pin is deleted or its unconfirmed expiry elapses. Retired codes
+-- are permanent — never reusable.
+CREATE TABLE retired_shortcodes (
     shortcode   TEXT PRIMARY KEY,
-    released_at INTEGER NOT NULL                   -- unix seconds; after this, shortcode is reusable
+    retired_at  INTEGER NOT NULL                   -- unix seconds
 );
 ```
 
@@ -91,19 +96,22 @@ If this still feels like too much exposure, the only real alternative is to drop
 | GET | `/manage` | Lists confirmed pins owned by the cookie's email fingerprint. |
 | PATCH | `/api/pins/:shortcode` | Owner edits lat/lng. Requires owner cookie. |
 | DELETE | `/api/pins/:shortcode` | Owner deletes pin. Requires owner cookie. Shortcode enters 24h cooldown before reusable. |
-| GET | `/confirm?token=...` | Confirmation magic link (from the creation email). Marks pin `status='confirmed'`, `expires_at=NULL`. Same token also logs the user into `/manage`. |
+| GET | `/confirm?token=...` | Confirmation magic link (from the creation email). Marks pin `status='confirmed'`, `expires_at=NULL`. Same token also logs the user into `/manage`. Token TTL 72 h (same as pin life). |
 
 ### Email triggers
 
-**Inbound:** IMAP poll against the addypin.com mailbox (cron or timer). **Outbound:** msmtp. Both are standard OSS. No Resend, no Postmark — per the OSS-only rule.
+**Inbound:** Postfix pipe transport. `virtual_alias_maps` maps `*@addypin.com` to a single local mailbox (`addypin@localhost`), whose `.forward` pipes each incoming message to a long-running Node process over a local Unix socket (or a one-shot CLI invocation — decide during POC). The VPS already runs Postfix as the addypin.com MX, so no new mail server to stand up.
+
+**Outbound:** `msmtp` (system binary) invoked via `child_process`. Sends through `mail.addypin.com`'s local submission port. Zero external SMTP relay. Existing DKIM signing on Postfix is reused.
+
+Both paths are OSS, zero SaaS, no Resend.
 
 | To | Behavior |
 |----|----------|
 | `login@addypin.com` | Reply with magic link to `/manage?token=...`. Token is signed, 15-min TTL, single-use. Silently drops if the sender has no confirmed pins (no email enumeration). |
-| `SHORTCODE@addypin.com` | Auto-reply with coords + map links for that pin. Silently drops if pin is unconfirmed or expired. |
+| `SHORTCODE@addypin.com` | Auto-reply with coords + map links for that pin. Silently drops if pin is unconfirmed, expired, or the shortcode is retired. |
+| `resend@addypin.com` with subject `SHORTCODE` | If sender's email HMAC matches the pin owner AND pin is still unconfirmed (within the 72 h window), regenerates the confirmation token and resends the creation email. Silently drops otherwise. Rate-limited per shortcode. |
 | anything else | Silently drop. No bounces, no NDRs. |
-
-Inbound poll runs at most every 60 seconds; processed messages are marked read or moved to an `archive/` IMAP folder so the same message isn't handled twice on a crash-restart.
 
 ### Map-link shortcuts
 
@@ -114,7 +122,7 @@ Reuse v1's map-link logic verbatim. 15 known providers (Google Maps, Apple Maps,
 - **Length:** exactly 6 characters.
 - **Alphabet:** `A–Z` and `0–9`. Case-insensitive input, stored uppercase.
 - **User-chosen** at creation. If omitted, server generates a random 6-char code.
-- **Uniqueness:** enforced by PRIMARY KEY. Also checked against `shortcode_cooldown` table (a recently-deleted code is not reusable for 24 h).
+- **Uniqueness:** enforced by PRIMARY KEY on `pins`. Also checked against `retired_shortcodes` table at creation — **retired codes are never reusable** (even by the original owner). This trades off one convenience (user can't re-claim their own old code) for a hard guarantee that a stale link can never silently redirect to a stranger's pin.
 - **Collision UX:** on collision, UI shows "`HOUSE1` is taken. Try `HOUSE2`?" where the suggestion is the next available numeric/alphabetic increment (`HOUSE1` → `HOUSE2` → `HOUSE3` → `HOUSE0` → `HOUSEA`…). User can accept the suggestion or type their own. If their own also collides, the loop repeats.
 - **Blocklist:** small file (`server/blocklist.txt`, ~200 entries) covering offensive words and high-risk impersonation (`GOOGLE`, `POLICE`, `AMAZON`, etc.). Rejected at creation.
 - **Reserved:** subdomain-like codes (`WWW`, `API`, `MAIL`, `SMTP`, `IMAP`, `ADMIN`, `LOGIN`, `ABOUT`, etc.) are rejected. List lives in the same blocklist file.
@@ -136,9 +144,11 @@ Reuse v1's map-link logic verbatim. 15 known providers (Google Maps, Apple Maps,
 In-process token bucket. No Redis. Limits applied per IP:
 - `POST /api/pins`: 5 per hour, 20 per day.
 - `GET /api/pins/:shortcode`: 300 per 15 min (lookups are cheap, don't over-constrain).
-- `login@addypin.com`: 3 per hour per email (prevent magic-link spam).
+- `POST /api/login`: 3 per hour per email fingerprint.
+- `login@addypin.com` (inbound email): 3 per hour per sender fingerprint.
+- `resend@addypin.com` (inbound email): 3 per hour per shortcode.
 
-On restart, counters reset. Acceptable for v2 scale (~hundreds of requests/day).
+On restart, counters reset. Acceptable for v2 scale (~hundreds of requests/day). If the VPS is ever DDoS'd, nginx-level connection limits are the outer ring before any of these fire.
 
 ## 9. Tech stack (target)
 
@@ -149,8 +159,9 @@ On restart, counters reset. Acceptable for v2 scale (~hundreds of requests/day).
 | DB | SQLite via `better-sqlite3` | Synchronous, zero-config, single-file. |
 | Crypto | Node `crypto` stdlib (AES-256-GCM, HMAC, Argon2 via `@node-rs/argon2`) | Vetted libs, stdlib where possible. |
 | Frontend | Plain HTML + vanilla JS + Leaflet | No React, no Vite, no Tailwind build. v1 used React; v2 does not need it. One page, one form, one map. |
-| Email out | msmtp (system binary) via `child_process` | OSS, zero-dep, already used by v1 infra. No SaaS. |
-| Email in | IMAP poll of the addypin.com mailbox via `imapflow` | OSS, lightweight. Runs on a 60s timer. |
+| Email out | `msmtp` (system binary) via `child_process` | OSS, zero-dep, already on the VPS. No SaaS relay. |
+| Email in | Postfix pipe transport → Node script | Postfix already runs on the VPS as the MX for addypin.com. Use `virtual_alias_maps` + `.forward` pipe. True catch-all, zero polling latency. |
+| Session | Signed cookie (HMAC using a third env-var secret) | Absolute 30-day TTL, non-rolling. No session table. |
 | Process mgmt | systemd unit on the VPS | No Docker, no Compose. One Node process, one SQLite file, one nginx reverse proxy. |
 
 Revisit if the POC (§11) reveals any of these are wrong.
@@ -176,10 +187,18 @@ If those four work end-to-end in a single `poc.js` file with hardcoded keys, the
 
 ## 12. Open questions
 
-- **Confirmation magic-link TTL.** Two competing rules were discussed: magic link expires in 24 h, pin auto-expires at 72 h. Simplest resolution: one token, valid for 72 h (same as pin life). If user doesn't click inside 72 h, both the token and the pin die together. Flag if you want the stricter 24 h token window (would require "resend confirmation" link in a subsequent email).
-- **HMAC acceptance.** §4 picks HMAC-based email fingerprints. Alternative: drop the email column entirely and force login via the original creation email only (no "I lost my shortcode" recovery). Confirm preference.
-- **IMAP credentials.** Server needs read access to `*@addypin.com`. Which mailbox provider? Options: current DNS already points somewhere — check before POC.
-- **Confirmation UX when email fails to arrive.** If the creation email bounces or ends up in spam, the pin dies in 72 h with no warning. Consider: "resend confirmation" link on the shortcode page while pin is unconfirmed. v2 scope: include this.
+All resolved as of 2026-04-18:
+
+- ~~Confirmation magic-link TTL.~~ **Resolved:** one token, 72 h TTL, same as pin life.
+- ~~HMAC acceptance.~~ **Resolved:** HMAC-based email fingerprints (§4) accepted.
+- ~~IMAP credentials.~~ **Resolved:** no IMAP. Mail is self-hosted on `mail.addypin.com` (confirmed via `dig MX`). Postfix pipe transport used instead. See §5.
+- ~~Confirmation resend UX.~~ **Resolved:** inbound-email trigger `resend@addypin.com` with subject = shortcode. No new web endpoint.
+
+Remaining items for the build phase (not blockers):
+
+- **SPF record cleanup.** Current TXT record includes `_spf.resend.com` from v1. Remove that include when v2 ships. Tighten `~all` to `-all` once DKIM on self-hosted Postfix is confirmed working.
+- **DKIM key continuity.** Confirm the existing DKIM selector on `mail.addypin.com` still signs outbound msmtp messages. If not, rotate.
+- **Postfix pipe invocation style.** Long-running Node process listening on a Unix socket, or one-shot `node script.js` per message? POC should test both and pick lower-latency.
 
 ## 13. Out for later (v2.1+)
 
