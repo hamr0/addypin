@@ -22,7 +22,7 @@ import { mapLinks } from './maplinks.js';
 const UNCONFIRMED_TTL_SEC = 72 * 60 * 60;
 const LOGIN_TTL_SEC = 15 * 60;
 
-export async function handleInbound({ raw, db, crypto, mailer, baseUrl, limiters, now = () => Date.now() }) {
+export async function handleInbound({ raw, db, crypto, mailer, baseUrl, limiters, reverseGeocode, now = () => Date.now() }) {
     const msg = parseRfc5322(raw);
     if (!msg) return drop('invalid_message');
 
@@ -42,7 +42,7 @@ export async function handleInbound({ raw, db, crypto, mailer, baseUrl, limiters
     // Otherwise treat the local part as a candidate shortcode.
     const code = normalizeShortcode(localPart);
     if (isValidShortcode(code)) {
-        return handleShortcode({ from, code, baseUrl, db, crypto, mailer });
+        return handleShortcode({ from, code, baseUrl, db, crypto, mailer, reverseGeocode });
     }
     return drop('unknown_route');
 }
@@ -86,13 +86,19 @@ async function handleResend({ from, subjectCode, db, crypto, mailer, baseUrl, li
     return { action: 'sent', type: 'resend' };
 }
 
-async function handleShortcode({ from, code, baseUrl, db, crypto, mailer }) {
+async function handleShortcode({ from, code, baseUrl, db, crypto, mailer, reverseGeocode }) {
     const pin = db.getPinByShortcode(code);
     if (!pin || pin.status !== 'confirmed') return drop('no_such_pin');
     const { lat, lng } = crypto.decryptCoords(pin.ciphertext, pin.iv);
     const links = mapLinks(lat, lng);
     const webUrl = `${normalizeBase(baseUrl)}/${code}`;
-    await mailer.sendShortcodeReply({ to: from, shortcode: code, lat, lng, links, webUrl });
+    // Reverse-geocode is best-effort: if Nominatim is down, slow, or returns
+    // nothing, we still send the reply — just without the "Near:" line.
+    let address = null;
+    if (typeof reverseGeocode === 'function') {
+        try { address = await reverseGeocode(lat, lng); } catch { /* graceful */ }
+    }
+    await mailer.sendShortcodeReply({ to: from, shortcode: code, lat, lng, address, links, webUrl });
     return { action: 'sent', type: 'shortcode_reply' };
 }
 

@@ -193,6 +193,42 @@ test('SHORTCODE@ replies with coords + map links for a confirmed pin', async () 
     assert.match(d.sent[0].body, /addypin\.com\/MAPPIN/);
 });
 
+test('SHORTCODE@ reply includes a "Near:" line when reverse-geocode succeeds', async () => {
+    const d = freshDeps();
+    confirmedPin(d.db, d.crypto, { code: 'NEARME', email: 'o@example.com', lat: 30.047741, lng: 31.243899 });
+    const r = await handleInbound({
+        raw: msg({ from: 'visitor@example.com', to: 'NEARME@addypin.com' }),
+        reverseGeocode: async () => 'Mohamed Farid Street, Cairo, Egypt',
+        ...d,
+    });
+    assert.equal(r.action, 'sent');
+    assert.match(d.sent[0].body, /Near: Mohamed Farid Street, Cairo, Egypt/);
+});
+
+test('SHORTCODE@ reply omits "Near:" when reverse-geocode returns null', async () => {
+    const d = freshDeps();
+    confirmedPin(d.db, d.crypto, { code: 'NONEAR', email: 'o@example.com' });
+    const r = await handleInbound({
+        raw: msg({ from: 'visitor@example.com', to: 'NONEAR@addypin.com' }),
+        reverseGeocode: async () => null,
+        ...d,
+    });
+    assert.equal(r.action, 'sent');
+    assert.ok(!/Near:/.test(d.sent[0].body), 'body should not contain Near: line');
+});
+
+test('SHORTCODE@ reply still goes out when reverse-geocode throws', async () => {
+    const d = freshDeps();
+    confirmedPin(d.db, d.crypto, { code: 'GEOERR', email: 'o@example.com' });
+    const r = await handleInbound({
+        raw: msg({ from: 'visitor@example.com', to: 'GEOERR@addypin.com' }),
+        reverseGeocode: async () => { throw new Error('nominatim down'); },
+        ...d,
+    });
+    assert.equal(r.action, 'sent', 'reply must send even when reverse-geocode fails');
+    assert.ok(!/Near:/.test(d.sent[0].body));
+});
+
 test('SHORTCODE@ is case-insensitive on the local part', async () => {
     const d = freshDeps();
     confirmedPin(d.db, d.crypto, { code: 'CASECA', email: 'o@example.com' });

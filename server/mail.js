@@ -49,19 +49,17 @@ export function createMailer({ from, fromName = '', transport }) {
     }
 
     // Auto-reply to SHORTCODE@addypin.com with the coordinates and a list of
-    // map-app deep links. `links` is the ordered array that mapLinks() returns.
-    async function sendShortcodeReply({ to, shortcode, lat, lng, links, webUrl }) {
+    // map-app deep links. `links` is the ordered array mapLinks() returns.
+    // `address` (optional) is a human-readable reverse-geocoded string —
+    // included as a "Near: ..." line when present. Falls back to coords-only
+    // when null/empty (geocoding failed, degraded gracefully).
+    async function sendShortcodeReply({ to, shortcode, lat, lng, address, links, webUrl }) {
         const subject = `Re: ${shortcode}`;
         const linkLines = links.map((l) => `  ${l.name.padEnd(18)} ${l.url}`).join('\n');
-        const body = [
-            `${shortcode} is at ${lat.toFixed(6)}, ${lng.toFixed(6)}.`,
-            ``,
-            `Open in your map app:`,
-            linkLines,
-            ``,
-            `Web: ${webUrl}`,
-        ].join('\n');
-        await transport(to, subject, body);
+        const lines = [`${shortcode} is at ${lat.toFixed(6)}, ${lng.toFixed(6)}.`];
+        if (address) lines.push(`Near: ${address}`);
+        lines.push('', 'Open in your map app:', linkLines, '', `Web: ${webUrl}`);
+        await transport(to, subject, lines.join('\n'));
     }
 
     return { sendConfirmation, sendLogin, sendShortcodeReply };

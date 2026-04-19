@@ -52,6 +52,7 @@ try {
     result = await handleInbound({
         raw, db, crypto: cryptoMod, mailer,
         baseUrl: cfg.baseUrl || 'https://addypin.com',
+        reverseGeocode: nominatimReverse,
         // No in-process rate limiters — CLI is one-shot per message, so
         // in-memory buckets reset every invocation. Postfix's own queue
         // and upstream delivery limits cap real abuse volume.
@@ -62,6 +63,22 @@ try {
     log('inbound_error', { message: e.message, stack: e.stack?.split('\n').slice(0, 3).join(' | ') });
 } finally {
     db.close();
+}
+
+// Best-effort reverse geocode for SHORTCODE@ replies. 5s timeout. If the
+// Nominatim call fails, the reply still goes out — just without "Near:".
+async function nominatimReverse(lat, lng) {
+    const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=jsonv2&zoom=18`;
+    const res = await fetch(url, {
+        signal: AbortSignal.timeout(5000),
+        headers: {
+            'User-Agent': `addypin/2.0 (${cfg.mailFromAddress})`,
+            'Accept-Language': 'en',
+        },
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.display_name || null;
 }
 
 // Always exit 0. A non-zero exit causes Postfix to requeue, which for
