@@ -62,7 +62,23 @@ export function createMailer({ from, fromName = '', transport }) {
         await transport(to, subject, lines.join('\n'));
     }
 
-    return { sendConfirmation, sendLogin, sendShortcodeReply };
+    async function sendExpiryReminder({ to, shortcode, confirmUrl, hoursLeft }) {
+        const subject = `Your addypin expires in ${hoursLeft}h: ${shortcode}`;
+        const body = [
+            `Reminder — the pin "${shortcode}" will expire in about ${hoursLeft} hours`,
+            `and will be permanently deleted if it isn't confirmed first.`,
+            ``,
+            `Confirm and keep it forever:`,
+            ``,
+            confirmUrl,
+            ``,
+            `After expiry the shortcode is retired and cannot be reused —`,
+            `nobody will be able to claim the same code later.`,
+        ].join('\n');
+        await transport(to, subject, body);
+    }
+
+    return { sendConfirmation, sendLogin, sendShortcodeReply, sendExpiryReminder };
 }
 
 // Format an RFC-5322 message and pipe it into msmtp's stdin.

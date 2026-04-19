@@ -42,19 +42,48 @@ setInterval(() => {
     limiters.create.gc(); limiters.lookup.gc(); limiters.login.gc();
 }, 5 * 60 * 1000).unref();
 
-// Expiry cleanup: unconfirmed pins past their 72h window are purged
-// and their shortcodes retired. Run once at boot (catches anything
-// accumulated during downtime), then hourly. db.cleanupExpired is
-// transactional and idempotent — if a tick overlaps nothing breaks.
-function sweep() {
+// Expiry tick: runs reminders (24h before expiry) and cleans up pins
+// past their 72h window. Called at boot and hourly. Both phases are
+// transactional/idempotent — overlapping ticks are safe.
+const REMINDER_WINDOW_SEC = 24 * 60 * 60; // remind when <= 24h remaining
+const CONFIRM_TTL_SEC = 72 * 60 * 60;
+
+async function sweep() {
+    const nowSec = Math.floor(Date.now() / 1000);
+
+    // 1. reminders — only runs once mailer is ready (see bottom of file).
+    if (mailerReady) {
+        try {
+            const due = db.listPinsNeedingReminder(nowSec, REMINDER_WINDOW_SEC);
+            for (const p of due) {
+                try {
+                    const email = crypto.decryptEmail(p.emailCiphertext, p.emailIv);
+                    const token = crypto.signToken({ shortcode: p.shortcode, action: 'confirm' }, CONFIRM_TTL_SEC);
+                    const confirmUrl = `${cfg.baseUrl.replace(/\/$/, '')}/confirm?token=${encodeURIComponent(token)}`;
+                    const hoursLeft = Math.max(1, Math.round((p.expiresAt - nowSec) / 3600));
+                    await mailer.sendExpiryReminder({ to: email, shortcode: p.shortcode, confirmUrl, hoursLeft });
+                    db.markReminderSent(p.shortcode, nowSec);
+                    console.log(`[reminder] sent for ${p.shortcode} (${hoursLeft}h left)`);
+                } catch (e) {
+                    console.error(`[reminder] ${p.shortcode}: ${e.message}`);
+                }
+            }
+        } catch (e) {
+            console.error(`[reminder] pass: ${e.message}`);
+        }
+    }
+
+    // 2. cleanup
     try {
-        const n = db.cleanupExpired(Math.floor(Date.now() / 1000));
+        const n = db.cleanupExpired(nowSec);
         if (n > 0) console.log(`[cleanup] retired ${n} expired unconfirmed pin(s)`);
     } catch (e) {
         console.error(`[cleanup] ${e.message}`);
     }
 }
-sweep();
+let mailerReady = false;
+// kick off initial sweep on next tick so mailer can be created first
+setImmediate(() => { sweep(); });
 setInterval(sweep, 60 * 60 * 1000).unref();
 
 // Pick the mail transport at boot. msmtp on the VPS, console fallback in dev.
@@ -64,6 +93,7 @@ const mailer = createMailer({
     fromName: cfg.mailFromName,
     transport,
 });
+mailerReady = true;
 
 const server = createServer({ db, crypto, limiters, mailer, baseUrl: cfg.baseUrl });
 server.listen(cfg.port, () => {

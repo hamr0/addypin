@@ -123,11 +123,14 @@ test('POST /api/pins requires email', async () => {
 
 // ─── GET /api/pins/:shortcode ───────────────────────────────────────────────
 
-test('GET /api/pins/:shortcode returns 404 for unconfirmed pin', async () => {
+test('GET /api/pins/:shortcode resolves unconfirmed pins (live during 72h window)', async () => {
     const c = await req('POST', '/api/pins', { lat: 10, lng: 20, email: 'a@b.com', shortcode: 'UNCNF1' });
     assert.equal(c.status, 201);
     const r = await req('GET', '/api/pins/UNCNF1');
-    assert.equal(r.status, 404);
+    assert.equal(r.status, 200);
+    assert.equal(r.body.lat, 10);
+    assert.equal(r.body.lng, 20);
+    assert.ok(Array.isArray(r.body.mapLinks));
 });
 
 test('GET /api/pins/:shortcode returns coords + maplinks for confirmed pin', async () => {
@@ -217,10 +220,9 @@ test('GET /logo.png serves the brand image', async () => {
     assert.ok(buf.byteLength > 100);
 });
 
-test('GET /favicon.svg serves the favicon', async () => {
+test('GET /favicon.svg returns 404 (we use /logo.png directly)', async () => {
     const res = await fetch(baseUrl + '/favicon.svg');
-    assert.equal(res.status, 200);
-    assert.equal(res.headers.get('content-type'), 'image/svg+xml');
+    assert.equal(res.status, 404);
 });
 
 test('GET /maplogos/<file> serves a real logo with correct content-type', async () => {
@@ -418,6 +420,31 @@ test('GET /manage?token=<login> sets a session cookie and 302s to /manage', asyn
     assert.equal(res.status, 302);
     assert.equal(res.headers.get('location'), '/manage');
     assert.match(res.headers.get('set-cookie'), /addypin_session=/);
+});
+
+test('GET /manage?token=<login> auto-confirms any still-pending pins owned by the fingerprint', async () => {
+    // Create an unconfirmed pin
+    const create = await req('POST', '/api/pins', { lat: 40, lng: -74, email: 'autocf@example.com', shortcode: 'AUTOCF' });
+    assert.equal(create.status, 201);
+    // Request login link
+    sentEmails.length = 0;
+    await req('POST', '/api/login', { email: 'autocf@example.com' });
+    await new Promise((res) => setTimeout(res, 30));
+    const tokenMatch = sentEmails[0].body.match(/\/manage\?token=([^\s]+)/);
+    assert.ok(tokenMatch, 'login URL missing (unconfirmed pins should still trigger login mail)');
+    // Click the magic link
+    const res = await fetch(baseUrl + `/manage?token=${tokenMatch[1]}`, { redirect: 'manual' });
+    assert.equal(res.status, 302);
+    // Pin should now be publicly resolvable (it already was) AND listed as confirmed via the session
+    const cookie = res.headers.get('set-cookie').split(';')[0];
+    const me = await reqWithCookie('GET', '/api/me/pins', cookie);
+    assert.equal(me.status, 200);
+    assert.equal(me.body.pins.length, 1);
+    assert.equal(me.body.pins[0].shortcode, 'AUTOCF');
+    // Direct DB check: status should be 'confirmed' now
+    const raw = db.getPinByShortcode('AUTOCF');
+    assert.equal(raw.status, 'confirmed');
+    assert.equal(raw.expiresAt, null);
 });
 
 test('GET /manage?token=<invalid> returns 400', async () => {

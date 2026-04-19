@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>addypin</title>
-<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="icon" type="image/png" href="/logo.png">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
     :root {
@@ -89,7 +89,7 @@
 <div id="loading" class="state"><p>loading...</p></div>
 <div id="notfound" class="state hide">
     <h1>404</h1>
-    <p>This addypin doesn't exist, hasn't been confirmed, or has expired.</p>
+    <p>This addypin doesn't exist or has expired.</p>
     <p><a href="/">← create one</a></p>
 </div>
 
@@ -143,6 +143,7 @@ function showPin({ lat, lng, mapLinks }) {
     document.getElementById('loading').classList.add('hide');
     document.getElementById('app').classList.remove('hide');
     document.getElementById('codeLabel').textContent = code;
+    document.title = `addypin — ${code}`;
     document.getElementById('coords').textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
 
     const map = L.map('map', { zoomControl: false }).setView([lat, lng], 16);

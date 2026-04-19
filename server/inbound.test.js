@@ -238,15 +238,16 @@ test('SHORTCODE@ is case-insensitive on the local part', async () => {
     assert.equal(r.action, 'sent');
 });
 
-test('SHORTCODE@ drops silently for unconfirmed pins', async () => {
+test('SHORTCODE@ replies for unconfirmed pins (live during 72h window)', async () => {
     const d = freshDeps();
     unconfirmedPin(d.db, d.crypto, { code: 'UNCNFX', email: 'o@example.com' });
     const r = await handleInbound({
         raw: msg({ from: 'v@example.com', to: 'UNCNFX@addypin.com' }), ...d,
     });
-    assert.equal(r.action, 'drop');
-    assert.equal(r.reason, 'no_such_pin');
-    assert.equal(d.sent.length, 0);
+    assert.equal(r.action, 'sent');
+    assert.equal(r.type, 'shortcode_reply');
+    assert.equal(d.sent.length, 1);
+    assert.equal(d.sent[0].to, 'v@example.com');
 });
 
 test('SHORTCODE@ drops for unknown pins', async () => {

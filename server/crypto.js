@@ -39,6 +39,25 @@ export function createCrypto({ dataKey, emailKey, signingKey }) {
         return { lat, lng };
     }
 
+    function encryptEmail(email) {
+        if (typeof email !== 'string') throw new Error('email must be a string');
+        const iv = crypto.randomBytes(12);
+        const cipher = crypto.createCipheriv('aes-256-gcm', dataKey, iv);
+        const body = Buffer.concat([cipher.update(email, 'utf8'), cipher.final()]);
+        const tag = cipher.getAuthTag();
+        return { ciphertext: Buffer.concat([body, tag]), iv };
+    }
+
+    function decryptEmail(ciphertext, iv) {
+        if (!Buffer.isBuffer(ciphertext) || ciphertext.length <= 16) throw new Error('invalid ciphertext');
+        if (!Buffer.isBuffer(iv) || iv.length !== 12) throw new Error('invalid iv');
+        const tag = ciphertext.subarray(ciphertext.length - 16);
+        const body = ciphertext.subarray(0, ciphertext.length - 16);
+        const decipher = crypto.createDecipheriv('aes-256-gcm', dataKey, iv);
+        decipher.setAuthTag(tag);
+        return Buffer.concat([decipher.update(body), decipher.final()]).toString('utf8');
+    }
+
     function fingerprint(email) {
         if (typeof email !== 'string' || !email.includes('@')) {
             throw new Error('email must be a string containing @');
@@ -85,7 +104,7 @@ export function createCrypto({ dataKey, emailKey, signingKey }) {
         return body;
     }
 
-    return { encryptCoords, decryptCoords, fingerprint, signToken, verifyToken };
+    return { encryptCoords, decryptCoords, encryptEmail, decryptEmail, fingerprint, signToken, verifyToken };
 }
 
 function assertKey(key, name) {

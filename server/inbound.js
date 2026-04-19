@@ -88,7 +88,7 @@ async function handleResend({ from, subjectCode, db, crypto, mailer, baseUrl, li
 
 async function handleShortcode({ from, code, baseUrl, db, crypto, mailer, reverseGeocode }) {
     const pin = db.getPinByShortcode(code);
-    if (!pin || pin.status !== 'confirmed') return drop('no_such_pin');
+    if (!pin) return drop('no_such_pin');
     const { lat, lng } = crypto.decryptCoords(pin.ciphertext, pin.iv);
     const links = mapLinks(lat, lng);
     const webUrl = `${normalizeBase(baseUrl)}/${code}`;

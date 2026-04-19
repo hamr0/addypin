@@ -1,6 +1,7 @@
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
+import nodeCrypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { createRouter } from './router.js';
 import { mapLinks } from './maplinks.js';
@@ -83,10 +84,17 @@ export function createServer({ db, crypto, limiters, mailer, baseUrl = '', webDi
 
         const { ciphertext, iv } = crypto.encryptCoords(lat, lng);
         const fingerprint = crypto.fingerprint(email);
+        // Encrypted owner email is stored ONLY during the 72h unconfirmed
+        // window so the expiry worker can send a 48h reminder. On confirm
+        // (see db.confirmPin / confirmPinsByOwner) it's nulled out —
+        // confirmed pins never hold reversible PII.
+        const emailEnc = crypto.encryptEmail(email);
         const nowSec = Math.floor(now() / 1000);
 
         db.insertPin({
             shortcode, ciphertext, iv, fingerprint,
+            emailCiphertext: emailEnc.ciphertext,
+            emailIv: emailEnc.iv,
             status: 'unconfirmed',
             createdAt: nowSec,
             expiresAt: nowSec + UNCONFIRMED_TTL_SEC,
@@ -146,7 +154,7 @@ export function createServer({ db, crypto, limiters, mailer, baseUrl = '', webDi
         const code = normalizeShortcode(params.shortcode);
         if (!isValidShortcode(code)) return json(404, { error: 'not_found' });
         const pin = db.getPinByShortcode(code);
-        if (!pin || pin.status !== 'confirmed') return json(404, { error: 'not_found' });
+        if (!pin) return json(404, { error: 'not_found' });
         const { lat, lng } = crypto.decryptCoords(pin.ciphertext, pin.iv);
         return json(200, { lat, lng, mapLinks: mapLinks(lat, lng) });
     });
@@ -190,6 +198,20 @@ export function createServer({ db, crypto, limiters, mailer, baseUrl = '', webDi
             if (!payload || payload.action !== 'login' || typeof payload.fp !== 'string') {
                 return text(400, 'invalid or expired login link');
             }
+            // Single-use: mark the token consumed. If insert-or-ignore
+            // didn't insert, the token was already used — reject. The
+            // 30-day session cookie is the durable auth; this just
+            // prevents magic-link replay if an email is later exposed.
+            const tokenHash = nodeCrypto.createHash('sha256').update(token).digest('hex');
+            if (!db.consumeToken(tokenHash, payload.exp)) {
+                return text(400, 'this login link has already been used — request a new one');
+            }
+            // Magic-link click == proof of email ownership, same proof the
+            // confirmation flow requires. Promote any still-pending pins
+            // owned by this fingerprint to confirmed so /manage treats them
+            // as permanent from the start.
+            const fpBuf = Buffer.from(payload.fp, 'hex');
+            db.confirmPinsByOwner(fpBuf, Math.floor(Date.now() / 1000));
             const sessionToken = crypto.signToken({ fp: payload.fp }, SESSION_TTL_SEC);
             return {
                 status: 302,
@@ -202,6 +224,13 @@ export function createServer({ db, crypto, limiters, mailer, baseUrl = '', webDi
         }
         return serveStatic(webDir, 'manage.html', 'text/html; charset=utf-8');
     });
+
+    // Clear the session cookie. Empty response; client just redirects.
+    router.post('/api/logout', () => ({
+        status: 204,
+        headers: { 'set-cookie': sessionCookie('', 0) },
+        body: '',
+    }));
 
     // Pins owned by the current session. 401 if no valid cookie —
     // the manage.html page uses this signal to swap to the login form.

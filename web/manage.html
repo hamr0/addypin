@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>addypin — manage</title>
-<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="icon" type="image/png" href="/logo.png">
 <style>
     :root {
         --brand: #00BCD4; --brand-bright: #1ee0ff;
@@ -12,7 +12,7 @@
         --error: #ff6b6b; --ok: #5ed681;
     }
     * { box-sizing: border-box; }
-    html, body { margin: 0; min-height: 100%; background: var(--ink);
+    html, body { margin: 0; min-height: 100%; background: var(--ink); overflow-x: hidden;
                  font-family: ui-monospace, SFMono-Regular, 'JetBrains Mono', Menlo, monospace;
                  -webkit-font-smoothing: antialiased; color: white; }
 
@@ -40,7 +40,7 @@
     input[type=email], input[type=number] {
         width: 100%; padding: 13px 14px; background: var(--ink-2);
         border: 1px solid var(--line); border-radius: 8px;
-        color: white; font-size: 15px; outline: none;
+        color: white; font-size: 16px; outline: none;
     }
     input:focus { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(0,188,212,.25); }
     button.primary { background: var(--brand); color: var(--ink); border: 0;
@@ -217,9 +217,10 @@ async function deletePin(el, code) {
 }
 
 // ─── logout ────────────────────────────────────────────────────────────────
-document.getElementById('logout').addEventListener('click', (e) => {
+document.getElementById('logout').addEventListener('click', async (e) => {
     e.preventDefault();
-    document.cookie = 'addypin_session=; Path=/; Max-Age=0; SameSite=Lax';
+    // Session cookie is HttpOnly — only the server can clear it.
+    try { await fetch('/api/logout', { method: 'POST' }); } catch {}
     location.reload();
 });
 </script>
