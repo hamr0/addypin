@@ -238,7 +238,7 @@ Non-negotiable for production cutover. Each item replicates something v1 has run
 - **External uptime watchdog.** External HTTP probe of `https://addypin.com/api/health` every 1–5 min (a separate host, a Healthchecks.io-style free service, or a second cheap VPS). If non-200 for N minutes, alert. This is the only check that survives the VPS being fully down.
 - **Log retention.** `journalctl` for the systemd unit; keep at least 14 days, rotate beyond. stdout is the only log stream we emit.
 - **Process manager.** systemd unit that restarts on crash, starts on boot, drops privileges to a non-root user. Not Docker.
-- **Service identity/DKIM.** The existing DKIM selector on `mail.addypin.com` must still sign outbound msmtp from the new service (see `docs/00-context/infra-snapshot.md`). Verify before cutover.
+- **Service identity/DKIM.** The existing DKIM selector on `mail.addypin.com` must still sign outbound msmtp from the new service (see `docs/00-context/infra-snapshot.md`). Verify before cutover. Fallback: lift the OpenDKIM setup from the gitdone project (known-good baseline) and mint a fresh selector + DNS record for addypin — faster than debugging the old v1 setup.
 - **Nginx config.** Reverse proxy + HTTP→HTTPS redirect + wildcard-cert → v2 app port. The subdomain-per-shortcode lookup (`HOUSE1.addypin.com`) is v2.1 work; for v2.0 only the apex is served.
 - **Rollback plan.** Keep the v1 service running on a different port during cutover. If v2 misbehaves in the first 24 h, flip nginx back. Delete v1 only after a stable week.
 

@@ -42,3 +42,61 @@ Captured at the start of the v2 rewrite. This is what the production VPS and its
 - DKIM selector on `mail.addypin.com` still signs outbound messages from msmtp (not just Resend).
 - Postfix `virtual_alias_maps` can be edited without breaking the current v1 inbound (v1 continues to serve on old code until v2 is ready).
 - Port plan: v1 currently listens on port 3000 (production) and 8080 (staging). v2 will pick a fresh port to allow parallel running during rollout.
+
+## v2 Postfix inbound config (for M10)
+
+AddyPin v2 receives email on `*@addypin.com` via Postfix's pipe
+transport. Three local-parts have handlers (`login`, `resend`, any
+6-char shortcode); everything else silently drops.
+
+### `/etc/postfix/master.cf`
+
+Add the pipe transport:
+
+```
+addypin   unix  -       n       n       -       -       pipe
+  flags=DRhu user=addypin argv=/opt/addypin/inbound-wrapper.sh
+```
+
+### `/etc/postfix/main.cf`
+
+Route all inbound addypin mail to the transport:
+
+```
+transport_maps = hash:/etc/postfix/transport
+```
+
+### `/etc/postfix/transport`
+
+```
+addypin.com  addypin:
+.addypin.com addypin:
+```
+
+Then `postmap /etc/postfix/transport && postfix reload`.
+
+### `/opt/addypin/inbound-wrapper.sh`
+
+```sh
+#!/usr/bin/env bash
+set -e
+set -a; source /etc/addypin/env; set +a
+exec /usr/bin/env node --experimental-sqlite \
+  /opt/addypin/server/inbound-cli.js
+```
+
+`/etc/addypin/env` holds the three `ADDYPIN_*_KEY` hex values + `DATA_DIR` + `BASE_URL`. Permissions 640, owner `root:addypin`.
+
+### Smoke tests (run on the VPS after deploy)
+
+```sh
+# confirmation auto-reply
+echo -e 'From: me@me.com\nTo: HOUSE1@addypin.com\nSubject: s\n\n' | \
+  sudo -u addypin /opt/addypin/inbound-wrapper.sh
+# expected stderr: {"t":"...","kind":"inbound","action":"sent","type":"shortcode_reply"}
+
+# login magic link
+echo -e 'From: owner@me.com\nTo: login@addypin.com\nSubject: s\n\n' | \
+  sudo -u addypin /opt/addypin/inbound-wrapper.sh
+# expected: action:"sent" type:"login" (if owner@me.com has pins)
+```

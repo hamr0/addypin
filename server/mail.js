@@ -48,7 +48,23 @@ export function createMailer({ from, fromName = '', transport }) {
         await transport(to, subject, body);
     }
 
-    return { sendConfirmation, sendLogin };
+    // Auto-reply to SHORTCODE@addypin.com with the coordinates and a list of
+    // map-app deep links. `links` is the ordered array that mapLinks() returns.
+    async function sendShortcodeReply({ to, shortcode, lat, lng, links, webUrl }) {
+        const subject = `Re: ${shortcode}`;
+        const linkLines = links.map((l) => `  ${l.name.padEnd(18)} ${l.url}`).join('\n');
+        const body = [
+            `${shortcode} is at ${lat.toFixed(6)}, ${lng.toFixed(6)}.`,
+            ``,
+            `Open in your map app:`,
+            linkLines,
+            ``,
+            `Web: ${webUrl}`,
+        ].join('\n');
+        await transport(to, subject, body);
+    }
+
+    return { sendConfirmation, sendLogin, sendShortcodeReply };
 }
 
 // Format an RFC-5322 message and pipe it into msmtp's stdin.
