@@ -1,6 +1,6 @@
-# AddyPin v2 — Product Requirements
+# addypin v2 — Product Requirements
 
-**Status:** In build · **Branch:** `v2-rewrite` (pushed to `origin/v2-rewrite`) · **Last updated:** 2026-04-19
+**Status:** In production rollout · **Branch:** `main` (v1 preserved on `v1` branch) · **Last updated:** 2026-04-19
 
 ## Implementation status (as of 2026-04-19)
 
@@ -12,23 +12,20 @@
 | M4 | Web server core (`node:http`, routes, rate limit, shortcode) | ✅ shipped |
 | M5 | Frontend (Variant G — mono overlay + Nominatim search + 12 map buttons with logos) | ✅ shipped |
 | M6 | Email out + `/confirm` flow (msmtp or console transport, signed 30d cookie) | ✅ shipped |
-| M7 | Magic-link login + `/manage` + edit/delete | pending |
-| M8 | Email in (Postfix pipe, `login@`/`SHORTCODE@`/`resend@`) | pending |
-| M9 | Expiry cleanup worker | pending |
-| M10 | Deploy to VPS + ops must-haves (§14) | pending |
+| M7 | Magic-link login + `/manage` + edit/delete | ✅ shipped |
+| M8 | Email in (Postfix pipe, `login@`/`SHORTCODE@`/`resend@`) | ✅ shipped |
+| M9 | Expiry cleanup worker | ✅ shipped |
+| M10 | Deploy to VPS + ops must-haves (§14) | 🚧 in rollout — see `docs/03-logs/m10-deploy-log.md` |
 
 No runtime dependencies have been added at any milestone. `node:sqlite` + `node:crypto` + `node:http` cover every need the design calls for.
 
-## Cutover plan
+## Cutover
 
-Production DNS, v1 container, and data all remain untouched until M10 ships. When M10 is signed off:
-1. Rename default branch from `main` to `main-v1-archive` (preserves v1 history).
-2. Promote `v2-rewrite` to `main` (and set as default on GitHub).
-3. Cut over `addypin.com` DNS to the new v2 service on the VPS.
+Cutover is happening live on branch `main`, which now points at the v2 tree. v1 code is preserved on the `v1` branch; nothing merges back. Remaining M10 work is captured in the deploy log.
 
 v1 data (pins in Postgres) is **not migrated**. Per product direction, the v2 release is a clean slate — users re-create pins. This is a deliberate product call, not a technical limitation.
 
-AddyPin turns a GPS coordinate into a short, memorable link (`HOUSE1.addypin.com`) and a matching email address (`HOUSE1@addypin.com`). Both resolve to the same coordinates and map-app shortcuts. No accounts, no tracking, no feed — just a pin and a link.
+addypin turns a GPS coordinate into a short, memorable link (`HOUSE1.addypin.com`) and a matching email address (`HOUSE1@addypin.com`). Both resolve to the same coordinates and map-app shortcuts. No accounts, no tracking, no feed — just a pin and a link.
 
 v2 is a clean rewrite. v1 worked but became over-engineered (Postgres, analytics tables, layered middleware, Docker Compose, CI/CD pipelines). v2 removes everything that is not required to do the one job.
 
@@ -36,7 +33,7 @@ v2 is a clean rewrite. v1 worked but became over-engineered (Postgres, analytics
 
 ## 1. Problem
 
-Sharing a precise location over text or email is painful. Coordinates are ugly, map-app links are long and platform-specific, and permanent URLs usually require an account. AddyPin gives a person-to-person memorable handle for a place, with no signup friction.
+Sharing a precise location over text or email is painful. Coordinates are ugly, map-app links are long and platform-specific, and permanent URLs usually require an account. addypin gives a person-to-person memorable handle for a place, with no signup friction.
 
 ## 2. Non-goals
 
@@ -194,7 +191,7 @@ Revisit if the POC (§11) reveals any of these are wrong.
 
 ## 10. Success criteria
 
-- Fresh VM → fully running AddyPin in under 10 minutes of commands.
+- Fresh VM → fully running addypin in under 10 minutes of commands.
 - Whole repo compiles and ships in one binary-equivalent artifact (tarball or single Node process).
 - Create → share → resolve round-trip works from a cold cache in under 300 ms on the VPS.
 - Total server code under 1,500 LOC (excluding third-party and the frontend HTML/JS).
@@ -220,11 +217,11 @@ All resolved as of 2026-04-18:
 - ~~IMAP credentials.~~ **Resolved:** no IMAP. Mail is self-hosted on `mail.addypin.com` (confirmed via `dig MX`). Postfix pipe transport used instead. See §5.
 - ~~Confirmation resend UX.~~ **Resolved:** inbound-email trigger `resend@addypin.com` with subject = shortcode. No new web endpoint.
 
-Remaining items for the build phase (not blockers):
+Resolved during M10 rollout:
 
-- **SPF record cleanup.** Current TXT record includes `_spf.resend.com` from v1. Remove that include when v2 ships. Tighten `~all` to `-all` once DKIM on self-hosted Postfix is confirmed working.
-- **DKIM key continuity.** Confirm the existing DKIM selector on `mail.addypin.com` still signs outbound msmtp messages. If not, rotate.
-- **Postfix pipe invocation style.** Long-running Node process listening on a Unix socket, or one-shot `node script.js` per message? POC should test both and pick lower-latency.
+- ~~**SPF record cleanup.**~~ **Resolved 2026-04-19:** `include:_spf.resend.com` removed. SPF is `v=spf1 a:mail.addypin.com ~all`. Will tighten to `-all` after mail-tester confirms DKIM pass end-to-end (Phase 3h).
+- ~~**DKIM key continuity.**~~ **Resolved 2026-04-19:** Minted a fresh selector `addypin2026` via OpenDKIM on the new VPS (gitdone-style baseline, per §14 fallback). TXT published in Route 53; loopback signing verified.
+- ~~**Postfix pipe invocation style.**~~ **Resolved:** one-shot `node` per message via `inbound-wrapper.sh`. Cold start is acceptable for inbound volume; the alternative (long-running daemon + socket) would have required managing a second systemd service for no measured win.
 
 ## 14. Deploy / operations must-haves (M10)
 

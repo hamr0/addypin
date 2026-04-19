@@ -21,7 +21,7 @@ export function createMailer({ from, fromName = '', transport }) {
     }
 
     async function sendConfirmation({ to, shortcode, confirmUrl }) {
-        const subject = `Confirm your AddyPin: ${shortcode}`;
+        const subject = `Confirm your addypin: ${shortcode}`;
         const body = [
             `Click to confirm and keep your pin:`,
             ``,
@@ -35,7 +35,7 @@ export function createMailer({ from, fromName = '', transport }) {
     }
 
     async function sendLogin({ to, loginUrl }) {
-        const subject = `Your AddyPin login link`;
+        const subject = `Your addypin login link`;
         const body = [
             `Click to log in and manage your pins:`,
             ``,

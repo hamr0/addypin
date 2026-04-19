@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# dev.sh — start the local AddyPin dev server.
+# dev.sh — start the local addypin dev server.
 #
 # Secrets come from `pass` (https://www.passwordstore.org). Nothing is
 # persisted to disk under the repo. `pass` prompts your GPG agent on

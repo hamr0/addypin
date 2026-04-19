@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-AddyPin is a location sharing service that turns GPS coordinates into short, memorable links. Users drop pins on a map and share them as web links (`ABC123.addypin.com`) or email addresses (`ABC123@addypin.com`).
+addypin is a location sharing service that turns GPS coordinates into short, memorable links. Users drop pins on a map and share them as web links (`ABC123.addypin.com`) or email addresses (`ABC123@addypin.com`).
 
 **You are working on v2 — a clean rewrite on the `main` branch.** v1 is preserved on the `v1` branch for reference only. Do not build on it. The v2 design lives in [`docs/01-product/prd.md`](docs/01-product/prd.md) and is the source of truth for scope, data model, endpoints, and threat model.
 

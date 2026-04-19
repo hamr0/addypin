@@ -45,7 +45,7 @@ Captured at the start of the v2 rewrite. This is what the production VPS and its
 
 ## v2 Postfix inbound config (for M10)
 
-AddyPin v2 receives email on `*@addypin.com` via Postfix's pipe
+addypin v2 receives email on `*@addypin.com` via Postfix's pipe
 transport. Three local-parts have handlers (`login`, `resend`, any
 6-char shortcode); everything else silently drops.
 

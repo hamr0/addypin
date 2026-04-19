@@ -176,6 +176,15 @@ Disk after Phase 3a: 6.2 GB used.
   Postfix then routed via pipe transport to the Node inbound CLI
   (side-effect: `localhost.addypin.com` matches `.addypin.com` in
   transport; inbound dropped as `unknown_route`, which is correct).
+- **msmtp reconfigured.** The old `/root/.msmtprc` from v1 relayed
+  through Gmail SMTP with static auth — it would have bypassed our
+  local OpenDKIM signing entirely. Deleted it and its log, then wrote
+  a minimal `/home/addypin/.msmtprc` (mode 600) that submits to
+  `127.0.0.1:25` with `auth off, tls off`. New path:
+  `app → msmtp → localhost Postfix → OpenDKIM sign → public MX`.
+- **mail-tester.com external verification:** sent via the new
+  msmtp→Postfix path, scored **10/10** (DKIM pass, SPF pass, DMARC
+  pass, zero blacklists). Outbound deliverability validated.
 
 ### Phase 3f (partial) — Ops monitor (done, 2026-04-19 session 2)
 
