@@ -230,10 +230,12 @@ Remaining items for the build phase (not blockers):
 
 Non-negotiable for production cutover. Each item replicates something v1 has running today — we lose it if we don't re-do it on the v2 service:
 
-- **TLS renewal cron.** Let's Encrypt wildcard cert for `*.addypin.com` renews every 60-90 days via certbot. Must survive the cutover. Test renewal before cutover by forcing a `certbot renew --dry-run`.
-- **Backups.** Nightly copy of `data/addypin.db` off the VPS (even just rsync to an external host). One file, cheap to move. Include the three env-var secrets in the backup plan — losing `ADDYPIN_DATA_KEY` means the backup is a brick.
-- **Disk-space watch.** Alert when `/` or the data volume drops below 15% free. SQLite WAL can grow silently under load; early warning beats a surprise.
-- **Uptime watchdog.** External HTTP probe of `https://addypin.com/api/health` every 1–5 min. If it returns non-200 for N minutes, alert (msmtp-to-self is fine, same channel we use for the app).
+- **VPS cutover: nuke vs preserve.** Wipe the VPS to a clean OS instead of surgically removing v1 (simpler, less leftover-surface to audit). Back up `/etc/letsencrypt/` (certbot state + cert files) off-VPS before the wipe and restore after — this preserves TLS with no re-validation. Also back up: pass store excerpt for VPS creds, DKIM selector key for `mail.addypin.com`, any manually-placed `/etc/ssl/` certs. Nuke everything else: docker containers + volumes + network bridges, Postgres, v1 app dirs, nginx configs, old systemd units, all old crons.
+- **TLS renewal cron.** After cutover, certbot's systemd timer resumes automatically since `/etc/letsencrypt/` is preserved. Verify with `certbot renew --dry-run` before pointing DNS. Cron also fires a renewal attempt daily as a belt-and-braces fallback.
+- **Backups (rebuild fresh, not restore old).** Nightly copy of `data/addypin.db` + `/etc/letsencrypt/` off the VPS (rsync to an external host). One file for the DB, ~1 MB for certbot state — cheap. Include the three env-var secrets (in `pass`, not the backup) in the restore runbook — losing `ADDYPIN_DATA_KEY` means the DB backup is a brick.
+- **Disk-space watch (new cron).** Every 30 min, check `df /` + `df ${DATA_DIR}`. Email-to-self via msmtp when either drops below 15% free. SQLite WAL can grow silently under load; early warning beats a surprise.
+- **API health cron (new, on-VPS).** Every 5 min: `curl -fsS http://127.0.0.1:3000/api/health || alert`. Catches process crashes that didn't re-start cleanly. Complements the external uptime probe below.
+- **External uptime watchdog.** External HTTP probe of `https://addypin.com/api/health` every 1–5 min (a separate host, a Healthchecks.io-style free service, or a second cheap VPS). If non-200 for N minutes, alert. This is the only check that survives the VPS being fully down.
 - **Log retention.** `journalctl` for the systemd unit; keep at least 14 days, rotate beyond. stdout is the only log stream we emit.
 - **Process manager.** systemd unit that restarts on crash, starts on boot, drops privileges to a non-root user. Not Docker.
 - **Service identity/DKIM.** The existing DKIM selector on `mail.addypin.com` must still sign outbound msmtp from the new service (see `docs/00-context/infra-snapshot.md`). Verify before cutover.
