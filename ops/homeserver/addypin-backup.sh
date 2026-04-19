@@ -45,7 +45,7 @@ echo "[$(date -Iseconds)] backup → $DEST"
 # 1. DB file + WAL sidecars. SQLite is in WAL mode, so copying all three
 #    gives a crash-consistent snapshot. Keep timing tight — addypin
 #    doesn't stop writes, but the window is milliseconds.
-$RSYNC "${VPS_USER}@${VPS_HOST}:/var/lib/addypin/addypin.db*" "$DEST/"
+$SSH "${VPS_USER}@${VPS_HOST}" 'tar -cf - -C /var/lib/addypin addypin.db addypin.db-shm addypin.db-wal' | tar -xf - -C "$DEST/"
 
 # 2. Let's Encrypt state. Tar on the remote so we capture symlinks.
 $SSH "${VPS_USER}@${VPS_HOST}" 'tar -czf - -C /etc letsencrypt' > "$DEST/letsencrypt.tar.gz"
