@@ -186,6 +186,37 @@ Disk after Phase 3a: 6.2 GB used.
   msmtp→Postfix path, scored **10/10** (DKIM pass, SPF pass, DMARC
   pass, zero blacklists). Outbound deliverability validated.
 
+### Phase 3f — Off-VPS backup + uptime watchdogs (done, 2026-04-19 session 3)
+
+Three monitoring layers now live, each catching what the others miss:
+
+1. **Site uptime** — Kuma HTTP monitor on the fedora home server
+   (federver) polling `https://addypin.com/api/health` every 60 s.
+   Survives total VPS loss.
+2. **Backup heartbeat** — Kuma Push monitor with 24 h interval + 1 h
+   grace. The daily backup job pings it on success; a silent failure
+   trips the grace window and alerts.
+3. **On-VPS health** — `ops/health-check.sh` via 15-min systemd timer
+   (see "Phase 3f (partial)" below, still running).
+
+Backup runner: `ops/homeserver/addypin-backup.{sh,service,timer}`
+deployed on federver.
+- Daily at 03:15 local, `Persistent=true` so a powered-off home
+  server catches up on next boot.
+- Pulls `addypin.db` + WAL sidecars via `ssh … | tar -cf - … | tar -xf -`
+  into `~/addypin-backups/daily/YYYY-MM-DD/` (rsync 3.4 on fedora
+  refused the source-side glob through the restricted shell we allow;
+  ssh+tar is equivalent and version-agnostic).
+- Tars `/etc/letsencrypt/` remotely to preserve symlinks.
+- Rotates out dirs older than 30 days.
+- First run 2026-04-19 23:47 local: 656 KB total, 10 s wall.
+- Federver install log committed alongside the script at
+  `ops/homeserver/FEDERVER_INSTALL.md` so future sessions see actual
+  deployed state.
+
+Remaining M10 items: Phase 3h only (SPF `~all` → `-all`, deferred
+~24 h to watch DKIM stay stable).
+
 ### Phase 3f (partial) — Ops monitor (done, 2026-04-19 session 2)
 
 Ported the gitdone health-check pattern (15-min oneshot+timer, email-on-fail).

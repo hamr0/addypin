@@ -5,7 +5,20 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
 
 ## [Unreleased]
 
-Nothing yet.
+### Added
+
+- Home-server backup pipeline (`ops/homeserver/`): daily at 03:15
+  local, pulls SQLite DB + WAL sidecars + `/etc/letsencrypt/` from
+  the VPS, rotates 30 days, pings Kuma on success.
+- Kuma-based monitoring: HTTP pull for site uptime, Push for backup
+  heartbeat. First full run 2026-04-19: 656 KB, 10 s wall, both
+  monitors green.
+
+### Fixed
+
+- `addypin-backup.sh` uses `ssh … | tar … | tar -xf -` instead of
+  rsync's source-side glob; rsync 3.4 on fedora refused the glob
+  through the restricted shell.
 
 ---
 
