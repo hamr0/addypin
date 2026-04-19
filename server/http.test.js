@@ -186,6 +186,20 @@ test('GET /:shortcode returns 404 for malformed shortcodes', async () => {
     assert.equal(r.status, 404);
 });
 
+test('GET /edit/:shortcode serves the editor HTML for any valid code', async () => {
+    // Ownership is enforced client-side via /api/me/pins; the server serves
+    // the HTML shell unconditionally.
+    const r = await req('GET', '/edit/ANYCD3');
+    assert.equal(r.status, 200);
+    assert.match(r.body, /<!doctype html>/i);
+    assert.match(r.body, /editing/i);
+});
+
+test('GET /edit/:shortcode returns 404 for malformed shortcodes', async () => {
+    const r = await req('GET', '/edit/!nope!');
+    assert.equal(r.status, 404);
+});
+
 // ─── Static files ──────────────────────────────────────────────────────────
 
 test('GET / serves the homepage HTML', async () => {

@@ -249,6 +249,15 @@ export function createServer({ db, crypto, limiters, mailer, baseUrl = '', webDi
         return { status: 204, headers: {}, body: '' };
     });
 
+    // /edit/:code → owner-only map-based editor. Ownership is enforced
+    // by the /api/me/pins call the page makes on load, so we can serve
+    // the HTML unconditionally here.
+    router.get('/edit/:shortcode', (_req, params) => {
+        const code = normalizeShortcode(params.shortcode);
+        if (!isValidShortcode(code)) return text(404, 'Not found');
+        return serveStatic(webDir, 'edit.html', 'text/html; charset=utf-8');
+    });
+
     // /:shortcode → the pin viewer page. We serve the same HTML for any
     // (syntactically valid) shortcode and let the page itself fetch
     // /api/pins/:code, which renders coords + map-link buttons or a 404

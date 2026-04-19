@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>addypin — edit</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+    :root {
+        --brand: #00BCD4; --brand-bright: #1ee0ff;
+        --ink: #0b1426; --ink-2: #142036; --line: #243149; --muted: #8aa0c0;
+        --error: #ff6b6b;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%;
+                 font-family: ui-monospace, SFMono-Regular, 'JetBrains Mono', Menlo, monospace;
+                 -webkit-font-smoothing: antialiased; color: white; }
+    #map { position: absolute; inset: 0; z-index: 0; }
+    .leaflet-tile-pane { filter: saturate(0.85); }
+    .leaflet-bottom.leaflet-right { bottom: 100px !important; }
+
+    .topbar { position: absolute; top: 14px; left: 14px; right: 14px; z-index: 1000;
+              display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: center; }
+    .brand { background: var(--ink); color: white; padding: 8px 14px;
+             border: 1px solid var(--line); display: flex; align-items: center; gap: 10px;
+             text-decoration: none; }
+    .brand img { height: 26px; }
+    .brand .word { font-weight: 800; letter-spacing: -0.02em; font-size: 16px; }
+    .brand .accent { color: var(--brand-bright); }
+
+    .search { position: relative; background: var(--ink); border: 1px solid var(--line);
+              display: flex; align-items: center; padding: 0 12px; }
+    .search::before { content: '⌕'; color: var(--brand-bright); font-size: 18px; margin-right: 10px; }
+    .search input { flex: 1; background: none; border: 0; outline: 0; padding: 12px 0;
+                    color: white; font: inherit; font-size: 14px; }
+    .search input::placeholder { color: var(--muted); }
+    .search .spinner { width: 14px; height: 14px; border: 2px solid var(--line);
+                       border-top-color: var(--brand-bright); border-radius: 999px;
+                       animation: spin .8s linear infinite; display: none; }
+    .search.loading .spinner { display: block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .results { position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+               background: var(--ink); border: 1px solid var(--line); max-height: 280px;
+               overflow-y: auto; display: none; }
+    .results.show { display: block; }
+    .result { padding: 10px 14px; cursor: pointer; border-bottom: 1px solid var(--line); font-size: 13px; }
+    .result:last-child { border-bottom: 0; }
+    .result:hover, .result.hot { background: var(--ink-2); color: var(--brand-bright); }
+    .result .sub { color: var(--muted); font-size: 11px; margin-top: 2px; }
+
+    .bottom { position: absolute; left: 14px; right: 14px; bottom: 14px; z-index: 1000;
+              background: var(--ink); border: 1px solid var(--line); padding: 14px; }
+
+    .banner { display: flex; justify-content: space-between; align-items: center;
+              gap: 12px; padding-bottom: 10px; margin-bottom: 10px;
+              border-bottom: 1px solid var(--line);
+              font-size: 10px; text-transform: uppercase; letter-spacing: 0.18em; }
+    .banner .left { color: var(--brand-bright); font-weight: 700; }
+    .banner .left .code { color: white; margin-left: 6px; }
+    .banner a.right { color: var(--muted); text-decoration: none;
+                      border-bottom: 1px dotted var(--line); padding-bottom: 1px; }
+    .banner a.right:hover { color: var(--brand-bright); border-bottom-color: var(--brand-bright); }
+
+    .row1 { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .row1 .tag { font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em;
+                 color: var(--brand-bright); font-weight: 700; }
+    .row1 .coords { font-size: 14px; color: white; font-weight: 700; }
+
+    .row2 { margin-top: 12px; display: grid; grid-template-columns: 1fr auto; gap: 10px; }
+    button.go { background: var(--brand); color: var(--ink); border: 0;
+                padding: 12px 22px; font: inherit; font-weight: 800; font-size: 14px;
+                cursor: pointer; text-transform: uppercase; letter-spacing: 0.08em;
+                transition: background .15s, transform .05s; }
+    button.go:hover:not(:disabled) { background: var(--brand-bright); }
+    button.go:active:not(:disabled) { transform: translateY(1px); }
+    button.go:disabled { background: var(--line); color: var(--muted); cursor: not-allowed; }
+    button.cancel { background: none; color: var(--muted); border: 1px solid var(--line);
+                    padding: 12px 18px; font: inherit; font-size: 13px; cursor: pointer;
+                    text-transform: uppercase; letter-spacing: 0.08em; }
+    button.cancel:hover { color: white; border-color: var(--brand-bright); }
+    .errmsg { color: var(--error); font-size: 12px; margin-top: 8px; min-height: 16px; }
+
+    .state { position: absolute; inset: 0; z-index: 2000; display: none; place-items: center;
+             background: var(--ink); padding: 24px; text-align: center; }
+    .state.active { display: grid; }
+    .state h1 { font-size: 30px; margin: 0 0 10px; color: var(--brand-bright); letter-spacing: -0.02em; }
+    .state p { color: var(--muted); margin: 0 0 20px; font-size: 14px; max-width: 360px; line-height: 1.6; }
+    .state a { color: var(--brand-bright); text-decoration: none; border-bottom: 1px solid var(--brand-bright); }
+
+    @media (max-width: 720px) {
+        .topbar { gap: 8px; top: 10px; left: 10px; right: 10px; }
+        .brand { padding: 8px 10px; }
+        .brand .word { font-size: 14px; }
+        .bottom { left: 10px; right: 10px; bottom: 10px; padding: 10px 12px; }
+        .banner { font-size: 9px; letter-spacing: 0.14em; padding-bottom: 8px; margin-bottom: 8px; }
+        .row1 .tag { font-size: 10px; }
+        .row1 .coords { font-size: 13px; }
+        .row2 { grid-template-columns: 1fr 1fr; }
+        .row2 .cancel { padding: 11px; font-size: 12px; }
+        .row2 .go { padding: 11px; font-size: 13px; }
+        .leaflet-bottom.leaflet-right { bottom: 88px !important; }
+    }
+</style>
+</head>
+<body>
+<div id="loading" class="state active"><p>loading pin...</p></div>
+<div id="notfound" class="state">
+    <h1>not your pin</h1>
+    <p>You can only edit pins you own. Log in first, or create a new one.</p>
+    <p><a href="/manage">← manage my pins</a></p>
+</div>
+
+<div id="app">
+    <div id="map"></div>
+    <div class="topbar">
+        <a class="brand" href="/manage">
+            <img src="/logo.png" alt="">
+            <span class="word">addy<span class="accent">pin</span></span>
+        </a>
+        <div class="search" id="search">
+            <input id="q" type="text" placeholder="Search a new location for this pin..." autocomplete="off">
+            <div class="spinner"></div>
+            <div class="results" id="results"></div>
+        </div>
+    </div>
+
+    <form class="bottom" id="bottom">
+        <div class="banner">
+            <span class="left">editing <span class="code" id="codeLabel"></span></span>
+            <a class="right" href="/manage">cancel ×</a>
+        </div>
+        <div class="row1">
+            <span class="tag">Pin</span>
+            <span class="coords" id="coords"></span>
+        </div>
+        <div class="row2">
+            <button type="button" class="cancel" onclick="location.href='/manage'">Cancel</button>
+            <button id="go" class="go" type="submit">Save</button>
+        </div>
+        <div class="errmsg" id="err"></div>
+    </form>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const code = location.pathname.split('/').pop().toUpperCase();
+
+let map, marker, coords;
+
+(async () => {
+    if (!/^[A-Z0-9]{6}$/.test(code)) { show('notfound'); return; }
+    // Ownership check: pin must be in the session's own pin list.
+    const res = await fetch('/api/me/pins');
+    if (res.status === 401) { location.href = '/manage'; return; }
+    if (!res.ok) { show('notfound'); return; }
+    const data = await res.json();
+    const pin = data.pins.find((p) => p.shortcode === code);
+    if (!pin) { show('notfound'); return; }
+
+    coords = { lat: pin.lat, lng: pin.lng };
+    document.getElementById('codeLabel').textContent = code;
+    document.getElementById('coords').textContent = `${pin.lat.toFixed(6)}, ${pin.lng.toFixed(6)}`;
+    initMap(pin.lat, pin.lng);
+    hide('loading');
+})();
+
+function show(id) { document.getElementById(id).classList.add('active'); }
+function hide(id) { document.getElementById(id).classList.remove('active'); }
+
+function initMap(lat, lng) {
+    map = L.map('map', { zoomControl: false }).setView([lat, lng], 16);
+    L.control.zoom({ position: 'bottomright' }).addTo(map);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        { attribution: '© OpenStreetMap', maxZoom: 19 }).addTo(map);
+    marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+    marker.on('dragend', () => setCoords(marker.getLatLng()));
+    map.on('click', (e) => {
+        marker.setLatLng(e.latlng);
+        setCoords(e.latlng);
+    });
+}
+
+function setCoords(latlng, opts = {}) {
+    coords = { lat: latlng.lat, lng: latlng.lng };
+    document.getElementById('coords').textContent = `${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)}`;
+    if (opts.fly) map.flyTo(latlng, Math.max(map.getZoom(), 15), { duration: 0.6 });
+}
+
+// ─── Nominatim search (same as homepage) ────────────────────────────────
+const q = document.getElementById('q');
+const results = document.getElementById('results');
+const search = document.getElementById('search');
+let timer = null, abortCtl = null, hot = -1;
+
+q.addEventListener('input', () => {
+    const text = q.value.trim();
+    if (timer) clearTimeout(timer);
+    if (abortCtl) abortCtl.abort();
+    if (text.length < 3) { results.classList.remove('show'); search.classList.remove('loading'); return; }
+    timer = setTimeout(() => doSearch(text), 400);
+});
+async function doSearch(text) {
+    search.classList.add('loading');
+    abortCtl = new AbortController();
+    try {
+        const url = `https://nominatim.openstreetmap.org/search?format=json&limit=5&q=${encodeURIComponent(text)}`;
+        const res = await fetch(url, { signal: abortCtl.signal,
+            headers: { 'Accept-Language': navigator.language || 'en' } });
+        const data = await res.json();
+        renderResults(data);
+    } catch (e) {
+        if (e.name !== 'AbortError') console.error(e);
+    } finally { search.classList.remove('loading'); }
+}
+function renderResults(items) {
+    results.innerHTML = '';
+    if (!items.length) { results.classList.remove('show'); return; }
+    items.forEach((it) => {
+        const el = document.createElement('div');
+        el.className = 'result';
+        const main = it.display_name.split(',')[0];
+        const sub = it.display_name.split(',').slice(1, 4).join(',').trim();
+        el.innerHTML = `<div>${escapeHtml(main)}</div><div class="sub">${escapeHtml(sub)}</div>`;
+        el.addEventListener('click', () => choose(it));
+        results.appendChild(el);
+    });
+    hot = -1;
+    results.classList.add('show');
+}
+function choose(it) {
+    const ll = L.latLng(parseFloat(it.lat), parseFloat(it.lon));
+    marker.setLatLng(ll);
+    setCoords(ll, { fly: true });
+    q.value = it.display_name;
+    results.classList.remove('show');
+}
+q.addEventListener('keydown', (e) => {
+    const items = results.querySelectorAll('.result');
+    if (!items.length) return;
+    if (e.key === 'ArrowDown') { e.preventDefault(); hot = (hot + 1) % items.length; updateHot(items); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); hot = (hot - 1 + items.length) % items.length; updateHot(items); }
+    else if (e.key === 'Enter' && hot >= 0) { e.preventDefault(); items[hot].click(); }
+    else if (e.key === 'Escape') { results.classList.remove('show'); }
+});
+function updateHot(items) { items.forEach((el, i) => el.classList.toggle('hot', i === hot)); }
+document.addEventListener('click', (e) => {
+    if (!search.contains(e.target)) results.classList.remove('show');
+});
+function escapeHtml(s) { return s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+// ─── Save ──────────────────────────────────────────────────────────────
+document.getElementById('bottom').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const go = document.getElementById('go');
+    const err = document.getElementById('err');
+    err.textContent = '';
+    go.disabled = true; go.textContent = 'Saving...';
+    try {
+        const res = await fetch(`/api/pins/${encodeURIComponent(code)}`, {
+            method: 'PATCH',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify(coords),
+        });
+        if (res.status === 401) { location.href = '/manage'; return; }
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            err.textContent = data.error === 'invalid_coords'
+                ? 'Coordinates are out of range.'
+                : 'Save failed. Please try again.';
+            return;
+        }
+        location.href = '/manage';
+    } catch {
+        err.textContent = 'Network error. Try again.';
+    } finally {
+        go.disabled = false; go.textContent = 'Save';
+    }
+});
+</script>
+</body>
+</html>
