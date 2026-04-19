@@ -1,0 +1,14 @@
+[Unit]
+Description=Run addypin backup daily
+
+[Timer]
+# 03:15 local daily. Randomized ±10 min to avoid thundering on the VPS.
+OnCalendar=*-*-* 03:15:00
+RandomizedDelaySec=10m
+# Persistent=true means if the home server was off at 03:15, the job
+# runs on next boot. Essential for home-lab kit that sleeps or reboots.
+Persistent=true
+AccuracySec=1min
+
+[Install]
+WantedBy=timers.target

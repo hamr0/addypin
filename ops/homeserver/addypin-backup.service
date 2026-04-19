@@ -1,0 +1,14 @@
+[Unit]
+Description=addypin VPS → home server backup (DB + letsencrypt)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+# Run as the user whose ~/.ssh/addypin_vps key was authorized on the VPS.
+# Override here or set via `systemctl edit` after install.
+User=%i
+EnvironmentFile=-/etc/default/addypin-backup
+ExecStart=/usr/local/bin/addypin-backup.sh
+Nice=19
+IOSchedulingClass=idle
