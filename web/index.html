@@ -23,28 +23,16 @@
     .topbar { position: absolute; top: 14px; left: 14px; right: 14px; z-index: 1000;
               display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: center; }
 
-    .tagline-strip { display: none; }
-    @media (max-width: 720px) {
-        .tagline-strip { display: block; position: absolute; left: 10px; right: 10px;
-                         top: 60px; z-index: 1000;
-                         text-align: center; font-size: 10px; letter-spacing: 0.22em;
-                         text-transform: uppercase; color: var(--muted);
-                         text-shadow: 0 0 6px rgba(11,20,38,.9), 0 0 6px rgba(11,20,38,.9); }
-        .tagline-strip .pop { color: var(--brand-bright); }
-    }
     .brand { background: var(--ink); color: white; padding: 8px 14px;
              border: 1px solid var(--line); display: flex; align-items: center; gap: 10px; }
     .brand img { height: 26px; }
-    .brand .text { display: flex; flex-direction: column; line-height: 1.05; }
     .brand .word { font-weight: 800; letter-spacing: -0.02em; font-size: 16px; }
     .brand .accent { color: var(--brand-bright); }
-    .brand .tagline { font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.18em;
-                      color: var(--muted); margin-top: 3px; }
-    .brand .tagline .pop { color: var(--brand-bright); }
-    .brand .manage { font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.18em;
-                     color: var(--muted); margin-top: 2px; text-decoration: none;
-                     border-bottom: 1px dotted var(--line); width: fit-content; padding-bottom: 1px; }
-    .brand .manage:hover { color: var(--brand-bright); border-bottom-color: var(--brand-bright); }
+
+    /* Leaflet's bottom-right zoom control sits clear of the bottom panel
+       (collapsed ≈ 88 px with banner). When the drawer is open the panel
+       grows but the zoom stays put — acceptable tradeoff vs. pinning it. */
+    .leaflet-bottom.leaflet-right { bottom: 100px !important; }
 
     .search { position: relative; background: var(--ink); border: 1px solid var(--line);
               display: flex; align-items: center; padding: 0 12px; }
@@ -69,6 +57,20 @@
 
     .bottom { position: absolute; left: 14px; right: 14px; bottom: 14px; z-index: 1000;
               background: var(--ink); border: 1px solid var(--line); padding: 14px; }
+
+    /* Always-visible thin banner at the top of the bottom panel. Tagline
+       on the left, manage link on the right. Visible in both collapsed and
+       expanded states. Replaces the old floating tagline-strip. */
+    .banner { display: flex; justify-content: space-between; align-items: center;
+              gap: 12px; padding-bottom: 10px; margin-bottom: 10px;
+              border-bottom: 1px solid var(--line);
+              font-size: 10px; text-transform: uppercase; letter-spacing: 0.18em; }
+    .banner .left { color: var(--muted); }
+    .banner .left .pop { color: var(--brand-bright); margin: 0 2px; }
+    .banner a.right { color: var(--muted); text-decoration: none;
+                      border-bottom: 1px dotted var(--line); padding-bottom: 1px; white-space: nowrap; }
+    .banner a.right:hover { color: var(--brand-bright); border-bottom-color: var(--brand-bright); }
+
     .row1 { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     .row1 .tag { font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em;
                  color: var(--brand-bright); font-weight: 700; }
@@ -125,10 +127,9 @@
     @media (max-width: 720px) {
         .topbar { gap: 8px; top: 10px; left: 10px; right: 10px; }
         .brand { padding: 8px 10px; }
-        .brand .tagline { display: none; }
-        .brand .manage { display: none; }
         .brand .word { font-size: 14px; }
         .bottom { left: 10px; right: 10px; bottom: 10px; padding: 10px 12px; }
+        .banner { font-size: 9px; letter-spacing: 0.14em; padding-bottom: 8px; margin-bottom: 8px; }
         .row1 .tag { font-size: 10px; }
         .row1 .coords { font-size: 13px; }
         .row2 { grid-template-columns: 1fr 1fr;
@@ -140,6 +141,7 @@
         .footnote { display: none; }
         .success .link-row { grid-template-columns: 1fr; gap: 6px; }
         .success .link-row .copy { justify-self: start; }
+        .leaflet-bottom.leaflet-right { bottom: 88px !important; }
     }
 </style>
 </head>
@@ -149,11 +151,7 @@
 <div class="topbar">
     <div class="brand">
         <img src="/logo.png" alt="">
-        <div class="text">
-            <span class="word">addy<span class="accent">pin</span></span>
-            <span class="tagline">drop a pin <span class="pop">·</span> get a link</span>
-            <a class="manage" href="/manage">manage my pins →</a>
-        </div>
+        <span class="word">addy<span class="accent">pin</span></span>
     </div>
     <div class="search" id="search">
         <input id="q" type="text" placeholder="Search address, place, or postcode..." autocomplete="off">
@@ -161,9 +159,11 @@
         <div class="results" id="results"></div>
     </div>
 </div>
-<div class="tagline-strip">drop a pin <span class="pop">·</span> get a link</div>
-
 <form class="bottom" id="bottom">
+    <div class="banner">
+        <span class="left">drop a pin <span class="pop">·</span> get a link</span>
+        <a class="right" href="/manage">manage my pins →</a>
+    </div>
     <div class="row1">
         <span class="tag">Pin</span>
         <span class="coords empty" id="coords">click the map or search above</span>
