@@ -42,6 +42,21 @@ setInterval(() => {
     limiters.create.gc(); limiters.lookup.gc(); limiters.login.gc();
 }, 5 * 60 * 1000).unref();
 
+// Expiry cleanup: unconfirmed pins past their 72h window are purged
+// and their shortcodes retired. Run once at boot (catches anything
+// accumulated during downtime), then hourly. db.cleanupExpired is
+// transactional and idempotent — if a tick overlaps nothing breaks.
+function sweep() {
+    try {
+        const n = db.cleanupExpired(Math.floor(Date.now() / 1000));
+        if (n > 0) console.log(`[cleanup] retired ${n} expired unconfirmed pin(s)`);
+    } catch (e) {
+        console.error(`[cleanup] ${e.message}`);
+    }
+}
+sweep();
+setInterval(sweep, 60 * 60 * 1000).unref();
+
 // Pick the mail transport at boot. msmtp on the VPS, console fallback in dev.
 const transport = pickTransport();
 const mailer = createMailer({
