@@ -2,9 +2,7 @@
 
 AddyPin is a location sharing service that turns GPS coordinates into short, memorable links. Users drop pins on a map and share them as web links (`ABC123.addypin.com`) or email addresses (`ABC123@addypin.com`).
 
-**You are working on v2 — a clean rewrite.** v1 is archived under `archive/v1/` as reference only. Do not build on it. The v2 design lives in [`docs/01-product/prd.md`](docs/01-product/prd.md) and is the source of truth for scope, data model, endpoints, and threat model.
-
-The live production site (`addypin.com`) still runs v1 at this moment. v2 will cut over only once built, tested, and validated.
+**You are working on v2 — a clean rewrite on the `main` branch.** v1 is preserved on the `v1` branch for reference only. Do not build on it. The v2 design lives in [`docs/01-product/prd.md`](docs/01-product/prd.md) and is the source of truth for scope, data model, endpoints, and threat model.
 
 ## Dev Rules
 
@@ -51,12 +49,11 @@ Production / VPS uses environment variables loaded from a systemd `EnvironmentFi
 
 | Path | Purpose |
 |------|---------|
-| `archive/v1/` | v1 reference only — do not edit |
 | `docs/` | Documentation, 5-tier hierarchy ([docs/README.md](docs/README.md)) |
-| `server/` | Node backend (crypto, db, http, email) — does not exist yet |
-| `web/` | Static HTML + JS + CSS + Leaflet — does not exist yet |
-| `data/` | Runtime SQLite file (gitignored) — does not exist yet |
-| `poc/` | Throwaway proof-of-concept (§11 of PRD) — does not exist yet |
+| `server/` | Node backend (crypto, db, http, email) |
+| `web/` | Static HTML + JS + CSS + Leaflet |
+| `ops/` | Deploy artifacts: inbound wrapper, health-check, systemd units |
+| `data/` | Runtime SQLite file (gitignored) |
 
 ## Key constraints
 
@@ -82,11 +79,11 @@ Manual: `git pull && npm ci && systemctl restart addypin` on the VPS. No Docker,
 
 ## Important notes
 
-- **Never edit files under `archive/v1/`.** Reference only.
+- **v1 code is on the `v1` branch** — check it out if you need to reference the old implementation. Do not merge from it.
 - **Never reintroduce** Postgres, Docker, Resend, Umami, React, or any paid SaaS without a PRD amendment.
 - **Shortcodes are 6 uppercase alphanumeric characters.** Case-insensitive at input, stored uppercase. User-chosen or server-generated.
 - Nginx handles SSL termination (Let's Encrypt wildcard). VPS infra is documented at [`docs/00-context/infra-snapshot.md`](docs/00-context/infra-snapshot.md).
 
-## Current state (2026-04-18)
+## Current state (2026-04-19)
 
-v2 rewrite is on branch `v2-rewrite`. PRD is written and agreed. POC has not started yet. When continuing, the next step per AGENT_RULES is to build the ~15-min POC in `poc/poc.js` validating the four claims in PRD §11, then throw it away and start Milestone 1.
+M1–M9 shipped and tested locally. M10 (VPS cutover) is mid-rollout on the live box — see `docs/03-logs/m10-deploy-log.md` for phase-by-phase status. The live addypin.com now serves v2 behind nginx with a renewed cert; Postfix inbound + OpenDKIM signing + ops monitor are wired up. Remaining: DNS DKIM TXT publish, end-to-end smoke, off-VPS backup/watchdog.

@@ -20,6 +20,11 @@ attached_assets/
 # Local Claude Code agent state (sessions, memory, worktrees)
 .claude/
 
+# IDE + legacy Replit scaffolding (preserved on v1 branch)
+.idea/
+.config/
+.local/
+
 # barebrowse snapshots (browser MCP tool artifacts)
 .barebrowse/
 

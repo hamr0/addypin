@@ -98,7 +98,107 @@ Disk after Phase 3a: 6.2 GB used.
   limit, 64k request size cap). Config syntax OK. Nginx reloaded.
 - External HTTPS fails because of the cert blocker below.
 
-## Phase 3c — Blocked on cert renewal
+### Phase 3c — TLS cert renewal (done, 2026-04-19 session 2)
+
+- `/etc/letsencrypt/renewal/addypin.com.conf`: switched
+  `authenticator = standalone` → `authenticator = webroot` + `webroot_path = /var/www/certbot`.
+  Original saved as `.bak`.
+- `/var/www/certbot/` created (nginx already has the
+  `location /.well-known/acme-challenge/` block pointing there).
+- `certbot renew --cert-name addypin.com --force-renewal`: "all renewals succeeded".
+  New expiry: 2026-07-18 (89 days). `addypin.com-0001` (wildcard, dns-01 manual)
+  still expired — we don't need it for v2.0.
+- `nginx -s reload` → `curl -I https://addypin.com/api/health` = **200 + HSTS** ✅.
+
+### Phase 3d — Postfix + inbound pipe (done, 2026-04-19 session 2)
+
+- Backups: `/etc/postfix/{main.cf,master.cf}.bak-2026-04-19`,
+  `/etc/postfix/transport.orig-sample`.
+- `postconf -e` on main.cf:
+  - `mydestination = localhost` (was `localhost, addypin.com` — removed so
+    pipe transport owns addypin.com)
+  - `transport_maps = hash:/etc/postfix/transport`
+  - `virtual_alias_maps =` (cleared; we don't use it)
+- `/etc/postfix/master.cf`: appended `addypin unix -- pipe` service block
+  running `/opt/addypin/inbound-wrapper.sh` as user `addypin`
+  (flags=DRhu).
+- `/etc/postfix/transport`:
+  ```
+  addypin.com  addypin:
+  .addypin.com addypin:
+  ```
+  + `postmap` to build the `.db`.
+- `/opt/addypin/inbound-wrapper.sh` (mode 750, addypin:addypin):
+  `cd /opt/addypin` **before** sourcing env + exec node — without the
+  `cd`, pipe runs with Postfix's cwd (/var/spool/postfix) and
+  `inbound-cli.js` throws `EACCES` trying to read `.env` from cwd.
+  Source of truth in repo: `ops/inbound-wrapper.sh`.
+- `postfix check` → ok; `systemctl enable --now postfix` → active.
+- Smoke tests (all 3 green, stderr JSON to journald):
+  - `HOUSE1@` → `{"action":"drop","reason":"no_such_pin"}`
+  - `login@` → `{"action":"drop","reason":"no_pins"}` (no pins for owner@me.com yet)
+  - `garbage@` → `{"action":"drop","reason":"unknown_route"}`
+
+### Phase 3e — OpenDKIM + DNS (done, 2026-04-19 session 2)
+
+- `opendkim-genkey -b 2048 -d addypin.com -s addypin2026` in
+  `/etc/opendkim/keys/addypin.com/`. Private key mode 600,
+  `opendkim:opendkim`.
+- `/etc/opendkim.conf` written with `Mode=sv`, `Socket=local:/run/opendkim/opendkim.sock`,
+  `OversignHeaders=From`, `Canonicalization=relaxed/simple`. Backed up
+  prior file to `.bak-2026-04-19`.
+- `KeyTable`, `SigningTable`, `TrustedHosts` under `/etc/opendkim/`.
+  Trusted hosts: `127.0.0.1`, `::1`, `localhost`, `addypin.com`,
+  `mail.addypin.com`.
+- Postfix milter wired via `postconf -e`:
+  `smtpd_milters = unix:/run/opendkim/opendkim.sock`,
+  `non_smtpd_milters = $smtpd_milters`,
+  `milter_default_action = accept`, `milter_protocol = 6`.
+- Added `postfix` user to `opendkim` group for socket access, then
+  `systemctl restart postfix`.
+- DNS (Route 53 via CloudShell `aws route53 change-resource-record-sets`,
+  UPSERT with `file://` heredoc — much cleaner than pasting JSON inline):
+  - **Added** `addypin2026._domainkey.addypin.com` TXT with the DKIM
+    public key, split into three ≤255-char quoted strings. Resolvers
+    concatenate at lookup time. One TXT RRSET, confirmed via dig on
+    both 8.8.8.8 and 1.1.1.1.
+  - **Updated** `addypin.com` TXT (SPF) — dropped `include:_spf.resend.com`.
+    Now `"v=spf1 a:mail.addypin.com ~all"`. `~all` stays until a
+    mail-tester pass confirms DKIM alignment, then Phase 3h tightens
+    to `-all`.
+  - **Deleted** `resend._domainkey.addypin.com` TXT (dead Resend key).
+  - `_dmarc` TXT left unchanged (`p=none; rua=mailto:admin@addypin.com`).
+    Admin reports silently drop at the pipe until we add an `admin`
+    handler or repoint rua.
+- Loopback verification: `echo ... | sendmail -f noreply@addypin.com root@localhost`
+  triggered journal line:
+  `opendkim: D074F61F56: DKIM-Signature field added (s=addypin2026, d=addypin.com)`
+  Postfix then routed via pipe transport to the Node inbound CLI
+  (side-effect: `localhost.addypin.com` matches `.addypin.com` in
+  transport; inbound dropped as `unknown_route`, which is correct).
+
+### Phase 3f (partial) — Ops monitor (done, 2026-04-19 session 2)
+
+Ported the gitdone health-check pattern (15-min oneshot+timer, email-on-fail).
+Repo layout: `ops/health-check.sh`, `ops/systemd/addypin-health.{service,timer}`.
+
+Checks:
+1. systemd units: `addypin.service`, `postfix.service`, `nginx.service`
+   (failed **or** inactive)
+2. local API: `http://127.0.0.1:3000/api/health` (5s timeout)
+3. disk: `/` and `/var/lib/addypin` vs 85% threshold
+4. postfix mailq deferred count vs 50
+5. `journalctl -u addypin.service` errors in last hour
+6. TLS expiry on `addypin.com` (warn < 14 days)
+7. DB file sanity (exists, ≥ 1 KB)
+
+Alert email goes to `avoidaccess@gmail.com` (override via
+`ADDYPIN_ALERT_TO` in `/etc/default/addypin-health`), sent through local
+`/usr/sbin/sendmail` (Postfix delivers). First run 2026-04-19 — silent
+(green). Still pending in Phase 3f: nightly DB backup rsync and off-VPS
+uptime watchdog.
+
+## Phase 3c — Blocked on cert renewal (superseded — resolved above)
 
 Both Let's Encrypt certificates on the box are EXPIRED:
 

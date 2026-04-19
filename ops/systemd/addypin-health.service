@@ -1,0 +1,11 @@
+[Unit]
+Description=addypin health check (units, disk, API, certs, queue, journal)
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=addypin
+Group=addypin
+ExecStart=/opt/addypin/ops/health-check.sh
+EnvironmentFile=-/etc/default/addypin-health
+Nice=10
