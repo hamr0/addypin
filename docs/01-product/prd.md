@@ -57,8 +57,10 @@ Explicit list of things v2 will **not** do. Each of these was in v1.
 - **As a link recipient**, I click `HOUSE1.addypin.com` and see a map at those coordinates plus buttons to open in Google Maps / Apple Maps / Waze / etc. Nothing else — no label, no owner info, no timestamp.
 - **As an email sender**, I email `HOUSE1@addypin.com` and receive an auto-reply with the same map links.
 - **As a pin owner**, I log in by either (a) entering my email on the web and clicking the magic link in the reply, or (b) emailing `login@addypin.com` and clicking the magic link in the reply. Either way I land on a page listing every pin I own, where I can edit coords or delete.
-- **As a pin owner**, once I have confirmed the pin (clicked its confirmation magic link), the pin is permanent. I own it until I delete it.
-- **As someone who never confirmed**, my pin auto-expires 72 hours after creation. Confirmation must happen inside that window.
+- **As a pin owner**, once I have confirmed the pin (clicked its confirmation magic link *or* logged in via magic link), the pin is permanent. I own it until I delete it.
+- **As someone who is sharing a link before confirming**, my pin is publicly resolvable *during* the 72 h unconfirmed window. "Unconfirmed" means "not yet claimed permanently," not "not yet active."
+- **As someone who forgot to confirm**, I receive a single reminder email roughly 24 h before expiry (~48 h after creation). Clicking the confirm link in the reminder is equivalent to clicking the original one.
+- **As someone who never confirmed**, my pin auto-deletes 72 h after creation. Its shortcode is retired and can never be reused.
 
 ## 4. Data model
 
@@ -66,14 +68,17 @@ Single SQLite file: `data/addypin.db`. Two tables.
 
 ```sql
 CREATE TABLE pins (
-    shortcode              TEXT PRIMARY KEY,       -- 6-char, uppercased, user-chosen or generated
-    coords_ciphertext      BLOB NOT NULL,          -- AES-256-GCM("lat,lng"), server key
-    coords_iv              BLOB NOT NULL,          -- per-row 12-byte nonce
+    shortcode               TEXT PRIMARY KEY,      -- 6-char, uppercased, user-chosen or generated
+    coords_ciphertext       BLOB NOT NULL,         -- AES-256-GCM("lat,lng"), server key
+    coords_iv               BLOB NOT NULL,         -- per-row 12-byte nonce
     owner_email_fingerprint BLOB NOT NULL,         -- HMAC-SHA256(server_key, lowercase_email) — see below
-    status                 TEXT NOT NULL,          -- 'unconfirmed' | 'confirmed'
-    created_at             INTEGER NOT NULL,       -- unix seconds
-    updated_at             INTEGER NOT NULL,
-    expires_at             INTEGER                 -- unix seconds, NULL once confirmed
+    owner_email_ciphertext  BLOB,                  -- AES-GCM of the email; set ONLY while unconfirmed
+    owner_email_iv          BLOB,                  -- paired IV; both nulled on confirm
+    reminder_sent_at        INTEGER,               -- NULL until the 48h reminder fires, then stamp
+    status                  TEXT NOT NULL,         -- 'unconfirmed' | 'confirmed'
+    created_at              INTEGER NOT NULL,      -- unix seconds
+    updated_at              INTEGER NOT NULL,
+    expires_at              INTEGER                -- unix seconds, NULL once confirmed
 );
 CREATE INDEX idx_owner_fp ON pins (owner_email_fingerprint);
 CREATE INDEX idx_expires  ON pins (expires_at) WHERE expires_at IS NOT NULL;
@@ -85,13 +90,24 @@ CREATE TABLE retired_shortcodes (
     shortcode   TEXT PRIMARY KEY,
     retired_at  INTEGER NOT NULL                   -- unix seconds
 );
+
+-- One-time-use record for magic login links. Hash of the full token
+-- is inserted on first click; duplicate inserts are rejected, making
+-- the magic link truly single-use even within its TTL. Rows age out
+-- as part of the hourly cleanup sweep.
+CREATE TABLE consumed_tokens (
+    token_hash  TEXT PRIMARY KEY,                  -- sha256(token)
+    expires_at  INTEGER NOT NULL
+);
 ```
 
 Notes:
 - **Two separate server secrets, two env vars:** `ADDYPIN_DATA_KEY` (AES-256 key for coords) and `ADDYPIN_EMAIL_KEY` (HMAC key for email fingerprints). Compromising one does not compromise the other.
 - **No label column.** Minimal data, minimal exposure. The encrypted blob is exactly `"lat,lng"` — nothing else.
 - **No users table, no sessions table, no analytics table, no rate-limit table.** Sessions are signed cookies; rate-limit state is in-process.
-- **Email is not stored.** Only the HMAC fingerprint is. We cannot send mail to a historical owner — we only have the fingerprint, not the email. This is fine: every outgoing email is triggered by an action where the email is known (login form, inbound email to `login@`, or the confirmation email at creation time).
+- **Email is never stored in a confirmed pin.** The HMAC fingerprint is permanent; the AES-GCM ciphertext of the email is stored *only* while the pin is unconfirmed, so the 48 h reminder worker can send mail. On confirm (via `/confirm?token=` or auto-confirm through magic-link login), both `owner_email_ciphertext` and `owner_email_iv` are set to NULL. After that, reversible PII for the pin is gone.
+- **Reminder email state is self-gating.** The worker only emails pins where `reminder_sent_at IS NULL` and `expires_at - now <= 24h`. The marker row is nulled alongside the email on confirm so it can't linger.
+- **Magic login links are single-use.** The `consumed_tokens` table records the sha256 of each used token. A second click returns "already used" — the 30-day session cookie issued on first click is the durable auth. Rows are cleaned out by the hourly cleanup sweep once their `expires_at` passes.
 
 **Why HMAC instead of salted argon2id (answer to the fair question):**
 A per-row salted hash (argon2id) is what password storage uses. It is the gold standard for "we never need to query by this value." The problem: we *do* need to query by it — the login flow is "given this email, show me their pins." With per-row salts, every row hashes differently, so finding the matches requires hashing the candidate email with every row's salt, i.e. a full table scan on every login. Doesn't scale past a few hundred pins.
@@ -112,11 +128,12 @@ If this still feels like too much exposure, the only real alternative is to drop
 |--------|------|---------|
 | GET | `/` | Landing + map. Drop a pin, pick custom shortcode (optional), enter email (required to own the pin). |
 | POST | `/api/pins` | Create pin. Body: `{lat, lng, shortcode?, email}`. Returns `{shortcode}`. Triggers confirmation email. Rate-limited. Pin starts `status='unconfirmed'`, `expires_at = now + 72h`. |
-| GET | `/api/pins/:shortcode` | Public lookup. Returns `{lat, lng, mapLinks}`. **Nothing else.** Returns 404 for unconfirmed, expired, or non-existent pins. |
+| GET | `/api/pins/:shortcode` | Public lookup. Returns `{lat, lng, mapLinks}`. **Nothing else.** Returns 404 only for non-existent pins (retired or never created). **Unconfirmed pins resolve** — they are live for the full 72 h window. |
 | GET | `/:shortcode` | HTML page showing the map + map-app shortcut buttons. Subdomain `:shortcode.addypin.com` resolves to the same handler. |
-| POST | `/api/login` | Body: `{email}`. Always returns 202 (no email enumeration). Sends magic link if the email has any confirmed pins, silently drops otherwise. Rate-limited. |
-| GET | `/manage?token=...` | Magic-link landing. Validates token, sets signed cookie, redirects to `/manage`. |
-| GET | `/manage` | Lists confirmed pins owned by the cookie's email fingerprint. |
+| POST | `/api/login` | Body: `{email}`. Always returns 202 (no email enumeration). Sends magic link if the email owns any pins (confirmed **or** unconfirmed), silently drops otherwise. Rate-limited. |
+| GET | `/manage?token=...` | Magic-link landing. Validates token, **marks it consumed** (rejects replays), **auto-confirms** any still-pending pins owned by the token's fingerprint (clicking the link is the same proof of ownership a confirm link requires), sets signed session cookie, redirects to `/manage`. |
+| GET | `/manage` | Lists pins owned by the cookie's email fingerprint. |
+| POST | `/api/logout` | Clears the session cookie (HttpOnly, so only the server can). No body. Returns 204. |
 | PATCH | `/api/pins/:shortcode` | Owner edits lat/lng. Requires owner cookie. |
 | DELETE | `/api/pins/:shortcode` | Owner deletes pin. Requires owner cookie. Shortcode enters 24h cooldown before reusable. |
 | GET | `/confirm?token=...` | Confirmation magic link (from the creation email). Marks pin `status='confirmed'`, `expires_at=NULL`. Same token also logs the user into `/manage`. Token TTL 72 h (same as pin life). |
@@ -131,14 +148,18 @@ Both paths are OSS, zero SaaS, no Resend.
 
 | To | Behavior |
 |----|----------|
-| `login@addypin.com` | Reply with magic link to `/manage?token=...`. Token is signed, 15-min TTL, single-use. Silently drops if the sender has no confirmed pins (no email enumeration). |
-| `SHORTCODE@addypin.com` | Auto-reply with coords + map links for that pin. Silently drops if pin is unconfirmed, expired, or the shortcode is retired. |
-| `resend@addypin.com` with subject `SHORTCODE` | If sender's email HMAC matches the pin owner AND pin is still unconfirmed (within the 72 h window), regenerates the confirmation token and resends the creation email. Silently drops otherwise. Rate-limited per shortcode. |
+| `login@addypin.com` | Reply with magic link to `/manage?token=...`. Token is signed, 15-min TTL, single-use (via `consumed_tokens`). Silently drops if the sender owns no pins (no email enumeration). |
+| `SHORTCODE@addypin.com` | Auto-reply with coords, a best-effort reverse-geocoded "Near:" line, 12 map-app deep links, and the web URL. Silently drops if the shortcode is retired or has no pin. Works on unconfirmed pins too. |
+| `resend@addypin.com` with subject `SHORTCODE` | If sender's email HMAC matches the pin owner AND pin is still unconfirmed, regenerates the confirmation token and resends the creation email. Silently drops otherwise. Rate-limited per shortcode. |
 | anything else | Silently drop. No bounces, no NDRs. |
+
+**From address:** all outbound uses `noreply@addypin.com` with display name `addypin`. Replies go nowhere (inbound pipe drops `noreply@` as `unknown_route`). This is a deliberate "don't reply" signal — choosing a convention over trying to make reply-to-confirm clever.
+
+**Content:** all outbound is `text/plain; charset=utf-8`. No HTML, no multipart — see memory log `feedback_plaintext_email` for rationale.
 
 ### Map-link shortcuts
 
-Reuse v1's map-link logic verbatim. 15 known providers (Google Maps, Apple Maps, Waze, OsmAnd, Organic Maps, etc.). Pure function: `(lat, lng) → { provider: url }`. Port the file from `archive/v1/`.
+Pure function in `server/maplinks.js`: `(lat, lng) → [{ name, url, icon, darkBg? }, ...]`. Twelve providers in the current cut — Google, Apple, Waze, OsmAnd, Organic Maps, Here, TomTom, Yandex, Yango, Mappls, Baidu, Amap. Icons come from the `/maplogos/` static dir. No network calls at link-compose time.
 
 ## 6. Shortcode rules
 
@@ -153,14 +174,16 @@ Reuse v1's map-link logic verbatim. 15 known providers (Google Maps, Apple Maps,
 ## 7. Threat model
 
 **In scope (what we protect against):**
-- **DB file theft / backup leak.** Attacker with `addypin.db` sees: shortcodes, encrypted blobs, email HMACs, salts, timestamps. They cannot recover coords (no AES key) or emails (HMAC is one-way, key is separate).
+- **DB file theft / backup leak.** Attacker with `addypin.db` sees: shortcodes, encrypted coord blobs, email HMACs, per-pin nonces, timestamps, and — for pins still in the 72 h unconfirmed window — encrypted email blobs. They cannot recover coords or emails without the AES key. Confirmed pins never carry a reversible email.
 - **Casual DB inspection.** Same protection.
-- **Email enumeration from public endpoints.** `GET /api/pins/:shortcode` never reveals the owner. No endpoint returns a list of emails.
+- **Email enumeration from public endpoints.** `GET /api/pins/:shortcode` never reveals the owner. `POST /api/login` returns 202 regardless of whether the email owns anything.
+- **Magic-link replay.** Single-use enforcement via `consumed_tokens`. Even if a token is intercepted within its 15-min TTL, it works at most once.
 
 **Out of scope (accepted risks):**
-- **Server compromise.** Attacker with root on the VPS has both the AES key and the HMAC key (env vars) — they can decrypt everything. We accept this; see non-goals for why we are not doing E2E.
+- **Server compromise.** Attacker with root on the VPS has the AES key, HMAC key, and signing key (env vars) — they can decrypt everything. We accept this; see non-goals for why we are not doing E2E.
 - **Traffic analysis.** A network attacker watching requests to `/api/pins/XYZ123` learns the shortcode exists. Acceptable — shortcodes are already meant to be shared.
-- **Magic-link email interception.** Anyone with access to the owner's email inbox can log in. This is the same security model as every consumer service that supports "forgot password."
+- **Magic-link email interception.** Anyone with access to the owner's email inbox can log in. Same security model as every "forgot password" flow. Single-use narrows the window but does not close it.
+- **Unconfirmed pin window.** For up to 72 h, an owner's email sits in the DB as AES-GCM ciphertext (necessary for the 48 h reminder). A DB-only leak during that window exposes a reversible email blob per unconfirmed pin. We accept this — it's bounded, nullified on confirm, and the only alternative was dropping the reminder feature.
 
 ## 8. Rate limiting
 
@@ -177,17 +200,16 @@ On restart, counters reset. Acceptable for v2 scale (~hundreds of requests/day).
 
 | Layer | Choice | Why |
 |-------|--------|-----|
-| Runtime | Node.js 20 | Matches v1; unchanged in skill set. Candidate for Go later if desired. |
-| Web framework | Express (minimal) or native `http` | No NestJS, no Fastify plugins. Stdlib-first per AGENT_RULES. |
-| DB | SQLite via `better-sqlite3` | Synchronous, zero-config, single-file. |
-| Crypto | Node `crypto` stdlib (AES-256-GCM, HMAC, Argon2 via `@node-rs/argon2`) | Vetted libs, stdlib where possible. |
-| Frontend | Plain HTML + vanilla JS + Leaflet | No React, no Vite, no Tailwind build. v1 used React; v2 does not need it. One page, one form, one map. |
-| Email out | `msmtp` (system binary) via `child_process` | OSS, zero-dep, already on the VPS. No SaaS relay. |
-| Email in | Postfix pipe transport → Node script | Postfix already runs on the VPS as the MX for addypin.com. Use `virtual_alias_maps` + `.forward` pipe. True catch-all, zero polling latency. |
-| Session | Signed cookie (HMAC using a third env-var secret) | Absolute 30-day TTL, non-rolling. No session table. |
-| Process mgmt | systemd unit on the VPS | No Docker, no Compose. One Node process, one SQLite file, one nginx reverse proxy. |
-
-Revisit if the POC (§11) reveals any of these are wrong.
+| Runtime | Node.js 22 | `node:sqlite` + `node:crypto` + `node:http` cover every stdlib need. No TypeScript — plain ESM. |
+| Web framework | Native `node:http` + small custom router | ~80-line router; reading it is faster than reading Express docs. |
+| DB | `node:sqlite` (`DatabaseSync`, `--experimental-sqlite`) | Built-in, synchronous, WAL. No external dep. |
+| Crypto | `node:crypto` stdlib (AES-256-GCM, HMAC-SHA256) | No argon2, no bcrypt — we don't store passwords. HMAC with a server key gives indexed lookup (see §4). |
+| Frontend | Plain HTML + vanilla JS + Leaflet (CDN) | Four files. No build step. |
+| Email out | `msmtp` (system binary) → `127.0.0.1:25` local Postfix → OpenDKIM signs → public MX | Zero SaaS, DKIM-aligned. mail-tester 10/10. msmtp config lives at `/etc/msmtprc` with `auth off, tls off` since it only talks to the loopback Postfix. |
+| Email in | Postfix `transport_maps` → pipe → `/opt/addypin/inbound-wrapper.sh` → `node server/inbound-cli.js` | One-shot per message. `addypin.com` is in `relay_domains` so Postfix accepts at RCPT TO then hands off to the pipe. |
+| Session | Signed cookie (HMAC, `ADDYPIN_SIGNING_KEY`). Magic links share the scheme with a 15-min TTL + single-use record. | No session table. 30-day absolute cookie, HttpOnly, SameSite=Lax. |
+| Process mgmt | systemd unit on the VPS | `ProtectSystem=strict`, `ProtectHome`, `PrivateTmp`, `ReadWritePaths` limited to `/var/lib/addypin` and `/var/log/addypin`. |
+| Reverse proxy | nginx + Let's Encrypt (certbot webroot) | TLS termination + HTTP→HTTPS + single `proxy_pass` to `127.0.0.1:3000`. |
 
 ## 10. Success criteria
 
@@ -197,16 +219,9 @@ Revisit if the POC (§11) reveals any of these are wrong.
 - Total server code under 1,500 LOC (excluding third-party and the frontend HTML/JS).
 - DB backup is one file copy.
 
-## 11. POC (before any production code)
+## 11. POC (historical)
 
-Per AGENT_RULES, build a ~15-min proof first. Must validate:
-
-1. Create a pin → encrypt coords → write row to a SQLite file.
-2. Read by shortcode → decrypt → return coords. No auth.
-3. Compute email HMAC → query pins by HMAC → list them. (Login path.)
-4. Sign a magic-link token, verify it, reject expired.
-
-If those four work end-to-end in a single `poc.js` file with hardcoded keys, the design is sound. Throw the POC away after.
+The 15-min POC was written, the four claims validated, and the file thrown away before M1 started — per AGENT_RULES. It confirmed: (1) AES-GCM coord round-trip, (2) shortcode lookup + decrypt, (3) HMAC-indexed email lookup, (4) signed-token verify + TTL rejection. No design change came out of it, so the build proceeded directly to M1. This section stays as a record of the gate.
 
 ## 12. Open questions
 
