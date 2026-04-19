@@ -13,6 +13,7 @@ function generousLimiters() {
     return {
         create: createRateLimiter({ capacity: 1000, refillPerSec: 1000 }),
         lookup: createRateLimiter({ capacity: 1000, refillPerSec: 1000 }),
+        login:  createRateLimiter({ capacity: 1000, refillPerSec: 1000 }),
     };
 }
 
@@ -232,6 +233,32 @@ test('unknown route returns 404 json', async () => {
 
 // ─── Rate limiting ──────────────────────────────────────────────────────────
 
+// ─── helper: create a confirmed pin and return the session cookie for its owner.
+async function createConfirmedPinAndLogin(shortcode, email) {
+    await req('POST', '/api/pins', { lat: 10, lng: 20, email, shortcode });
+    await new Promise((r) => setTimeout(r, 30));
+    const confirmUrl = sentEmails.at(-1).body.match(/\/confirm\?token=([^\s]+)/)[1];
+    const res = await fetch(baseUrl + `/confirm?token=${confirmUrl}`, { redirect: 'manual' });
+    return extractCookie(res.headers.get('set-cookie'));
+}
+
+function extractCookie(setCookieHeader) {
+    const m = /(addypin_session=[^;]+)/.exec(setCookieHeader || '');
+    return m ? m[1] : '';
+}
+
+async function reqWithCookie(method, path, cookie, body) {
+    const headers = { cookie };
+    if (body) headers['content-type'] = 'application/json';
+    const res = await fetch(baseUrl + path, {
+        method, headers, body: body ? JSON.stringify(body) : undefined,
+        redirect: 'manual',
+    });
+    const ct = res.headers.get('content-type') || '';
+    const data = res.status === 204 ? null : (ct.includes('json') ? await res.json() : await res.text());
+    return { status: res.status, body: data, setCookie: res.headers.get('set-cookie') };
+}
+
 // ─── M6: confirmation email + /confirm route ───────────────────────────────
 
 test('POST /api/pins fires a confirmation email with a magic link', async () => {
@@ -338,6 +365,150 @@ test('mailer failure does not fail pin creation', async () => {
 
     tightServer.close();
     tightDb.close();
+});
+
+// ─── M7: login + /manage + edit/delete ────────────────────────────────────
+
+test('POST /api/login sends a login email when the address owns confirmed pins', async () => {
+    await createConfirmedPinAndLogin('LOGIN1', 'loginuser@example.com');
+    sentEmails.length = 0; // only the confirmation was there; clear for clean assertion
+    const r = await req('POST', '/api/login', { email: 'loginuser@example.com' });
+    assert.equal(r.status, 202);
+    await new Promise((res) => setTimeout(res, 30));
+    assert.equal(sentEmails.length, 1);
+    assert.match(sentEmails[0].subject, /login link/i);
+    assert.match(sentEmails[0].body, /\/manage\?token=/);
+});
+
+test('POST /api/login is silent (no email) when the address owns nothing', async () => {
+    sentEmails.length = 0;
+    const r = await req('POST', '/api/login', { email: 'stranger@nowhere.com' });
+    assert.equal(r.status, 202); // same status as success — no enumeration
+    await new Promise((res) => setTimeout(res, 30));
+    assert.equal(sentEmails.length, 0);
+});
+
+test('POST /api/login rejects malformed email with 400', async () => {
+    const r = await req('POST', '/api/login', { email: 'noatsign' });
+    assert.equal(r.status, 400);
+});
+
+test('GET /manage?token=<login> sets a session cookie and 302s to /manage', async () => {
+    await createConfirmedPinAndLogin('LGNTST', 'lg@example.com');
+    sentEmails.length = 0;
+    await req('POST', '/api/login', { email: 'lg@example.com' });
+    await new Promise((res) => setTimeout(res, 30));
+    const tokenMatch = sentEmails[0].body.match(/\/manage\?token=([^\s]+)/);
+    assert.ok(tokenMatch, 'login URL missing in email');
+    const res = await fetch(baseUrl + `/manage?token=${tokenMatch[1]}`, { redirect: 'manual' });
+    assert.equal(res.status, 302);
+    assert.equal(res.headers.get('location'), '/manage');
+    assert.match(res.headers.get('set-cookie'), /addypin_session=/);
+});
+
+test('GET /manage?token=<invalid> returns 400', async () => {
+    const res = await fetch(baseUrl + '/manage?token=not.a.real', { redirect: 'manual' });
+    assert.equal(res.status, 400);
+});
+
+test('GET /manage without token or cookie serves manage.html (client handles login)', async () => {
+    const res = await fetch(baseUrl + '/manage');
+    assert.equal(res.status, 200);
+    const body = await res.text();
+    assert.match(body, /<!doctype html>/i);
+    assert.match(body, /manage/i);
+});
+
+test('GET /api/me/pins returns 401 without a session cookie', async () => {
+    const r = await reqWithCookie('GET', '/api/me/pins', '');
+    assert.equal(r.status, 401);
+});
+
+test('GET /api/me/pins returns the session owner\'s confirmed pins', async () => {
+    const cookie = await createConfirmedPinAndLogin('MINEEE', 'mine@example.com');
+    // Add a second pin for the same owner.
+    await req('POST', '/api/pins', { lat: 1, lng: 2, email: 'mine@example.com', shortcode: 'MINEE2' });
+    await new Promise((r) => setTimeout(r, 30));
+    db.confirmPin('MINEE2', Math.floor(Date.now() / 1000));
+
+    const r = await reqWithCookie('GET', '/api/me/pins', cookie);
+    assert.equal(r.status, 200);
+    const codes = r.body.pins.map((p) => p.shortcode).sort();
+    assert.ok(codes.includes('MINEEE'));
+    assert.ok(codes.includes('MINEE2'));
+    for (const p of r.body.pins) {
+        assert.equal(typeof p.lat, 'number');
+        assert.equal(typeof p.lng, 'number');
+    }
+});
+
+test('GET /api/me/pins excludes another user\'s pins', async () => {
+    const aliceCookie = await createConfirmedPinAndLogin('ALICE1', 'alice.mine@example.com');
+    await createConfirmedPinAndLogin('BOBBY1', 'bobby.mine@example.com');
+
+    const r = await reqWithCookie('GET', '/api/me/pins', aliceCookie);
+    const codes = r.body.pins.map((p) => p.shortcode);
+    assert.ok(codes.includes('ALICE1'));
+    assert.ok(!codes.includes('BOBBY1'));
+});
+
+test('PATCH /api/pins/:code updates coords for the owner', async () => {
+    const cookie = await createConfirmedPinAndLogin('PCHTST', 'patcher@example.com');
+    const r = await reqWithCookie('PATCH', '/api/pins/PCHTST', cookie, { lat: 40.7128, lng: -74.006 });
+    assert.equal(r.status, 200);
+    assert.equal(r.body.lat, 40.7128);
+
+    // Verify the public lookup reflects the change.
+    const lookup = await req('GET', '/api/pins/PCHTST');
+    assert.equal(lookup.body.lat, 40.7128);
+    assert.equal(lookup.body.lng, -74.006);
+});
+
+test('PATCH /api/pins/:code returns 401 without session', async () => {
+    await createConfirmedPinAndLogin('PATCH2', 'p2@example.com');
+    const r = await reqWithCookie('PATCH', '/api/pins/PATCH2', '', { lat: 1, lng: 2 });
+    assert.equal(r.status, 401);
+});
+
+test('PATCH /api/pins/:code returns 403 when session owns a different pin', async () => {
+    const aliceCookie = await createConfirmedPinAndLogin('OWN001', 'alice.own@example.com');
+    await createConfirmedPinAndLogin('NOTOUR', 'bob.own@example.com');
+    const r = await reqWithCookie('PATCH', '/api/pins/NOTOUR', aliceCookie, { lat: 1, lng: 2 });
+    assert.equal(r.status, 403);
+});
+
+test('PATCH /api/pins/:code rejects invalid coords with 400', async () => {
+    const cookie = await createConfirmedPinAndLogin('BADCOR', 'bad@example.com');
+    const r = await reqWithCookie('PATCH', '/api/pins/BADCOR', cookie, { lat: 999, lng: 0 });
+    assert.equal(r.status, 400);
+});
+
+test('DELETE /api/pins/:code removes the pin, retires the shortcode', async () => {
+    const cookie = await createConfirmedPinAndLogin('DELTST', 'del@example.com');
+    const r = await reqWithCookie('DELETE', '/api/pins/DELTST', cookie);
+    assert.equal(r.status, 204);
+    // Lookup 404s (pin gone).
+    const lookup = await req('GET', '/api/pins/DELTST');
+    assert.equal(lookup.status, 404);
+    // Trying to re-create with the same shortcode is blocked (retired).
+    const recreate = await req('POST', '/api/pins', {
+        lat: 1, lng: 2, email: 'someone@new.com', shortcode: 'DELTST',
+    });
+    assert.equal(recreate.status, 409);
+    assert.equal(recreate.body.error, 'shortcode_taken');
+});
+
+test('DELETE /api/pins/:code returns 401 without session', async () => {
+    await createConfirmedPinAndLogin('DELAUT', 'da@example.com');
+    const r = await reqWithCookie('DELETE', '/api/pins/DELAUT', '');
+    assert.equal(r.status, 401);
+});
+
+test('DELETE /api/pins/:code returns 403 when session does not own the pin', async () => {
+    const aliceCookie = await createConfirmedPinAndLogin('AL0001', 'alice.del@example.com');
+    await createConfirmedPinAndLogin('BO0001', 'bob.del@example.com');
+    const r = await reqWithCookie('DELETE', '/api/pins/BO0001', aliceCookie);
+    assert.equal(r.status, 403);
 });
 
 test('rate limiter returns 429 after capacity exhausted', async () => {

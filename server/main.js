@@ -34,10 +34,13 @@ const crypto = createCrypto({
 
 // Per PRD §8.
 const limiters = {
-    create: createRateLimiter({ capacity: 5, refillPerSec: 5 / 3600 }),  // 5/hr
-    lookup: createRateLimiter({ capacity: 300, refillPerSec: 300 / 900 }), // 300/15min
+    create: createRateLimiter({ capacity: 5, refillPerSec: 5 / 3600 }),    // 5/hr per IP
+    lookup: createRateLimiter({ capacity: 300, refillPerSec: 300 / 900 }), // 300/15min per IP
+    login:  createRateLimiter({ capacity: 3, refillPerSec: 3 / 3600 }),    // 3/hr per email fp
 };
-setInterval(() => { limiters.create.gc(); limiters.lookup.gc(); }, 5 * 60 * 1000).unref();
+setInterval(() => {
+    limiters.create.gc(); limiters.lookup.gc(); limiters.login.gc();
+}, 5 * 60 * 1000).unref();
 
 // Pick the mail transport at boot. msmtp on the VPS, console fallback in dev.
 const transport = pickTransport();

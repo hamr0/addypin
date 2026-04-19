@@ -22,8 +22,10 @@ const STATIC_FILES = new Map([
 ]);
 
 // Confirmation tokens live as long as the unconfirmed pin (72 h);
+// login tokens are 15 min per PRD §5;
 // session cookies are 30 days per PRD §9.
 const CONFIRM_TTL_SEC = 72 * 60 * 60;
+const LOGIN_TTL_SEC = 15 * 60;
 const SESSION_TTL_SEC = 30 * 24 * 60 * 60;
 
 // Build an http.Server given the wired modules. Pure construction —
@@ -149,6 +151,104 @@ export function createServer({ db, crypto, limiters, mailer, baseUrl = '', webDi
         return json(200, { lat, lng, mapLinks: mapLinks(lat, lng) });
     });
 
+    // ─── M7: login + manage ────────────────────────────────────────────────
+
+    // Always returns 202 — no email enumeration. If the submitted email
+    // actually owns at least one confirmed pin, a magic link is emailed.
+    // Rate-limited per email fingerprint (3/hr) so the login endpoint can't
+    // be weaponized for targeted email probing.
+    router.post('/api/login', async (_req, _params, body) => {
+        const email = body?.email;
+        if (typeof email !== 'string' || !email.includes('@')) {
+            return json(400, { error: 'invalid_email' });
+        }
+        const fp = crypto.fingerprint(email);
+        const fpHex = fp.toString('hex');
+        if (limiters.login && !limiters.login.take(fpHex)) {
+            return json(202, {}); // silent rate-limit
+        }
+        const pins = db.listPinsByOwner(fp);
+        if (pins.length === 0) return json(202, {}); // silent no-op
+        if (mailer) {
+            const token = crypto.signToken({ fp: fpHex, action: 'login' }, LOGIN_TTL_SEC);
+            const loginUrl = `${effectiveBaseUrl(_req, baseUrl)}/manage?token=${encodeURIComponent(token)}`;
+            mailer.sendLogin({ to: email, loginUrl })
+                .catch((err) => console.error(`[mail] login send failed: ${err.message}`));
+        }
+        return json(202, {});
+    });
+
+    // /manage is the single owner-facing entry point. Three modes:
+    //   - with ?token=  → verify, set cookie, redirect to /manage
+    //   - with cookie   → serve manage.html (client fetches /api/me/pins)
+    //   - neither       → serve manage.html anyway; the page shows a
+    //                     login form inline
+    router.get('/manage', (req, _params, _body, query) => {
+        const token = query?.token;
+        if (token) {
+            const payload = crypto.verifyToken(token);
+            if (!payload || payload.action !== 'login' || typeof payload.fp !== 'string') {
+                return text(400, 'invalid or expired login link');
+            }
+            const sessionToken = crypto.signToken({ fp: payload.fp }, SESSION_TTL_SEC);
+            return {
+                status: 302,
+                headers: {
+                    'set-cookie': sessionCookie(sessionToken, SESSION_TTL_SEC),
+                    'location': '/manage',
+                },
+                body: '',
+            };
+        }
+        return serveStatic(webDir, 'manage.html', 'text/html; charset=utf-8');
+    });
+
+    // Pins owned by the current session. 401 if no valid cookie —
+    // the manage.html page uses this signal to swap to the login form.
+    router.get('/api/me/pins', (req) => {
+        const session = getSession(req, crypto);
+        if (!session) return json(401, { error: 'unauthorized' });
+        const rows = db.listPinsByOwner(session.fp);
+        const out = rows.map((p) => {
+            const { lat, lng } = crypto.decryptCoords(p.ciphertext, p.iv);
+            return { shortcode: p.shortcode, lat, lng, createdAt: p.createdAt };
+        });
+        return json(200, { pins: out });
+    });
+
+    router.patch('/api/pins/:shortcode', (req, params, body) => {
+        const session = getSession(req, crypto);
+        if (!session) return json(401, { error: 'unauthorized' });
+        const code = normalizeShortcode(params.shortcode);
+        if (!isValidShortcode(code)) return json(404, { error: 'not_found' });
+        const pin = db.getPinByShortcode(code);
+        if (!pin) return json(404, { error: 'not_found' });
+        if (!pin.fingerprint.equals(session.fp)) return json(403, { error: 'forbidden' });
+
+        const { lat, lng } = body || {};
+        if (typeof lat !== 'number' || typeof lng !== 'number' ||
+            !Number.isFinite(lat) || !Number.isFinite(lng) ||
+            lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+            return json(400, { error: 'invalid_coords' });
+        }
+        const enc = crypto.encryptCoords(lat, lng);
+        const nowSec = Math.floor(now() / 1000);
+        db.updatePinCoords(code, enc.ciphertext, enc.iv, nowSec);
+        return json(200, { shortcode: code, lat, lng });
+    });
+
+    router.delete('/api/pins/:shortcode', (req, params) => {
+        const session = getSession(req, crypto);
+        if (!session) return json(401, { error: 'unauthorized' });
+        const code = normalizeShortcode(params.shortcode);
+        if (!isValidShortcode(code)) return json(404, { error: 'not_found' });
+        const pin = db.getPinByShortcode(code);
+        if (!pin) return json(404, { error: 'not_found' });
+        if (!pin.fingerprint.equals(session.fp)) return json(403, { error: 'forbidden' });
+        db.deletePin(code, Math.floor(now() / 1000));
+        return { status: 204, headers: {}, body: '' };
+    });
+
     // /:shortcode → the pin viewer page. We serve the same HTML for any
     // (syntactically valid) shortcode and let the page itself fetch
     // /api/pins/:code, which renders coords + map-link buttons or a 404
@@ -235,6 +335,23 @@ function effectiveBaseUrl(req, configured) {
     const proto = req.headers['x-forwarded-proto'] || (req.socket.encrypted ? 'https' : 'http');
     const host = req.headers.host || 'localhost';
     return `${proto}://${host}`;
+}
+
+// Read + verify the session cookie. Returns { fp: Buffer } on success, null
+// on anything missing/expired/tampered. Caller is responsible for reacting
+// (401, skip, etc).
+function getSession(req, crypto) {
+    const cookieHeader = req.headers.cookie;
+    if (typeof cookieHeader !== 'string') return null;
+    const m = /(?:^|;\s*)addypin_session=([^;]+)/.exec(cookieHeader);
+    if (!m) return null;
+    const payload = crypto.verifyToken(m[1]);
+    if (!payload || typeof payload.fp !== 'string') return null;
+    try {
+        return { fp: Buffer.from(payload.fp, 'hex') };
+    } catch {
+        return null;
+    }
 }
 
 function sessionCookie(value, ttlSec) {

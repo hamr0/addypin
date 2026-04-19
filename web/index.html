@@ -41,6 +41,10 @@
     .brand .tagline { font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.18em;
                       color: var(--muted); margin-top: 3px; }
     .brand .tagline .pop { color: var(--brand-bright); }
+    .brand .manage { font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.18em;
+                     color: var(--muted); margin-top: 2px; text-decoration: none;
+                     border-bottom: 1px dotted var(--line); width: fit-content; padding-bottom: 1px; }
+    .brand .manage:hover { color: var(--brand-bright); border-bottom-color: var(--brand-bright); }
 
     .search { position: relative; background: var(--ink); border: 1px solid var(--line);
               display: flex; align-items: center; padding: 0 12px; }
@@ -122,6 +126,7 @@
         .topbar { gap: 8px; top: 10px; left: 10px; right: 10px; }
         .brand { padding: 8px 10px; }
         .brand .tagline { display: none; }
+        .brand .manage { display: none; }
         .brand .word { font-size: 14px; }
         .bottom { left: 10px; right: 10px; bottom: 10px; padding: 10px 12px; }
         .row1 .tag { font-size: 10px; }
@@ -147,6 +152,7 @@
         <div class="text">
             <span class="word">addy<span class="accent">pin</span></span>
             <span class="tagline">drop a pin <span class="pop">·</span> get a link</span>
+            <a class="manage" href="/manage">manage my pins →</a>
         </div>
     </div>
     <div class="search" id="search">

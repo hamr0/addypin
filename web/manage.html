@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>addypin — manage</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<style>
+    :root {
+        --brand: #00BCD4; --brand-bright: #1ee0ff;
+        --ink: #0b1426; --ink-2: #142036; --line: #243149; --muted: #8aa0c0;
+        --error: #ff6b6b; --ok: #5ed681;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background: var(--ink);
+                 font-family: ui-monospace, SFMono-Regular, 'JetBrains Mono', Menlo, monospace;
+                 -webkit-font-smoothing: antialiased; color: white; }
+
+    .wrap { max-width: 720px; margin: 0 auto; padding: 24px 20px 48px; }
+    header { display: flex; justify-content: space-between; align-items: center;
+             padding-bottom: 20px; border-bottom: 1px solid var(--line); margin-bottom: 24px; }
+    header a.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: white; }
+    header a.brand img { height: 26px; }
+    header a.brand .word { font-weight: 800; letter-spacing: -0.02em; font-size: 18px; }
+    header a.brand .accent { color: var(--brand-bright); }
+    header .crumb { font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--muted); }
+
+    .state { display: none; }
+    .state.active { display: block; }
+
+    /* ─── Loading ───────────────────────────────────────────────────────────── */
+    #loading { color: var(--muted); text-align: center; padding: 40px 0; font-size: 13px; }
+
+    /* ─── Login form ────────────────────────────────────────────────────────── */
+    #login h1 { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; margin: 0 0 8px; }
+    #login p.lede { color: var(--muted); margin: 0 0 28px; line-height: 1.55; font-size: 14px; }
+    label { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em;
+            margin-bottom: 8px; color: var(--muted); font-weight: 700; }
+    input, button { font: inherit; }
+    input[type=email], input[type=number] {
+        width: 100%; padding: 13px 14px; background: var(--ink-2);
+        border: 1px solid var(--line); border-radius: 8px;
+        color: white; font-size: 15px; outline: none;
+    }
+    input:focus { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(0,188,212,.25); }
+    button.primary { background: var(--brand); color: var(--ink); border: 0;
+                     padding: 14px 22px; border-radius: 8px; font-weight: 800;
+                     text-transform: uppercase; letter-spacing: 0.08em; cursor: pointer;
+                     transition: background .15s; }
+    button.primary:hover:not(:disabled) { background: var(--brand-bright); }
+    button.primary:disabled { background: var(--line); color: var(--muted); cursor: not-allowed; }
+    button.secondary { background: none; border: 1px solid var(--line); color: var(--muted);
+                       padding: 10px 16px; border-radius: 6px; font-size: 12px;
+                       text-transform: uppercase; letter-spacing: 0.08em; cursor: pointer; }
+    button.secondary:hover { color: white; border-color: var(--brand-bright); }
+    button.danger { background: none; border: 1px solid var(--line); color: var(--error);
+                    padding: 10px 16px; border-radius: 6px; font-size: 12px;
+                    text-transform: uppercase; letter-spacing: 0.08em; cursor: pointer; }
+    button.danger:hover { background: var(--error); color: var(--ink); border-color: var(--error); }
+    #login form { max-width: 480px; }
+    #login .field { margin-bottom: 18px; }
+    #login .hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
+    #login .msg { margin-top: 18px; padding: 14px; border-radius: 8px;
+                  font-size: 13px; line-height: 1.5; display: none; }
+    #login .msg.show { display: block; }
+    #login .msg.ok { background: rgba(94,214,129,.08); color: var(--ok); border: 1px solid rgba(94,214,129,.3); }
+    #login .msg.err { background: rgba(255,107,107,.08); color: var(--error); border: 1px solid rgba(255,107,107,.3); }
+
+    /* ─── Pin list ──────────────────────────────────────────────────────────── */
+    #pins h1 { font-size: 22px; margin: 0 0 6px; font-weight: 800; letter-spacing: -0.02em; }
+    #pins p.lede { color: var(--muted); margin: 0 0 22px; font-size: 13px; }
+    .pin { background: var(--ink-2); border: 1px solid var(--line);
+           padding: 16px; margin-bottom: 10px; }
+    .pin .top { display: flex; justify-content: space-between; align-items: center;
+                gap: 12px; flex-wrap: wrap; }
+    .pin .code { font-weight: 800; font-size: 16px; color: var(--brand-bright); letter-spacing: 0.04em; }
+    .pin .coords { font-size: 13px; color: var(--muted); margin-top: 4px; }
+    .pin .coords a { color: var(--brand-bright); text-decoration: none; }
+    .pin .coords a:hover { text-decoration: underline; }
+    .pin .actions { display: flex; gap: 6px; }
+    .pin.editing .edit-form { display: grid; }
+    .pin .edit-form { display: none; grid-template-columns: 1fr 1fr auto auto; gap: 8px;
+                      margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
+    .pin .edit-form input { padding: 10px 12px; font-size: 13px; }
+    .pin .edit-form button.primary { padding: 10px 16px; font-size: 12px; }
+    @media (max-width: 560px) { .pin .edit-form { grid-template-columns: 1fr 1fr; } }
+    #pins .empty { background: var(--ink-2); border: 1px dashed var(--line);
+                   padding: 32px 20px; text-align: center; color: var(--muted); font-size: 13px; }
+    #pins .empty a { color: var(--brand-bright); text-decoration: none; }
+    #pins .empty a:hover { text-decoration: underline; }
+    #pins .footer { margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--line);
+                    display: flex; justify-content: space-between; align-items: center; }
+    #pins .footer a { color: var(--muted); text-decoration: none; font-size: 12px; }
+    #pins .footer a:hover { color: var(--brand-bright); }
+    #pins .footer a.new { color: var(--brand-bright); }
+</style>
+</head>
+<body>
+<div class="wrap">
+    <header>
+        <a class="brand" href="/"><img src="/logo.png" alt=""><span class="word">addy<span class="accent">pin</span></span></a>
+        <span class="crumb">manage</span>
+    </header>
+
+    <div id="loading" class="state active">loading...</div>
+
+    <section id="login" class="state">
+        <h1>Log in to manage your pins.</h1>
+        <p class="lede">Enter your email. We'll send you a magic link — one click and you're in. Works only if you own pins here.</p>
+        <form id="loginForm">
+            <div class="field">
+                <label for="email">Your email</label>
+                <input id="email" type="email" required autocomplete="email" placeholder="you@example.com">
+                <div class="hint">The same email you used when you created a pin.</div>
+            </div>
+            <button id="loginGo" class="primary" type="submit">Send me a link</button>
+            <div id="loginMsg" class="msg"></div>
+        </form>
+    </section>
+
+    <section id="pins" class="state">
+        <h1>Your pins</h1>
+        <p class="lede">Edit coordinates or delete. Deleted shortcodes are retired permanently (they can never be reused).</p>
+        <div id="pinList"></div>
+        <div class="footer">
+            <a href="/" class="new">+ drop another pin</a>
+            <a href="#" id="logout">log out</a>
+        </div>
+    </section>
+</div>
+
+<script>
+// ─── bootstrap ──────────────────────────────────────────────────────────────
+(async () => {
+    const res = await fetch('/api/me/pins');
+    if (res.status === 401) { show('login'); return; }
+    if (!res.ok) { show('login'); return; }
+    const data = await res.json();
+    renderPins(data.pins);
+    show('pins');
+})();
+
+function show(id) {
+    document.querySelectorAll('.state').forEach(s => s.classList.toggle('active', s.id === id));
+}
+
+// ─── login ─────────────────────────────────────────────────────────────────
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('loginGo');
+    const msg = document.getElementById('loginMsg');
+    const email = document.getElementById('email').value.trim();
+    btn.disabled = true; btn.textContent = 'Sending...';
+    msg.className = 'msg'; msg.textContent = '';
+    try {
+        const res = await fetch('/api/login', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ email }),
+        });
+        if (res.status === 202) {
+            msg.className = 'msg ok show';
+            msg.textContent = `If ${email} owns any pins, a login link is on its way. Check your inbox — expires in 15 minutes.`;
+        } else {
+            const data = await res.json().catch(() => ({}));
+            msg.className = 'msg err show';
+            msg.textContent = data.error === 'invalid_email' ? "That email doesn't look right." : 'Something went wrong. Try again.';
+        }
+    } catch {
+        msg.className = 'msg err show';
+        msg.textContent = 'Network error. Try again.';
+    } finally {
+        btn.disabled = false; btn.textContent = 'Send me a link';
+    }
+});
+
+// ─── pin list ──────────────────────────────────────────────────────────────
+function renderPins(pins) {
+    const list = document.getElementById('pinList');
+    list.innerHTML = '';
+    if (pins.length === 0) {
+        list.innerHTML = '<div class="empty">no pins yet · <a href="/">drop one</a></div>';
+        return;
+    }
+    for (const p of pins) list.appendChild(renderPin(p));
+}
+
+function renderPin(p) {
+    const el = document.createElement('div');
+    el.className = 'pin';
+    el.dataset.code = p.shortcode;
+    const host = location.host;
+    el.innerHTML = `
+        <div class="top">
+            <div>
+                <div class="code">${p.shortcode}</div>
+                <div class="coords">
+                    ${p.lat.toFixed(6)}, ${p.lng.toFixed(6)} ·
+                    <a href="/${p.shortcode}" target="_blank">view ↗</a>
+                </div>
+            </div>
+            <div class="actions">
+                <button class="secondary js-edit">edit</button>
+                <button class="danger js-delete">delete</button>
+            </div>
+        </div>
+        <form class="edit-form">
+            <input class="js-lat" type="number" step="any" min="-90" max="90" required value="${p.lat}">
+            <input class="js-lng" type="number" step="any" min="-180" max="180" required value="${p.lng}">
+            <button class="primary" type="submit">save</button>
+            <button class="secondary js-cancel" type="button">cancel</button>
+        </form>`;
+    el.querySelector('.js-edit').addEventListener('click', () => el.classList.toggle('editing'));
+    el.querySelector('.js-cancel').addEventListener('click', () => el.classList.remove('editing'));
+    el.querySelector('.edit-form').addEventListener('submit', (e) => savePin(e, el, p.shortcode));
+    el.querySelector('.js-delete').addEventListener('click', () => deletePin(el, p.shortcode));
+    return el;
+}
+
+async function savePin(e, el, code) {
+    e.preventDefault();
+    const lat = parseFloat(el.querySelector('.js-lat').value);
+    const lng = parseFloat(el.querySelector('.js-lng').value);
+    const res = await fetch(`/api/pins/${encodeURIComponent(code)}`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ lat, lng }),
+    });
+    if (!res.ok) { alert('Save failed. Coordinates must be -90..90 / -180..180.'); return; }
+    const data = await res.json();
+    el.querySelector('.coords').firstChild.textContent = `${data.lat.toFixed(6)}, ${data.lng.toFixed(6)} · `;
+    el.classList.remove('editing');
+}
+
+async function deletePin(el, code) {
+    if (!confirm(`Delete ${code}? The shortcode will be retired permanently — it can never be reused.`)) return;
+    const res = await fetch(`/api/pins/${encodeURIComponent(code)}`, { method: 'DELETE' });
+    if (res.status !== 204) { alert('Delete failed.'); return; }
+    el.remove();
+    if (!document.querySelector('.pin')) {
+        document.getElementById('pinList').innerHTML = '<div class="empty">no pins yet · <a href="/">drop one</a></div>';
+    }
+}
+
+// ─── logout ────────────────────────────────────────────────────────────────
+document.getElementById('logout').addEventListener('click', (e) => {
+    e.preventDefault();
+    document.cookie = 'addypin_session=; Path=/; Max-Age=0; SameSite=Lax';
+    location.reload();
+});
+</script>
+</body>
+</html>

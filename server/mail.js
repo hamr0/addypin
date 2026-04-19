@@ -34,7 +34,21 @@ export function createMailer({ from, fromName = '', transport }) {
         await transport(to, subject, body);
     }
 
-    return { sendConfirmation };
+    async function sendLogin({ to, loginUrl }) {
+        const subject = `Your AddyPin login link`;
+        const body = [
+            `Click to log in and manage your pins:`,
+            ``,
+            loginUrl,
+            ``,
+            `This link expires in 15 minutes and can only be used once.`,
+            ``,
+            `If you didn't request this, ignore the email — no action is needed.`,
+        ].join('\n');
+        await transport(to, subject, body);
+    }
+
+    return { sendConfirmation, sendLogin };
 }
 
 // Format an RFC-5322 message and pipe it into msmtp's stdin.
