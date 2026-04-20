@@ -1,15 +1,34 @@
 # addypin
 
-Turn a GPS coordinate into a short, memorable link.
+**Drop a pin, get a link.**
 
 ```
 https://addypin.com/HOUSE1          ← resolves to lat/lng + 12 map-app buttons
 HOUSE1@addypin.com                   ← email it, get an auto-reply with the same
 ```
 
-No accounts. No tracking. No app to install. Create a pin, share the
-shortcode, done. Anyone with the code can open the location; only you
-(as the creator) can edit or delete it via a magic-link login.
+## What it solves
+
+Sharing a precise place over text, email, or voice is still awkward in
+2026. Coordinates are ugly, Google/Apple/Waze share links are long
+and only open in the app they came from, and permanent "place URLs"
+usually require an account, a pin drop in someone else's app, or a
+third-party URL shortener that phones home on every click.
+
+addypin replaces that with a **six-character handle** you can say out
+loud. `HOUSE1` is the dirt road entrance to a rental with no street
+address. `BBQ22` is the parking lot behind the church. `CLINIC` is
+the obscure clinic door between two storefronts. The recipient opens
+it in **whatever map app they already use** — Google, Apple, Waze,
+Baidu, Yandex, Naver, Neshan, whatever — because addypin translates
+the same coords into a deep link for each of the twelve big map
+apps on the planet.
+
+Same short link works as an email address, so someone who only has
+SMS or a paper flyer can just email the shortcode and get the
+location back. No accounts. No tracking. No app to install. No
+shortcode is ever reused after a pin is retired, so a stale link can
+never silently redirect to a stranger's location.
 
 ---
 
