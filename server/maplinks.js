@@ -1,12 +1,20 @@
 // Pure function: (lat, lng) → { provider: deep-link URL }.
 //
-// 12-app curated portfolio ported from the feature/15-maps branch
-// (commit 8249a59c). Each app's URL was researched + validated. The
-// translation across Western, Chinese, Russian, Indian, and African
-// stacks is the product's geographic moat — see docs/01-product/prd.md.
+// Curated 12-app portfolio. Each URL was researched + validated.
+// The translation across Western, Chinese, Russian, Indian, Korean,
+// Iranian, and African stacks is the product's geographic moat —
+// see docs/01-product/prd.md §13.
 //
 // Chinese maps (Baidu, Amap) require WGS84 → GCJ-02 conversion;
 // see ./coords.js. The conversion is a no-op outside China.
+//
+// Known caveats:
+// - Mappls opens in directions-mode, not place-view (no known marker URL).
+// - Naver's web product is place-centric; coord URLs rely on a
+//   server-side reverse-geocode, which lands cleanly inside Korea
+//   but may show a blank card for non-Korea points. Accepted
+//   tradeoff to cover the Korea gap (Google Maps is legally limited
+//   there). Koreans sharing Korea pins is the dominant use case.
 
 import { wgs84ToGcj02 } from './coords.js';
 
@@ -22,7 +30,7 @@ export const APPS = [
       url: 'https://waze.com/ul?ll={lat},{lon}&navigate=yes',
       requiresConversion: false },
 
-    // Regional champions — developing nations
+    // Regional champions — markets where Google Maps is thin or restricted
     { id: 'mappls',  name: 'Mappls',          icon: 'mappls.png',
       url: 'https://maps.mappls.com/direction?destination={lat},{lon}',
       requiresConversion: false },
@@ -35,16 +43,16 @@ export const APPS = [
     { id: 'yandex',  name: 'Yandex Maps',     icon: 'yandex.png',
       url: 'https://yandex.com/maps/?ll={lon},{lat}&z=15',
       requiresConversion: false },
-    { id: '2gis',    name: '2GIS',            icon: '2gis.png',
-      url: 'https://2gis.com/?center={lon},{lat}&zoom=15',
+    { id: 'naver',   name: 'Naver Map',       icon: 'naver.png',
+      url: 'https://map.naver.com/p/search/{lat},{lon}',
+      requiresConversion: false },
+    { id: 'neshan',  name: 'Neshan',          icon: 'neshan.png',
+      url: 'https://nshn.ir/?lat={lat}&lng={lon}',
       requiresConversion: false },
 
     // Offline / data-constrained
     { id: 'osmand',  name: 'OsmAnd',          icon: 'osmand.ico',
       url: 'https://osmand.net/map#{lat}/{lon}/15',
-      requiresConversion: false },
-    { id: 'here',    name: 'HERE WeGo',       icon: 'here.png',
-      url: 'https://share.here.com/l/{lat},{lon}',
       requiresConversion: false },
 
     // Public transit specialist
@@ -52,7 +60,7 @@ export const APPS = [
       url: 'https://moovitapp.com/?to={lat},{lon}',
       requiresConversion: false },
 
-    // Strategic — Africa, MENA, LatAm
+    // Africa, MENA, LatAm ride-share
     { id: 'yango',   name: 'Yango Maps',      icon: 'yango.png', darkBg: true,
       url: 'https://maps.yango.com/?ll={lon},{lat}&z=15',
       requiresConversion: false },

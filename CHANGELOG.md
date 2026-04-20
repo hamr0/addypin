@@ -5,7 +5,24 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
 
 ## [Unreleased]
 
-Nothing yet.
+### Added
+
+- **Naver Map** in the map-app portfolio — fills the Korea gap
+  (Google Maps is legally limited there for driving/transit, so
+  Koreans default to Naver). URL relies on Naver's reverse-geocode
+  and lands cleanly for Korea points; blank-card for non-Korea is an
+  accepted tradeoff.
+- **Neshan** in the portfolio — fills the Iran gap (Google has thin
+  Iran street data). Clean coord→marker URL via `nshn.ir`.
+
+### Removed
+
+- **HERE WeGo** — legacy Nokia-era, migrated-away user base, <1%
+  realistic tap share. Dead weight in the grid.
+- **2GIS** — overlapped with Yandex for the 99% of non-CIS traffic.
+  Kept Yandex as the CIS generalist.
+- Stale `staging` branch on GitHub (was v1-era continued-work, never
+  shipped, dead since the v2 rewrite).
 
 ---
 

@@ -60,9 +60,19 @@ test('China inputs trigger GCJ-02 shift for Chinese apps only', () => {
 test('lon-first apps put lon before lat in the URL', () => {
     const links = mapLinks(37.7749, -122.4194);
     const yandex = links.find(l => l.id === 'yandex');
-    const twogis = links.find(l => l.id === '2gis');
+    const yango  = links.find(l => l.id === 'yango');
     assert.match(yandex.url, /ll=-122\.4194,37\.7749/);
-    assert.match(twogis.url, /center=-122\.4194,37\.7749/);
+    assert.match(yango.url,  /ll=-122\.4194,37\.7749/);
+});
+
+test('portfolio covers the Korea + Iran gaps', () => {
+    const links = mapLinks(37.5665, 126.9780); // Seoul
+    const naver  = links.find(l => l.id === 'naver');
+    const neshan = links.find(l => l.id === 'neshan');
+    assert.ok(naver,  'naver must be in the portfolio');
+    assert.ok(neshan, 'neshan must be in the portfolio');
+    assert.match(naver.url,  /\/p\/search\/37\.5665,126\.978/);
+    assert.match(neshan.url, /lat=37\.5665&lng=126\.978/);
 });
 
 test('handles edges and zero', () => {

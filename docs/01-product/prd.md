@@ -159,7 +159,9 @@ Both paths are OSS, zero SaaS, no Resend.
 
 ### Map-link shortcuts
 
-Pure function in `server/maplinks.js`: `(lat, lng) → [{ name, url, icon, darkBg? }, ...]`. Twelve providers in the current cut — Google, Apple, Waze, OsmAnd, Organic Maps, Here, TomTom, Yandex, Yango, Mappls, Baidu, Amap. Icons come from the `/maplogos/` static dir. No network calls at link-compose time.
+Pure function in `server/maplinks.js`: `(lat, lng) → [{ name, url, icon, darkBg? }, ...]`. Twelve providers in the current cut — Google, Apple, Waze, Mappls, Baidu, Amap, Yandex, Naver, Neshan, OsmAnd, Moovit, Yango. Icons come from the `/maplogos/` static dir. No network calls at link-compose time.
+
+**Portfolio rationale (2026-04-20):** the list covers Google-dominated markets, China (Baidu + Amap), Russia/CIS (Yandex), India (Mappls), **Korea** (Naver — Google Maps is legally limited there for driving/transit), **Iran** (Neshan — Google has thin Iran street data), offline/privacy (OsmAnd), global transit (Moovit), and ride-share-heavy regions (Yango). HERE WeGo and 2GIS were dropped as dead weight — HERE's user base migrated to Google a decade ago, and 2GIS overlapped Yandex for the 99% of non-CIS traffic. Activity-specialist apps (Komoot, AllTrails, Strava, Citymapper) were deliberately excluded: addypin is a point-sharing tool; those apps share routes or segments, not lat/lng pairs, so their buttons would be decorative.
 
 ## 6. Shortcode rules
 
@@ -260,5 +262,5 @@ Non-negotiable for production cutover. Each item replicates something v1 has run
 - Pin expiry option for privacy-conscious users.
 - Signed audit log of edits (git-style append-only) for the tamper-evidence idea that got cut from v2.
 - Go rewrite of the server if Node proves heavy.
-- **Korea map coverage.** Add Naver Map (or KakaoMap) to the 12-app portfolio in `server/maplinks.js`. Korea is the only major region currently uncovered — Google Maps is legally limited there (no driving/transit directions due to data export restrictions), so the local apps dominate. URL pattern needs validation; the existing `mapLinks()` function takes one new entry, no other changes.
+- ~~**Korea map coverage.**~~ **Done 2026-04-20:** Naver Map added. Uses `https://map.naver.com/p/search/{lat},{lon}` — relies on Naver's server-side reverse-geocode, which lands cleanly on a place card for Korea points and degrades gracefully to a blank result outside. Koreans sharing Korea pins is the dominant use case, so the caveat is accepted rather than a deal-breaker.
 - **Mappls UX caveat.** The canonical Mappls share URL (`https://maps.mappls.com/direction?destination={lat},{lon}`) opens in directions mode — the user is asked for an origin before seeing the destination. Verified across 12+ public repos via GitHub code search; this is the product's intentional default (delivery-driver focus). No `/place/`, `/@lat,lng`, `/marker`, or other place-view URL exists. Alternatives: switch to `/embed?lat=X&lng=Y&zoom=15` (lighter chrome, iframe-style) if a place view becomes essential. v2 ships with the canonical URL; revisit only if Mappls publishes a non-directions place URL.
