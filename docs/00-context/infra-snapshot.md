@@ -55,8 +55,14 @@ Add the pipe transport:
 
 ```
 addypin   unix  -       n       n       -       -       pipe
-  flags=DRhu user=addypin argv=/opt/addypin/inbound-wrapper.sh
+  flags=DRhu user=addypin argv=/opt/addypin/ops/inbound-wrapper.sh
 ```
+
+The wrapper path MUST match where the repo actually places the file
+(`ops/inbound-wrapper.sh`). If the script is moved or renamed, both
+the repo tree and `/etc/postfix/master.cf` on the VPS must be updated
+— mismatch = every inbound email gets deferred with
+"pipe: fatal: pipe_command: execvp ...: No such file or directory".
 
 ### `/etc/postfix/main.cf`
 
@@ -75,7 +81,7 @@ addypin.com  addypin:
 
 Then `postmap /etc/postfix/transport && postfix reload`.
 
-### `/opt/addypin/inbound-wrapper.sh`
+### `/opt/addypin/ops/inbound-wrapper.sh`
 
 ```sh
 #!/usr/bin/env bash
@@ -92,11 +98,11 @@ exec /usr/bin/env node --experimental-sqlite \
 ```sh
 # confirmation auto-reply
 echo -e 'From: me@me.com\nTo: HOUSE1@addypin.com\nSubject: s\n\n' | \
-  sudo -u addypin /opt/addypin/inbound-wrapper.sh
+  sudo -u addypin /opt/addypin/ops/inbound-wrapper.sh
 # expected stderr: {"t":"...","kind":"inbound","action":"sent","type":"shortcode_reply"}
 
 # login magic link
 echo -e 'From: owner@me.com\nTo: login@addypin.com\nSubject: s\n\n' | \
-  sudo -u addypin /opt/addypin/inbound-wrapper.sh
+  sudo -u addypin /opt/addypin/ops/inbound-wrapper.sh
 # expected: action:"sent" type:"login" (if owner@me.com has pins)
 ```

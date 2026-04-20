@@ -208,7 +208,7 @@ On restart, counters reset. Acceptable for v2 scale (~hundreds of requests/day).
 | Crypto | `node:crypto` stdlib (AES-256-GCM, HMAC-SHA256) | No argon2, no bcrypt — we don't store passwords. HMAC with a server key gives indexed lookup (see §4). |
 | Frontend | Plain HTML + vanilla JS + Leaflet (CDN) | Four files. No build step. |
 | Email out | `msmtp` (system binary) → `127.0.0.1:25` local Postfix → OpenDKIM signs → public MX | Zero SaaS, DKIM-aligned. mail-tester 10/10. msmtp config lives at `/etc/msmtprc` with `auth off, tls off` since it only talks to the loopback Postfix. |
-| Email in | Postfix `transport_maps` → pipe → `/opt/addypin/inbound-wrapper.sh` → `node server/inbound-cli.js` | One-shot per message. `addypin.com` is in `relay_domains` so Postfix accepts at RCPT TO then hands off to the pipe. |
+| Email in | Postfix `transport_maps` → pipe → `/opt/addypin/ops/inbound-wrapper.sh` → `node server/inbound-cli.js` | One-shot per message. `addypin.com` is in `relay_domains` so Postfix accepts at RCPT TO then hands off to the pipe. |
 | Session | Signed cookie (HMAC, `ADDYPIN_SIGNING_KEY`). Magic links share the scheme with a 15-min TTL + single-use record. | No session table. 30-day absolute cookie, HttpOnly, SameSite=Lax. |
 | Process mgmt | systemd unit on the VPS | `ProtectSystem=strict`, `ProtectHome`, `PrivateTmp`, `ReadWritePaths` limited to `/var/lib/addypin` and `/var/log/addypin`. |
 | Reverse proxy | nginx + Let's Encrypt (certbot webroot) | TLS termination + HTTP→HTTPS + single `proxy_pass` to `127.0.0.1:3000`. |

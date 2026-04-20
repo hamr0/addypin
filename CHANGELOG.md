@@ -5,6 +5,16 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Fixed
+
+- Postfix pipe wrapper path on the VPS. During the git-based-deploy
+  switchover, the wrapper moved from `/opt/addypin/inbound-wrapper.sh`
+  (historical, outside the repo tree) into `/opt/addypin/ops/inbound-wrapper.sh`
+  (where it lives in the repo). `master.cf` still pointed at the old
+  path and every inbound email deferred with `execvp: No such file or
+  directory`. Fixed `master.cf`, flushed queue, two stuck messages
+  processed. Docs updated so the path stays in sync going forward.
+
 ### Changed
 
 - **Success panel redesign.** After creating a pin:
