@@ -18,6 +18,12 @@ references still resolve.
 - `postfix` — MX for addypin.com. `relay_domains=addypin.com`,
   `transport_maps=hash:/etc/postfix/transport` routes `*@addypin.com`
   through the addypin pipe (`/opt/addypin/ops/inbound-wrapper.sh`).
+  Two RFC-2142 contacts are handled by Postfix *before* the pipe
+  via `virtual_alias_maps=hash:/etc/postfix/virtual`:
+  `postmaster@addypin.com` and `abuse@addypin.com` forward to
+  `avoidaccess@gmail.com`. Needed for SNDS/Postmaster-Tools-type
+  verification flows and for receivers that expect abuse contacts
+  to reach a human.
 - `opendkim` — signs outbound with selector `addypin2026`
   (TXT at `addypin2026._domainkey.addypin.com`).
 - `msmtp` — config at `/etc/msmtprc`, relays to `127.0.0.1:25` Postfix

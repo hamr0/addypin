@@ -5,6 +5,14 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Added
+
+- RFC-2142 mail contacts: `postmaster@addypin.com` and
+  `abuse@addypin.com` now forward to `avoidaccess@gmail.com` via
+  Postfix `virtual_alias_maps` (preempts the pipe transport).
+  Needed for Microsoft SNDS signup verification and any future
+  abuse-contact workflow from receivers.
+
 ### Fixed
 
 - Postfix pipe wrapper path on the VPS. During the git-based-deploy
