@@ -5,6 +5,12 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
 
 ## [Unreleased]
 
+Nothing yet.
+
+---
+
+## [2.0.2] — 2026-04-20
+
 ### Added
 
 - **Naver Map** in the map-app portfolio — fills the Korea gap
@@ -14,15 +20,47 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
   accepted tradeoff.
 - **Neshan** in the portfolio — fills the Iran gap (Google has thin
   Iran street data). Clean coord→marker URL via `nshn.ir`.
+- Git-based deploy to the VPS: a dedicated **read-only ed25519
+  deploy key** (`addypin-vps-deploy`) authorizes
+  `/opt/addypin` as `addypin` user to `git pull` from
+  `github.com/hamr0/addypin` directly. Replaces the previous
+  rsync-only workflow. Private half of the key is DR-archived in
+  pass under `addypin/vps/github_deploy_key`.
+
+### Changed
+
+- VPS `/root/.ssh/authorized_keys` pruned **18 → 2**. Kept only
+  `hamr@chaotic` (laptop) and `addypin-backup@federver` (home
+  server). Every other entry was v1-era (GitHub Actions runners,
+  Replit scaffolding, stale host keys from previous RackNerd VPSes,
+  temporary session keys). Old file archived on-box as
+  `authorized_keys.v1-cruft-2026-04-20`.
+- **SSH password authentication disabled** on the VPS
+  (`PasswordAuthentication no` in `/etc/ssh/sshd_config`). Key-only
+  auth going forward. Recovery path if keys are ever lost is the
+  RackNerd web VNC console (hypervisor-level, independent of SSH) +
+  the VPS root password stashed in pass.
+- Pass tree cleanup:
+  - Added `addypin/vps/github_deploy_key` (private half of the new
+    VPS deploy key).
+  - Fixed `addypin/github/git_url` to point at `hamr0/addypin`
+    instead of the old `amrhas82/addypin` path.
+  - Removed `addypin/ssh/authorized_keys` (stale 1-line snapshot;
+    live VPS has the canonical copy).
+  - Removed `addypin/ssh/password` (password auth disabled —
+    irrelevant).
 
 ### Removed
 
-- **HERE WeGo** — legacy Nokia-era, migrated-away user base, <1%
-  realistic tap share. Dead weight in the grid.
+- **HERE WeGo** from the map portfolio — legacy Nokia-era,
+  migrated-away user base, <1% realistic tap share.
 - **2GIS** — overlapped with Yandex for the 99% of non-CIS traffic.
   Kept Yandex as the CIS generalist.
-- Stale `staging` branch on GitHub (was v1-era continued-work, never
+- Stale `staging` branch on GitHub (v1-era continued-work, never
   shipped, dead since the v2 rewrite).
+- Stale `feature/15-maps` branch (research scaffolding for the
+  v1-era 15→12 map portfolio refinement; the current maplinks.js
+  is the clean outcome).
 
 ---
 

@@ -256,6 +256,13 @@ Non-negotiable for production cutover. Each item replicates something v1 has run
 - **Nginx config.** Reverse proxy + HTTP→HTTPS redirect + wildcard-cert → v2 app port. The subdomain-per-shortcode lookup (`HOUSE1.addypin.com`) is v2.1 work; for v2.0 only the apex is served.
 - **Rollback plan.** Keep the v1 service running on a different port during cutover. If v2 misbehaves in the first 24 h, flip nginx back. Delete v1 only after a stable week.
 
+### Ops posture (as of 2026-04-20, post-shipping)
+
+- **Deploy model:** read-only GitHub deploy key on the VPS authorizes `/opt/addypin` to `git pull` from `github.com/hamr0/addypin`. Canonical deploy = `ssh root@vps 'cd /opt/addypin && sudo -u addypin git pull && systemctl restart addypin'`. Manual by design; automate only if it hurts.
+- **SSH posture:** key-only on the VPS (`PasswordAuthentication no`). Two authorized keys — the primary laptop (`hamr@chaotic`) and the home-server backup user (`addypin-backup@federver`). Every v1-era CI/runner/scaffolding key was pruned.
+- **DR for SSH lockout:** the RackNerd web VNC console is the escape hatch — hypervisor-level, independent of SSH. Auth is the VPS root password stored in pass. If both laptop and federver keys are lost simultaneously AND the pass-store GPG secret is lost, it's a full rebuild from the nightly backup.
+- **Secret store:** everything sensitive (SSH private key, prod env keys, RackNerd panel creds, VPS root password) in `pass` at `addypin/*`. Pass-store is itself a private git repo on GitHub. Single point of failure is the GPG secret key — paperkey or offline-USB backup strongly recommended.
+
 ## 13. Out for later (v2.1+)
 
 - Custom domains on shortcodes.

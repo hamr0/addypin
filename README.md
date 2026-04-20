@@ -86,7 +86,7 @@ production surface.
 | Secrets (dev) | `pass` (GPG password-store), never on disk | `./dev.sh` reads three required keys + config values from pass. First run generates anything missing. |
 | Secrets (prod) | systemd `EnvironmentFile=/etc/addypin/env` mode 640 | Three 32-byte hex keys: `ADDYPIN_DATA_KEY` (AES), `ADDYPIN_EMAIL_KEY` (HMAC), `ADDYPIN_SIGNING_KEY` (HMAC). Losing `DATA_KEY` bricks the DB — backed up in `pass` under `addypin/prod/*`. |
 | Ops monitor | `ops/health-check.sh` + `ops/systemd/addypin-health.{service,timer}` | 15-min oneshot. Checks units, disk, local API, mailq, journal errors, cert expiry, DB sanity. Emails on failure via local Postfix (DKIM-signed). |
-| Deploy | `git pull && npm ci && systemctl restart addypin` | Manual on purpose. Automation comes later if it hurts. |
+| Deploy | `ssh root@vps 'cd /opt/addypin && sudo -u addypin git pull && systemctl restart addypin'` | VPS has a read-only GitHub deploy key; the `addypin` user pulls from `github.com/hamr0/addypin` directly. Manual on purpose. |
 
 ---
 
