@@ -16,7 +16,7 @@
 //
 //   /opt/addypin/inbound-wrapper.sh  →  sources env, execs node on this file
 //
-// See docs/00-context/infra-snapshot.md for the full Postfix config.
+// See docs/00-context/system-state.md for the full Postfix config.
 
 import fs from 'node:fs';
 import path from 'node:path';

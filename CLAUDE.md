@@ -82,7 +82,7 @@ Manual: `git pull && npm ci && systemctl restart addypin` on the VPS. No Docker,
 - **v1 code is on the `v1` branch** — check it out if you need to reference the old implementation. Do not merge from it.
 - **Never reintroduce** Postgres, Docker, Resend, Umami, React, or any paid SaaS without a PRD amendment.
 - **Shortcodes are 6 uppercase alphanumeric characters.** Case-insensitive at input, stored uppercase. User-chosen or server-generated.
-- Nginx handles SSL termination (Let's Encrypt wildcard). VPS infra is documented at [`docs/00-context/infra-snapshot.md`](docs/00-context/infra-snapshot.md).
+- Nginx handles SSL termination (Let's Encrypt wildcard). VPS infra is documented at [`docs/00-context/system-state.md`](docs/00-context/system-state.md).
 
 ## Current state (2026-04-19)
 

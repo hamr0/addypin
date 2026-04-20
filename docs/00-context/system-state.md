@@ -1,6 +1,74 @@
-# Infrastructure Snapshot (as of 2026-04-18)
+# System state (as of 2026-04-20)
 
-Captured at the start of the v2 rewrite. This is what the production VPS and its DNS look like today. Anything not listed here is out of scope or does not exist.
+What's actually running right now, across the VPS, DNS, home-server
+backup host, and the pass-store. Updated after every material
+ops/infra change; superseded sections keep their headings so earlier
+references still resolve.
+
+## Live production state (post-M10)
+
+**VPS** (`155.94.144.191`, RackNerd, AlmaLinux 8.10):
+
+- `addypin.service` (systemd) — Node 22, `/opt/addypin/server/main.js`,
+  listens on `127.0.0.1:3000`. `ProtectSystem=strict`, `ProtectHome`,
+  `PrivateTmp`, `ReadWritePaths=/var/lib/addypin /var/log/addypin`.
+- `nginx` — TLS termination via Let's Encrypt `addypin.com` cert
+  (apex + staging + www, renewed via certbot webroot, valid
+  until 2026-07-18). Proxies HTTP to `127.0.0.1:3000`.
+- `postfix` — MX for addypin.com. `relay_domains=addypin.com`,
+  `transport_maps=hash:/etc/postfix/transport` routes `*@addypin.com`
+  through the addypin pipe (`/opt/addypin/ops/inbound-wrapper.sh`).
+- `opendkim` — signs outbound with selector `addypin2026`
+  (TXT at `addypin2026._domainkey.addypin.com`).
+- `msmtp` — config at `/etc/msmtprc`, relays to `127.0.0.1:25` Postfix
+  with `auth off, tls off`. No external SMTP credentials.
+- `addypin-health.timer` — 15-min oneshot health checks; emails
+  `avoidaccess@gmail.com` on failure.
+- SSH — key-only (`PasswordAuthentication no`), two authorized keys
+  (`hamr@chaotic`, `addypin-backup@federver`).
+
+**DNS (Route 53):**
+
+| Record | Value |
+|---|---|
+| `addypin.com` A | 155.94.144.191 |
+| `addypin.com` MX | 10 mail.addypin.com |
+| `addypin.com` TXT (SPF) | `v=spf1 a:mail.addypin.com -all` |
+| `_dmarc.addypin.com` TXT | `v=DMARC1; p=none; rua=mailto:admin@addypin.com` |
+| `addypin2026._domainkey.addypin.com` TXT | DKIM public key (split into 3 quoted chunks) |
+| `*.addypin.com` A | 155.94.144.191 (wildcard for future `SHORTCODE.addypin.com`) |
+| `mail.addypin.com` A | 155.94.144.191 |
+| `www.addypin.com` A | 155.94.144.191 |
+
+**Home server (federver):**
+
+- `addypin-backup.timer` — daily 03:15 local, pulls
+  `/var/lib/addypin/addypin.db*` + tar of `/etc/letsencrypt/` via
+  `ssh | tar`, rotates 30 days.
+- Kuma HTTP monitor pulls `https://addypin.com/api/health` every 60 s.
+- Kuma Push monitor tracks the backup heartbeat (24 h interval + 1 h
+  grace).
+
+**Pass tree (hamr0/pwd on GitHub, GPG-encrypted):**
+
+```
+addypin/
+├── prod/   ← VPS env keys (DR; match live /etc/addypin/env)
+├── server/ ← dev env keys (./dev.sh reads these)
+├── ssh/    ← laptop → VPS SSH key
+└── vps/
+    ├── federver_backup_key ← federver → VPS (DR)
+    └── github_deploy_key   ← VPS → GitHub read-only deploy key (DR)
+```
+
+**Live data state:** single pin (`1MHERE`) for smoke testing.
+
+---
+
+## Historical: pre-rewrite infrastructure snapshot (2026-04-18)
+
+Captured at the start of the v2 rewrite. Preserved verbatim below
+so older log entries that reference "the snapshot" still parse.
 
 ## DNS (addypin.com)
 
