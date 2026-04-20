@@ -39,7 +39,7 @@ references still resolve.
 |---|---|
 | `addypin.com` A | 155.94.144.191 |
 | `addypin.com` MX | 10 mail.addypin.com |
-| `addypin.com` TXT (SPF) | `v=spf1 a:mail.addypin.com -all` |
+| `addypin.com` TXT | Two values on one record: `v=spf1 a:mail.addypin.com -all` + `google-site-verification=...` (for Postmaster Tools) |
 | `_dmarc.addypin.com` TXT | `v=DMARC1; p=none; rua=mailto:admin@addypin.com` |
 | `addypin2026._domainkey.addypin.com` TXT | DKIM public key (split into 3 quoted chunks) |
 | `*.addypin.com` A | 155.94.144.191 (wildcard for future `SHORTCODE.addypin.com`) |

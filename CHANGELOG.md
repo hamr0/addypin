@@ -12,6 +12,14 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
   Postfix `virtual_alias_maps` (preempts the pipe transport).
   Needed for Microsoft SNDS signup verification and any future
   abuse-contact workflow from receivers.
+- Deliverability-reputation dashboards enrolled:
+  - **Microsoft SNDS + JMRP** — verified via `abuse@addypin.com`.
+    Populates per-IP reputation data; JMRP emails our abuse contact
+    on every user-side junk-mark. ~days to start seeing data.
+  - **Google Postmaster Tools** — verified via a second apex TXT
+    (`google-site-verification=...`), coexisting with the SPF TXT
+    as separate quoted strings on the same record. Shows Gmail-side
+    reputation, spam-complaint rate, and auth pass rates.
 
 ### Fixed
 
