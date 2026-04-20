@@ -5,6 +5,12 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
 
 ## [Unreleased]
 
+Nothing yet.
+
+---
+
+## [2.0.1] — 2026-04-20
+
 ### Added
 
 - Home-server backup pipeline (`ops/homeserver/`): daily at 03:15
@@ -13,6 +19,12 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
 - Kuma-based monitoring: HTTP pull for site uptime, Push for backup
   heartbeat. First full run 2026-04-19: 656 KB, 10 s wall, both
   monitors green.
+
+### Changed
+
+- SPF hardened from `~all` to `-all` on `addypin.com` TXT record
+  after 24 h of clean DKIM-aligned traffic. mail-tester remains
+  **10/10** post-tighten. M10 fully shipped.
 
 ### Fixed
 

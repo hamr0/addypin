@@ -1,6 +1,6 @@
 # addypin v2 — Product Requirements
 
-**Status:** In production rollout · **Branch:** `main` (v1 preserved on `v1` branch) · **Last updated:** 2026-04-19
+**Status:** Shipped 2026-04-20 · **Branch:** `main` (v1 preserved on `v1` branch) · **Last updated:** 2026-04-20
 
 ## Implementation status (as of 2026-04-19)
 
@@ -15,7 +15,7 @@
 | M7 | Magic-link login + `/manage` + edit/delete | ✅ shipped |
 | M8 | Email in (Postfix pipe, `login@`/`SHORTCODE@`/`resend@`) | ✅ shipped |
 | M9 | Expiry cleanup worker | ✅ shipped |
-| M10 | Deploy to VPS + ops must-haves (§14) | 🚧 in rollout — see `docs/03-logs/m10-deploy-log.md` |
+| M10 | Deploy to VPS + ops must-haves (§14) | ✅ shipped 2026-04-20 — see `docs/03-logs/m10-deploy-log.md` |
 
 No runtime dependencies have been added at any milestone. `node:sqlite` + `node:crypto` + `node:http` cover every need the design calls for.
 

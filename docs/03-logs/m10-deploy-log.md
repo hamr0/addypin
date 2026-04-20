@@ -217,6 +217,20 @@ deployed on federver.
 Remaining M10 items: Phase 3h only (SPF `~all` → `-all`, deferred
 ~24 h to watch DKIM stay stable).
 
+### Phase 3h — SPF hardened to `-all` (done, 2026-04-20)
+
+- Route 53 TXT for `addypin.com` UPSERT'd via AWS CloudShell:
+  `"v=spf1 a:mail.addypin.com ~all"` → `"v=spf1 a:mail.addypin.com -all"`
+- Propagation verified on 8.8.8.8 and 1.1.1.1.
+- Pre-flight: 20 DKIM signs + 28 deliveries in the prior 24 h, zero
+  new failures since the `/etc/msmtprc` fix. All services green,
+  cert 89 days valid.
+- Post-flight mail-tester probe through the usual msmtp→Postfix→
+  OpenDKIM path: **10/10** (DKIM pass, SPF pass, DMARC pass, zero
+  blacklists) — confirmed the strict SPF didn't break alignment.
+
+**M10 fully shipped.**
+
 ### Phase 3f (partial) — Ops monitor (done, 2026-04-19 session 2)
 
 Ported the gitdone health-check pattern (15-min oneshot+timer, email-on-fail).
