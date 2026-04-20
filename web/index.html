@@ -78,12 +78,20 @@
               font-size: 10px; text-transform: uppercase; letter-spacing: 0.18em; }
     .banner .left { color: var(--muted); }
     .banner .left .pop { color: var(--brand-bright); margin: 0 2px; }
-    .banner a.right { background: var(--brand); color: var(--ink);
-                      padding: 5px 10px; font-weight: 800; letter-spacing: 0.1em;
-                      text-decoration: none; white-space: nowrap;
-                      transition: background .15s, transform .05s; }
-    .banner a.right:hover { background: var(--brand-bright); }
-    .banner a.right:active { transform: translateY(1px); }
+    .banner-actions { display: flex; align-items: center; gap: 6px; }
+    .banner .right { background: var(--brand); color: var(--ink);
+                     padding: 5px 10px; font: inherit; font-weight: 800;
+                     font-size: inherit; letter-spacing: 0.1em;
+                     text-decoration: none; white-space: nowrap; border: 0; cursor: pointer;
+                     transition: background .15s, transform .05s; }
+    .banner .right:hover { background: var(--brand-bright); }
+    .banner .right:active { transform: translateY(1px); }
+    .banner .right.secondary { background: var(--ink-2); color: var(--muted);
+                               border: 1px solid var(--line); display: none; }
+    .banner .right.secondary:hover { color: white; border-color: var(--brand-bright);
+                                     background: var(--ink-2); }
+    /* "drop another" only appears in the success state */
+    .bottom.done .banner .right.secondary { display: inline-block; }
 
     .row1 { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     .row1 .tag { font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em;
@@ -119,24 +127,27 @@
     .bottom.done .expand .footnote,
     .bottom.done .expand .errmsg { display: none; }
     .bottom.done .expand .success { display: block; }
-    .success .links { display: grid; gap: 8px; margin-top: 12px; }
-    .success .link-row { display: grid; grid-template-columns: 78px 1fr auto; gap: 10px;
-                        align-items: center; padding: 10px 12px;
-                        background: var(--ink-2); border: 1px solid var(--line); }
-    .success .link-row .label { font-size: 11px; text-transform: uppercase;
-                                letter-spacing: 0.12em; color: var(--brand-bright); font-weight: 700; }
-    .success .link-row .val { font-size: 13px; word-break: break-all; }
-    .success .link-row .copy { background: none; border: 1px solid var(--line);
-                               color: var(--muted); padding: 6px 10px; font: inherit; font-size: 11px;
-                               cursor: pointer; text-transform: uppercase; letter-spacing: 0.08em; }
-    .success .link-row .copy:hover { color: white; border-color: var(--brand-bright); }
-    .success .link-row .copy.done { color: var(--brand-bright); border-color: var(--brand-bright); }
-    .success .note { margin-top: 14px; font-size: 12px; color: var(--muted); text-align: center; line-height: 1.5; }
-    .success .note .pop { color: var(--brand-bright); }
-    .success .new { margin-top: 14px; width: 100%; background: none; color: var(--muted);
-                    border: 1px solid var(--line); padding: 10px; font: inherit; font-size: 12px;
-                    text-transform: uppercase; letter-spacing: 0.08em; cursor: pointer; }
-    .success .new:hover { color: white; border-color: var(--brand-bright); }
+    .success .links { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+    .success .link-card { display: flex; align-items: center; gap: 10px;
+                          padding: 8px 12px; text-align: left;
+                          background: var(--ink-2); border: 1px solid var(--line);
+                          color: white; font: inherit; cursor: pointer;
+                          transition: border-color .15s, background .15s; }
+    .success .link-card:hover { border-color: var(--brand-bright); }
+    .success .link-card:active { transform: translateY(1px); }
+    .success .link-card.copied { border-color: var(--brand-bright); background: var(--ink); }
+    .success .link-card .label { font-size: 10px; text-transform: uppercase;
+                                 letter-spacing: 0.14em; color: var(--brand-bright);
+                                 font-weight: 700; flex-shrink: 0; }
+    .success .link-card .val { font-size: 12px; word-break: break-all;
+                               flex: 1; min-width: 0; }
+    .success .link-card.copied .val::after { content: '  ✓ copied';
+                                             color: var(--brand-bright); font-size: 10px;
+                                             letter-spacing: 0.12em; text-transform: uppercase;
+                                             margin-left: 6px; white-space: nowrap; }
+    .success .note { margin-top: 8px; font-size: 10px; color: var(--muted);
+                     text-align: center; letter-spacing: 0.1em; text-transform: uppercase; }
+    .success .note .pop { color: var(--brand-bright); margin: 0 3px; }
 
     @media (max-width: 720px) {
         .topbar { gap: 8px; top: 10px; left: 10px; right: 10px;
@@ -149,7 +160,8 @@
         .bottom { left: 10px; right: 10px; bottom: 10px; padding: 10px 12px;
                   max-height: calc(100vh - 130px); overflow-y: auto; }
         .banner { font-size: 9px; letter-spacing: 0.12em; padding-bottom: 6px; margin-bottom: 6px; gap: 8px; }
-        .banner a.right { padding: 4px 8px; font-size: 9px; letter-spacing: 0.06em; }
+        .banner .right { padding: 4px 8px; font-size: 9px; letter-spacing: 0.06em; }
+        .banner-actions { gap: 4px; }
         .row1 .tag { font-size: 10px; }
         .row1 .coords { font-size: 13px; }
         .row2 { grid-template-columns: 1fr 1fr;
@@ -162,14 +174,12 @@
         input.field, .search input { font-size: 16px; }
         .bottom.active .expand { max-height: 340px; margin-top: 10px; }
         .footnote { display: none; }
-        /* Compact success panel so web+email cards don't eat the screen. */
-        .success .link-row { grid-template-columns: 54px 1fr auto; gap: 8px;
-                             padding: 8px 10px; align-items: center; }
-        .success .link-row .label { font-size: 10px; }
-        .success .link-row .val { font-size: 12px; }
-        .success .link-row .copy { padding: 4px 8px; font-size: 10px; }
-        .success .note { margin-top: 10px; font-size: 11px; }
-        .success .new { margin-top: 10px; padding: 8px; font-size: 11px; }
+        /* Stack success cards on mobile — one per row — so vals stay readable. */
+        .success .links { grid-template-columns: 1fr; gap: 6px; }
+        .success .link-card { padding: 7px 10px; }
+        .success .link-card .label { font-size: 9px; }
+        .success .link-card .val { font-size: 12px; }
+        .success .note { margin-top: 8px; font-size: 9px; }
         .leaflet-bottom.leaflet-right { bottom: 88px !important; }
     }
 </style>
@@ -201,7 +211,10 @@
 <form class="bottom" id="bottom">
     <div class="banner">
         <span class="left">drop a pin <span class="pop">·</span> get a link</span>
-        <a class="right" href="/manage">manage my pins →</a>
+        <div class="banner-actions">
+            <button type="button" class="right secondary" id="newPin">drop another</button>
+            <a class="right" href="/manage">manage my pins →</a>
+        </div>
     </div>
     <div class="row1">
         <span class="tag">Pin</span>
@@ -217,19 +230,16 @@
         <div class="footnote">no accounts <span class="dot">·</span> no tracking <span class="dot">·</span> open source</div>
         <div class="success" id="success">
             <div class="links">
-                <div class="link-row">
+                <button type="button" class="link-card" id="webCard">
                     <span class="label">Web</span>
                     <span class="val" id="webLink"></span>
-                    <button type="button" class="copy" data-copy="webLink">Copy</button>
-                </div>
-                <div class="link-row">
+                </button>
+                <button type="button" class="link-card" id="emailCard">
                     <span class="label">Email</span>
                     <span class="val" id="emailLink"></span>
-                    <button type="button" class="copy" data-copy="emailLink">Copy</button>
-                </div>
+                </button>
             </div>
-            <div class="note">check your inbox <span class="pop">·</span> click the magic link to confirm <span class="pop">·</span> 72h window</div>
-            <button type="button" class="new" id="newPin">Drop another pin</button>
+            <div class="note">tap to copy <span class="pop">·</span> magic link in inbox <span class="pop">·</span> 72h to confirm</div>
         </div>
     </div>
 </form>
@@ -393,13 +403,15 @@ function showSuccess(shortcode) {
     document.getElementById('emailLink').textContent = `${shortcode}@${host.replace(/^www\./, '')}`;
     document.getElementById('bottom').classList.add('done');
 }
-document.querySelectorAll('.copy').forEach(btn => btn.addEventListener('click', async () => {
-    const targetId = btn.dataset.copy;
-    const text = document.getElementById(targetId).textContent;
-    try { await navigator.clipboard.writeText(text); } catch { return; }
-    btn.classList.add('done'); btn.textContent = 'Copied';
-    setTimeout(() => { btn.classList.remove('done'); btn.textContent = 'Copy'; }, 1600);
-}));
+// Whole-card tap-to-copy. No separate copy button.
+for (const card of document.querySelectorAll('.link-card')) {
+    card.addEventListener('click', async () => {
+        const val = card.querySelector('.val').textContent;
+        try { await navigator.clipboard.writeText(val); } catch { return; }
+        card.classList.add('copied');
+        setTimeout(() => card.classList.remove('copied'), 1600);
+    });
+}
 document.getElementById('newPin').addEventListener('click', () => {
     document.getElementById('bottom').classList.remove('done');
     document.getElementById('code').value = '';

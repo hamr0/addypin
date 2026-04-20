@@ -5,7 +5,19 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
 
 ## [Unreleased]
 
-Nothing yet.
+### Changed
+
+- **Success panel redesign.** After creating a pin:
+  - "Drop another pin" button moved from a standalone bottom row
+    into the top banner, next to "Manage my pins →". Only shows in
+    the success state.
+  - Web + email link rows collapsed into two side-by-side tap-to-copy
+    cards (stacked on mobile). Entire card is the click target — the
+    separate "COPY" button is gone. Cards flash `✓ COPIED` inline on
+    successful clipboard write.
+  - Confirmation note compressed to one small uppercase line
+    (`TAP TO COPY · MAGIC LINK IN INBOX · 72H TO CONFIRM`).
+  - Net vertical-space reduction: ~40%.
 
 ---
 
