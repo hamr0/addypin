@@ -5,6 +5,26 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Added
+
+- **`ops/deploy.sh` + `docs/04-process/deploy.md`.** Manual deploy
+  is no longer a tribal-knowledge incantation — one script enforces
+  the gate (on `main`, clean tree, in sync with origin, tests
+  green) before SSHing the VPS and refusing to deploy onto a dirty
+  remote tree. Killed the prior failure mode where the VPS drifted
+  onto an orphan local branch with a hot-patched `web/index.html`
+  that was never reconciled with `origin/main`.
+
+### Fixed
+
+- **VPS branch reconciled.** Live box was on a local `v2-rewrite`
+  branch (renamed to `main` upstream months ago) with the success-
+  panel redesign hot-patched into `web/index.html` directly on
+  prod. Working-tree contents already matched `origin/main`, so
+  `git checkout -f -B main origin/main` absorbed cleanly. Stale
+  `v2-rewrite` branch deleted. Live HEAD now tracks `origin/main`
+  the way the docs always claimed it did.
+
 ### Changed
 
 - **Pin lookup page: collapsed map-app list.** The 12-app grid was

@@ -45,35 +45,21 @@ the *what* is in the diff.
 
 ## Deploy
 
+See [`deploy.md`](./deploy.md) for the full runbook. TL;DR:
+
 ```bash
-ssh -i /dev/shm/addypin-ssh/id root@$(pass show addypin/ssh/host | head -1) \
-  'cd /opt/addypin && sudo -u addypin git pull && systemctl restart addypin'
+./ops/deploy.sh
 ```
 
-That's it. The VPS pulls directly from `github.com/hamr0/addypin`
-via a read-only SSH deploy key (DR copy in
-`pass addypin/vps/github_deploy_key`). Manual on purpose.
+The script enforces pre-flight (on `main`, clean tree, in sync with
+origin, tests green) and refuses to deploy if any gate fails. VPS
+pulls from `github.com/hamr0/addypin` via a read-only SSH deploy
+key. No CI/CD — manual on purpose.
 
 **If the deploy fails:** check `journalctl -u addypin -n 50` on
-the VPS first. If it's a migration issue (e.g. schema change),
-see `server/db.js applyMigrations` for the pattern — we use
-`ALTER TABLE … ADD COLUMN` wrapped in a "swallow duplicate-column"
-guard so restarts are idempotent.
-
-## Hotfix that can't wait for a commit+push cycle
-
-Rare, but if it happens:
-
-```bash
-rsync -az -e "ssh -i /dev/shm/addypin-ssh/id" \
-  server/<file>.js root@vps:/opt/addypin/server/
-ssh -i /dev/shm/addypin-ssh/id root@vps \
-  'chown addypin:addypin /opt/addypin/server/<file>.js && systemctl restart addypin'
-```
-
-Then commit + push so the VPS `git pull` stays a no-op on the next
-normal deploy. Don't leave the VPS ahead of `origin/main` — git
-will eventually complain about dirty tree.
+the VPS. Migration issues follow the `applyMigrations` pattern in
+`server/db.js` — `ALTER TABLE … ADD COLUMN` wrapped in a "swallow
+duplicate-column" guard so restarts are idempotent.
 
 ## Secrets
 
