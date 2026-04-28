@@ -5,6 +5,23 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Changed
+
+- **Pin lookup page: collapsed map-app list.** The 12-app grid was
+  dominating the viewport on mobile. Now Google Maps + Apple Maps
+  render up-front and the remaining 10 apps live behind a native
+  `<details>` disclosure ("Show 10 more ▾", chevron rotates on open).
+  No JS framework, no dependency — just the browser's built-in
+  widget.
+- **iOS Apple Maps deep link.** On iOS the Apple Maps tile now uses
+  `maps://?q=lat,lng` instead of `https://maps.apple.com/...` so the
+  native Maps.app actually launches when the click originates from
+  an in-app browser (Mail, Slack, etc.) where universal-link routing
+  is suppressed. Other tiles unchanged — `https://` URLs already
+  hand off to native apps via universal links on the happy path,
+  and there's no clean per-app override that works without an app
+  installed.
+
 ### Added
 
 - RFC-2142 mail contacts: `postmaster@addypin.com` and

@@ -64,6 +64,17 @@
     .links a .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis;
                    white-space: nowrap; }
 
+    .more { margin-top: 8px; }
+    .more > summary { list-style: none; cursor: pointer; padding: 8px 4px;
+                      font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em;
+                      color: var(--muted); font-weight: 700;
+                      display: flex; align-items: center; gap: 6px; user-select: none; }
+    .more > summary::-webkit-details-marker { display: none; }
+    .more > summary:hover { color: var(--brand-bright); }
+    .more > summary .chev { display: inline-block; transition: transform .15s; }
+    .more[open] > summary .chev { transform: rotate(180deg); }
+    .more > .links { margin-top: 6px; }
+
     .state { position: absolute; inset: 0; z-index: 1000; display: grid; place-items: center;
              background: var(--ink); padding: 24px; text-align: center; }
     .state h1 { font-size: 36px; margin: 0 0 8px; color: var(--brand-bright); letter-spacing: -0.02em; }
@@ -114,7 +125,11 @@
                 <div class="coords" id="coords"></div>
             </div>
         </div>
-        <div class="links" id="links"></div>
+        <div class="links" id="linksTop"></div>
+        <details class="more" id="more">
+            <summary><span class="chev">▾</span><span id="moreLabel">Show more</span></summary>
+            <div class="links" id="linksRest"></div>
+        </details>
     </div>
 </div>
 
@@ -152,18 +167,30 @@ function showPin({ lat, lng, mapLinks }) {
         { attribution: '© OpenStreetMap', maxZoom: 19 }).addTo(map);
     L.marker([lat, lng]).addTo(map);
 
-    const links = document.getElementById('links');
-    for (const link of mapLinks) {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    const top = document.getElementById('linksTop');
+    const rest = document.getElementById('linksRest');
+    mapLinks.forEach((link, i) => {
         const a = document.createElement('a');
-        a.href = link.url; a.target = '_blank'; a.rel = 'noopener noreferrer';
+        let href = link.url;
+        // iOS: Apple Maps native scheme opens the app reliably; web URL
+        // sometimes lands in Safari instead of Maps.app from in-app browsers.
+        if (isIOS && link.id === 'apple') {
+            href = `maps://?q=${lat},${lng}`;
+        }
+        a.href = href; a.target = '_blank'; a.rel = 'noopener noreferrer';
         const img = document.createElement('img');
         img.src = link.icon; img.alt = '';
         if (link.darkBg) img.classList.add('dark');
         const nm = document.createElement('span');
         nm.className = 'nm'; nm.textContent = link.name;
         a.append(img, nm);
-        links.appendChild(a);
-    }
+        (i < 2 ? top : rest).appendChild(a);
+    });
+    const hidden = mapLinks.length - 2;
+    document.getElementById('moreLabel').textContent =
+        hidden > 0 ? `Show ${hidden} more` : '';
+    if (hidden <= 0) document.getElementById('more').style.display = 'none';
 }
 
 document.getElementById('copyUrl').addEventListener('click', async (e) => {
