@@ -203,9 +203,22 @@ function showPin({ lat, lng, mapLinks }) {
     if (hidden <= 0) document.getElementById('more').style.display = 'none';
 }
 
+// Always copy the canonical subdomain form (`CODE.addypin.com`) when on
+// a real host — even if the visitor arrived via path or via the
+// post-confirm redirect that lands on `addypin.com/CODE?confirmed=1`.
+// On localhost dev, fall back to whatever URL is in the bar (subdomain
+// resolution there would need /etc/hosts hacks).
+function canonicalUrl() {
+    const host = location.host;
+    const isLocal = /^(localhost|127\.|\[)/.test(host) || host.includes(':');
+    if (isLocal) return location.href;
+    const baseDomain = host.replace(/^www\./, '').replace(/^[A-Za-z0-9]{6}\./, '');
+    return `${location.protocol}//${code}.${baseDomain}/`;
+}
+
 document.getElementById('copyUrl').addEventListener('click', async (e) => {
     const btn = e.currentTarget;
-    try { await navigator.clipboard.writeText(location.href); } catch { return; }
+    try { await navigator.clipboard.writeText(canonicalUrl()); } catch { return; }
     btn.classList.add('done'); btn.textContent = 'Copied';
     setTimeout(() => { btn.classList.remove('done'); btn.textContent = 'Copy URL'; }, 1600);
 });
