@@ -5,7 +5,7 @@
   "type": "module",
   "description": "Location sharing via short links. v2 rewrite.",
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=22.5.0"
   },
   "scripts": {
     "start": "node --experimental-sqlite server/main.js",
@@ -13,6 +13,6 @@
     "test": "node --experimental-sqlite --test --test-reporter=spec \"server/**/*.test.js\""
   },
   "dependencies": {
-    "knowless": "^0.1.10"
+    "knowless": "^0.2.0"
   }
 }
