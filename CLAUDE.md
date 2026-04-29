@@ -20,18 +20,18 @@ addypin is a location sharing service that turns GPS coordinates into short, mem
 
 For full development and testing standards, see `.claude/memory/AGENT_RULES.md`.
 
-## Tech stack (v2 target)
+## Tech stack
 
-- **Runtime:** Node.js 20
-- **Web framework:** Minimal Express (or native `node:http` if it fits)
-- **DB:** SQLite via `better-sqlite3` — one file, two tables
+- **Runtime:** Node.js 22 (`engines.node >=22.5.0`)
+- **Web framework:** Native `node:http` + ~80-line custom router
+- **DB:** `node:sqlite` (`--experimental-sqlite`) — `data/addypin.db` for pins, `data/knowless.db` for handles/tokens/sessions. Both via the same driver as of `knowless@0.2.0`; files stay separate so the two domains have independent backup/wipe/migration lifecycles.
 - **Crypto:** `node:crypto` stdlib (AES-256-GCM for coords + the encrypted-email blob in the unconfirmed window)
-- **Auth + auth-mail:** [`knowless`](https://github.com/hamr0/knowless) (since M11). Owns magic-link round-trip, sham-work timing equivalence, single-use SHA-256-hashed token store, session cookies, and SMTP submission for auth mail. Ships its own SQLite file at `data/knowless.db` (separate driver, separate handle from `data/addypin.db`). Pulls in `nodemailer` + `better-sqlite3` as transitives — the only runtime deps in the tree.
+- **Auth + auth-mail:** [`knowless`](https://github.com/hamr0/knowless) (since M11, on `0.2.0` since the cutover). Owns magic-link round-trip, sham-work timing equivalence, single-use SHA-256-hashed token store, session cookies, and SMTP submission for auth mail. One transitive runtime dep (`nodemailer`) — zero native compiles in the tree.
 - **Frontend:** Plain HTML + vanilla JS + Leaflet (CDN). No React, no Vite, no Tailwind build step.
 - **Email out (non-auth):** `msmtp` system binary via `child_process` for the `SHORTCODE@` auto-reply.
 - **Email in:** Postfix `virtual_alias_maps` → pipe transport to a Node script (instantiates its own knowless instance per message).
 - **Process:** systemd unit on the VPS. No Docker, no Compose.
-- **Reverse proxy:** Existing nginx with Let's Encrypt wildcard cert for `*.addypin.com`.
+- **Reverse proxy:** nginx + Let's Encrypt wildcard cert (`certbot --dns-route53`, auto-renewed). Two HTTPS server blocks: apex (`addypin.com`) and `*.addypin.com` (rewrites `/` → `/SHORTCODE` so subdomain and path forms both serve `pin.html`).
 
 ## Commands
 
@@ -59,7 +59,7 @@ Production / VPS uses environment variables loaded from a systemd `EnvironmentFi
 ## Key constraints
 
 1. **Minimum data.** Only lat/lng is stored per pin (encrypted). No labels. No analytics. No session table.
-2. **Encrypted coords, HMAC-fingerprinted owner email.** Two server-held secrets in env vars: `ADDYPIN_DATA_KEY` (AES-256) and `ADDYPIN_EMAIL_KEY` (HMAC). See PRD §4.
+2. **Encrypted coords, HMAC-derived owner handles.** Two server-held secrets in env vars: `ADDYPIN_DATA_KEY` (AES-256, coords + unconfirmed-window email) and `KNOWLESS_SECRET` (HMAC, handle derivation + cookie signing). See PRD §4.
 3. **Shortcodes are never reusable.** Deleted or expired codes are retired permanently (see PRD §6 + `retired_shortcodes` table).
 4. **Pin expiry.** Unconfirmed pins live 72 h, then auto-delete. Confirmed pins are permanent until owner deletes them.
 5. **All management via magic link.** No passwords, no OAuth. Login flow: enter email on web form OR email `login@addypin.com` → magic link sent → click → land on `/manage` with a 30-day signed cookie.
@@ -83,8 +83,8 @@ Manual: `git pull && npm ci && systemctl restart addypin` on the VPS. No Docker,
 - **v1 code is on the `v1` branch** — check it out if you need to reference the old implementation. Do not merge from it.
 - **Never reintroduce** Postgres, Docker, Resend, Umami, React, or any paid SaaS without a PRD amendment.
 - **Shortcodes are 6 uppercase alphanumeric characters.** Case-insensitive at input, stored uppercase. User-chosen or server-generated.
-- Nginx handles SSL termination (Let's Encrypt wildcard). VPS infra is documented at [`docs/00-context/system-state.md`](docs/00-context/system-state.md).
+- Nginx handles SSL termination via the wildcard cert at `/etc/letsencrypt/live/addypin.com-0001/`. Wildcard renewal uses the `certbot-dns-route53` plugin — AWS creds at `/root/.aws/credentials` (chmod 600), IAM creds in `pass` at `addypin/prod/aws_r53_ssl_key` and `addypin/prod/aws_r53_ssl`. VPS infra: [`docs/00-context/system-state.md`](docs/00-context/system-state.md).
 
-## Current state (2026-04-19)
+## Current state (2026-04-29)
 
-M1–M9 shipped and tested locally. M10 (VPS cutover) is mid-rollout on the live box — see `docs/03-logs/m10-deploy-log.md` for phase-by-phase status. The live addypin.com now serves v2 behind nginx with a renewed cert; Postfix inbound + OpenDKIM signing + ops monitor are wired up. Remaining: DNS DKIM TXT publish, end-to-end smoke, off-VPS backup/watchdog.
+M1–M11 shipped. Live `https://addypin.com` and `https://SHORTCODE.addypin.com` both resolve, knowless@0.2.0 backs the auth flow, wildcard cert renewed (auto-renewal via `certbot-renew.timer`). Path-based URLs (`addypin.com/SHORTCODE`) still resolve so old links don't break. Pending tail: tighten the IAM policy from `AmazonRoute53FullAccess` to a scoped inline policy on hosted zone `Z1CHOY92OEU194`; off-VPS backup/watchdog.
