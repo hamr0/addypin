@@ -44,6 +44,7 @@ const auth = knowless({
     secret: cfg.knowlessSecret,
     baseUrl: cfg.baseUrl || `http://localhost:${cfg.port}`,
     from: cfg.mailFromAddress,
+    fromName: cfg.mailFromName,  // AF-27: From: addypin <noreply@addypin.com>
     dbPath: path.join(cfg.dataDir, 'knowless.db'),
     cookieName: 'addypin_session',
     cookieDomain: hostnameOf(cfg.baseUrl) || undefined,

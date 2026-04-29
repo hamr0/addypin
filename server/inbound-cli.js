@@ -56,6 +56,7 @@ const auth = knowless({
     secret: cfg.knowlessSecret,
     baseUrl: cfg.baseUrl || 'https://addypin.com',
     from: cfg.mailFromAddress,
+    fromName: cfg.mailFromName,  // AF-27: display name on From: header
     dbPath: path.join(cfg.dataDir, 'knowless.db'),
     smtpHost: 'localhost',
     smtpPort: 25,
