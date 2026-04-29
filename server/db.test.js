@@ -11,12 +11,17 @@ function blob(n = 32) {
     return crypto.randomBytes(n);
 }
 
+// 64-char lowercase hex — matches knowless's deriveHandle output shape.
+function handle() {
+    return crypto.randomBytes(32).toString('hex');
+}
+
 function samplePin(overrides = {}) {
     return {
         shortcode: overrides.shortcode ?? 'HOUSE1',
         ciphertext: overrides.ciphertext ?? blob(48),
         iv: overrides.iv ?? blob(12),
-        fingerprint: overrides.fingerprint ?? blob(32),
+        ownerHandle: overrides.ownerHandle ?? handle(),
         status: overrides.status ?? 'confirmed',
         createdAt: overrides.createdAt ?? 1000,
         expiresAt: overrides.expiresAt ?? null,
@@ -29,7 +34,6 @@ function samplePin(overrides = {}) {
 test('init is idempotent — opening the same path twice does not error', () => {
     const db1 = createDb({ path: ':memory:' });
     db1.close();
-    // A separate :memory: db won't share state, but this proves init runs cleanly twice.
     const db2 = createDb({ path: ':memory:' });
     db2.close();
 });
@@ -44,14 +48,15 @@ test('insertPin → getPinByShortcode round-trips a confirmed pin', () => {
     assert.equal(got.shortcode, 'HOUSE1');
     assert.deepEqual(got.ciphertext, p.ciphertext);
     assert.deepEqual(got.iv, p.iv);
-    assert.deepEqual(got.fingerprint, p.fingerprint);
+    assert.equal(got.ownerHandle, p.ownerHandle);
     assert.equal(got.status, 'confirmed');
     assert.equal(got.createdAt, 1000);
     assert.equal(got.updatedAt, 1000);
     assert.equal(got.expiresAt, null);
     assert.ok(Buffer.isBuffer(got.ciphertext), 'ciphertext should be a Buffer');
     assert.ok(Buffer.isBuffer(got.iv), 'iv should be a Buffer');
-    assert.ok(Buffer.isBuffer(got.fingerprint), 'fingerprint should be a Buffer');
+    assert.equal(typeof got.ownerHandle, 'string');
+    assert.match(got.ownerHandle, /^[a-f0-9]{64}$/);
     db.close();
 });
 
@@ -82,11 +87,18 @@ test('insertPin validates status', () => {
     db.close();
 });
 
+test('insertPin validates ownerHandle shape', () => {
+    const db = fresh();
+    assert.throws(() => db.insertPin(samplePin({ ownerHandle: 'not-hex' })));
+    assert.throws(() => db.insertPin(samplePin({ ownerHandle: 'AABBCC' }))); // too short
+    assert.throws(() => db.insertPin(samplePin({ ownerHandle: handle().toUpperCase() }))); // uppercase
+    db.close();
+});
+
 test('insertPin requires expiresAt for unconfirmed, forbids it for confirmed', () => {
     const db = fresh();
     assert.throws(() => db.insertPin(samplePin({ status: 'unconfirmed', expiresAt: null })));
     assert.throws(() => db.insertPin(samplePin({ status: 'confirmed', expiresAt: 5000 })));
-    // valid versions
     db.insertPin(samplePin({ shortcode: 'OK0001', status: 'unconfirmed', expiresAt: 5000 }));
     db.insertPin(samplePin({ shortcode: 'OK0002', status: 'confirmed', expiresAt: null }));
     db.close();
@@ -96,21 +108,21 @@ test('insertPin requires expiresAt for unconfirmed, forbids it for confirmed', (
 
 test('listPinsByOwner returns all pins (both statuses), sorted by createdAt', () => {
     const db = fresh();
-    const fp = blob(32);
-    db.insertPin(samplePin({ shortcode: 'AAAAAA', fingerprint: fp, createdAt: 3000 }));
-    db.insertPin(samplePin({ shortcode: 'BBBBBB', fingerprint: fp, createdAt: 1000 }));
-    db.insertPin(samplePin({ shortcode: 'CCCCCC', fingerprint: fp, createdAt: 2000 }));
-    const rows = db.listPinsByOwner(fp);
+    const h = handle();
+    db.insertPin(samplePin({ shortcode: 'AAAAAA', ownerHandle: h, createdAt: 3000 }));
+    db.insertPin(samplePin({ shortcode: 'BBBBBB', ownerHandle: h, createdAt: 1000 }));
+    db.insertPin(samplePin({ shortcode: 'CCCCCC', ownerHandle: h, createdAt: 2000 }));
+    const rows = db.listPinsByOwner(h);
     assert.deepEqual(rows.map(r => r.shortcode), ['BBBBBB', 'CCCCCC', 'AAAAAA']);
     db.close();
 });
 
 test('listPinsByOwner includes unconfirmed pins (live during 72h window)', () => {
     const db = fresh();
-    const fp = blob(32);
-    db.insertPin(samplePin({ shortcode: 'CONFRM', fingerprint: fp, status: 'confirmed' }));
-    db.insertPin(samplePin({ shortcode: 'UNCONF', fingerprint: fp, status: 'unconfirmed', expiresAt: 9999 }));
-    const rows = db.listPinsByOwner(fp);
+    const h = handle();
+    db.insertPin(samplePin({ shortcode: 'CONFRM', ownerHandle: h, status: 'confirmed' }));
+    db.insertPin(samplePin({ shortcode: 'UNCONF', ownerHandle: h, status: 'unconfirmed', expiresAt: 9999 }));
+    const rows = db.listPinsByOwner(h);
     assert.equal(rows.length, 2);
     assert.deepEqual(rows.map(r => r.shortcode).sort(), ['CONFRM', 'UNCONF']);
     db.close();
@@ -118,22 +130,18 @@ test('listPinsByOwner includes unconfirmed pins (live during 72h window)', () =>
 
 test('listPinsNeedingReminder returns only unconfirmed pins inside the reminder window', () => {
     const db = fresh();
-    const fp = blob(32);
+    const h = handle();
     const now = 1000;
-    // Pin A: expires in 12h → inside 24h window, needs reminder
-    db.insertPin(samplePin({ shortcode: 'NEARXP', fingerprint: fp,
+    db.insertPin(samplePin({ shortcode: 'NEARXP', ownerHandle: h,
         status: 'unconfirmed', createdAt: now, expiresAt: now + 12 * 3600,
         emailCiphertext: blob(32), emailIv: blob(12) }));
-    // Pin B: expires in 48h → outside window
-    db.insertPin(samplePin({ shortcode: 'FARTIM', fingerprint: fp,
+    db.insertPin(samplePin({ shortcode: 'FARTIM', ownerHandle: h,
         status: 'unconfirmed', createdAt: now, expiresAt: now + 48 * 3600,
         emailCiphertext: blob(32), emailIv: blob(12) }));
-    // Pin C: already expired → cleanup's job, not reminder's
-    db.insertPin(samplePin({ shortcode: 'ALRDYE', fingerprint: fp,
+    db.insertPin(samplePin({ shortcode: 'ALRDYE', ownerHandle: h,
         status: 'unconfirmed', createdAt: now - 100000, expiresAt: now - 10,
         emailCiphertext: blob(32), emailIv: blob(12) }));
-    // Pin D: confirmed → no reminder ever
-    db.insertPin(samplePin({ shortcode: 'CONFRM', fingerprint: fp, status: 'confirmed' }));
+    db.insertPin(samplePin({ shortcode: 'CONFRM', ownerHandle: h, status: 'confirmed' }));
     const due = db.listPinsNeedingReminder(now, 24 * 3600);
     assert.equal(due.length, 1);
     assert.equal(due[0].shortcode, 'NEARXP');
@@ -142,9 +150,9 @@ test('listPinsNeedingReminder returns only unconfirmed pins inside the reminder 
 
 test('markReminderSent prevents the same pin from being picked up twice', () => {
     const db = fresh();
-    const fp = blob(32);
+    const h = handle();
     const now = 1000;
-    db.insertPin(samplePin({ shortcode: 'RMONCE', fingerprint: fp,
+    db.insertPin(samplePin({ shortcode: 'RMONCE', ownerHandle: h,
         status: 'unconfirmed', createdAt: now, expiresAt: now + 12 * 3600,
         emailCiphertext: blob(32), emailIv: blob(12) }));
     assert.equal(db.listPinsNeedingReminder(now, 24 * 3600).length, 1);
@@ -155,24 +163,23 @@ test('markReminderSent prevents the same pin from being picked up twice', () => 
 
 test('confirm nulls the stored email + reminder marker', () => {
     const db = fresh();
-    const fp = blob(32);
-    db.insertPin(samplePin({ shortcode: 'NULLEM', fingerprint: fp,
+    const h = handle();
+    db.insertPin(samplePin({ shortcode: 'NULLEM', ownerHandle: h,
         status: 'unconfirmed', createdAt: 1000, expiresAt: 2000,
         emailCiphertext: blob(32), emailIv: blob(12) }));
     db.confirmPin('NULLEM', 1500);
-    // Listing with reminder query should never return this pin now
     assert.equal(db.listPinsNeedingReminder(1100, 3600).length, 0);
     db.close();
 });
 
-test('confirmPinsByOwner promotes all unconfirmed pins for that fingerprint', () => {
+test('confirmPinsByOwner promotes all unconfirmed pins for that handle', () => {
     const db = fresh();
-    const alice = blob(32);
-    const bob = blob(32);
-    db.insertPin(samplePin({ shortcode: 'ALPND1', fingerprint: alice, status: 'unconfirmed', expiresAt: 9999 }));
-    db.insertPin(samplePin({ shortcode: 'ALPND2', fingerprint: alice, status: 'unconfirmed', expiresAt: 9999 }));
-    db.insertPin(samplePin({ shortcode: 'ALDONE', fingerprint: alice, status: 'confirmed' }));
-    db.insertPin(samplePin({ shortcode: 'BBPEND', fingerprint: bob, status: 'unconfirmed', expiresAt: 9999 }));
+    const alice = handle();
+    const bob = handle();
+    db.insertPin(samplePin({ shortcode: 'ALPND1', ownerHandle: alice, status: 'unconfirmed', expiresAt: 9999 }));
+    db.insertPin(samplePin({ shortcode: 'ALPND2', ownerHandle: alice, status: 'unconfirmed', expiresAt: 9999 }));
+    db.insertPin(samplePin({ shortcode: 'ALDONE', ownerHandle: alice, status: 'confirmed' }));
+    db.insertPin(samplePin({ shortcode: 'BBPEND', ownerHandle: bob, status: 'unconfirmed', expiresAt: 9999 }));
     const n = db.confirmPinsByOwner(alice, 5000);
     assert.equal(n, 2);
     const alicePins = db.listPinsByOwner(alice);
@@ -185,16 +192,16 @@ test('confirmPinsByOwner promotes all unconfirmed pins for that fingerprint', ()
 test('listPinsByOwner returns empty array for unknown owner', () => {
     const db = fresh();
     db.insertPin(samplePin());
-    assert.deepEqual(db.listPinsByOwner(blob(32)), []);
+    assert.deepEqual(db.listPinsByOwner(handle()), []);
     db.close();
 });
 
 test('listPinsByOwner does not return another owners pins', () => {
     const db = fresh();
-    const alice = blob(32);
-    const bob = blob(32);
-    db.insertPin(samplePin({ shortcode: 'ALICE1', fingerprint: alice }));
-    db.insertPin(samplePin({ shortcode: 'BOBPIN', fingerprint: bob }));
+    const alice = handle();
+    const bob = handle();
+    db.insertPin(samplePin({ shortcode: 'ALICE1', ownerHandle: alice }));
+    db.insertPin(samplePin({ shortcode: 'BOBPIN', ownerHandle: bob }));
     const rows = db.listPinsByOwner(alice);
     assert.equal(rows.length, 1);
     assert.equal(rows[0].shortcode, 'ALICE1');

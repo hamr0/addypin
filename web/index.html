@@ -420,6 +420,9 @@ document.getElementById('bottom').addEventListener('submit', async (e) => {
             }
             return;
         }
+        // Remember the email locally so /manage can show "Signed in as ..."
+        // after the magic-link round-trip. Server stores no plaintext.
+        try { localStorage.setItem('addypin:email', email.trim().toLowerCase()); } catch {}
         showSuccess(data.shortcode);
     } catch {
         err.textContent = 'Network error. Try again.';

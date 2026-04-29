@@ -20,6 +20,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { knowless } from 'knowless';
 import { createDb } from './db.js';
 import { createCrypto } from './crypto.js';
 import { createMailer, msmtpTransport, consoleTransport } from './mail.js';
@@ -31,26 +32,45 @@ loadDotenv();
 const cfg = {
     dataDir: process.env.DATA_DIR || './data',
     baseUrl: process.env.BASE_URL || '',
-    mailFromAddress: process.env.MAIL_FROM_ADDRESS || 'noreply@addypin.com',
+    mailFromAddress: process.env.MAIL_FROM_ADDRESS || 'auth@addypin.com',
     mailFromName: process.env.MAIL_FROM_NAME || 'addypin',
     dataKey: hexKey('ADDYPIN_DATA_KEY'),
-    emailKey: hexKey('ADDYPIN_EMAIL_KEY'),
-    signingKey: hexKey('ADDYPIN_SIGNING_KEY'),
+    knowlessSecret: process.env.KNOWLESS_SECRET || process.env.ADDYPIN_EMAIL_KEY,
 };
+if (!cfg.knowlessSecret || !/^[0-9a-f]{64}$/i.test(cfg.knowlessSecret)) {
+    throw new Error('KNOWLESS_SECRET (or legacy ADDYPIN_EMAIL_KEY) must be 64 hex chars');
+}
 
 const db = createDb({ path: path.join(cfg.dataDir, 'addypin.db') });
-const cryptoMod = createCrypto({
-    dataKey: cfg.dataKey, emailKey: cfg.emailKey, signingKey: cfg.signingKey,
-});
+const cryptoMod = createCrypto({ dataKey: cfg.dataKey });
 const mailer = createMailer({
     from: cfg.mailFromAddress, fromName: cfg.mailFromName, transport: pickTransport(),
+});
+
+// One-shot knowless instance for this delivery. Same DB file as the
+// long-running web process; better-sqlite3's WAL mode tolerates this.
+// maxLoginRequestsPerIpPerHour=0 disables the per-IP cap because every
+// inbound call originates from 127.0.0.1 and would starve the bucket.
+// Postfix already gates incoming volume upstream.
+const auth = knowless({
+    secret: cfg.knowlessSecret,
+    baseUrl: cfg.baseUrl || 'https://addypin.com',
+    from: cfg.mailFromAddress,
+    dbPath: path.join(cfg.dataDir, 'knowless.db'),
+    smtpHost: 'localhost',
+    smtpPort: 25,
+    openRegistration: true,
+    bodyFooter: "feedback@addypin.com | we don't keep your email",
+    includeLastLoginInEmail: false,
+    subject: 'Your addypin login link',
+    maxLoginRequestsPerIpPerHour: 0,
 });
 
 const raw = await readStdin();
 let result;
 try {
     result = await handleInbound({
-        raw, db, crypto: cryptoMod, mailer,
+        raw, db, crypto: cryptoMod, mailer, auth,
         baseUrl: cfg.baseUrl || 'https://addypin.com',
         reverseGeocode: nominatimReverse,
         // No in-process rate limiters — CLI is one-shot per message, so
@@ -62,6 +82,7 @@ try {
 } catch (e) {
     log('inbound_error', { message: e.message, stack: e.stack?.split('\n').slice(0, 3).join(' | ') });
 } finally {
+    auth.close();
     db.close();
 }
 

@@ -1,9 +1,12 @@
 import crypto from 'node:crypto';
 
-export function createCrypto({ dataKey, emailKey, signingKey }) {
+// Slimmed for the knowless integration. knowless owns identity derivation
+// (handles via HMAC) and one-time tokens for magic links. addypin keeps
+// only what's left over: AES-GCM for coords, AES-GCM for the encrypted
+// owner email persisted during the 72h unconfirmed window (decrypted by
+// the 48h reminder pass to compose the reminder mail).
+export function createCrypto({ dataKey }) {
     assertKey(dataKey, 'dataKey');
-    assertKey(emailKey, 'emailKey');
-    assertKey(signingKey, 'signingKey');
 
     function encryptCoords(lat, lng) {
         if (typeof lat !== 'number' || typeof lng !== 'number' ||
@@ -58,53 +61,7 @@ export function createCrypto({ dataKey, emailKey, signingKey }) {
         return Buffer.concat([decipher.update(body), decipher.final()]).toString('utf8');
     }
 
-    function fingerprint(email) {
-        if (typeof email !== 'string' || !email.includes('@')) {
-            throw new Error('email must be a string containing @');
-        }
-        const normalized = email.trim().toLowerCase();
-        return crypto.createHmac('sha256', emailKey).update(normalized, 'utf8').digest();
-    }
-
-    function signToken(payload, ttlSec) {
-        if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
-            throw new Error('payload must be a plain object');
-        }
-        if (typeof ttlSec !== 'number' || !Number.isFinite(ttlSec)) {
-            throw new Error('ttlSec must be a finite number');
-        }
-        const exp = Math.floor(Date.now() / 1000) + Math.floor(ttlSec);
-        const body = JSON.stringify({ ...payload, exp });
-        const bodyB64 = Buffer.from(body, 'utf8').toString('base64url');
-        const sig = crypto.createHmac('sha256', signingKey).update(bodyB64).digest('base64url');
-        return `${bodyB64}.${sig}`;
-    }
-
-    function verifyToken(token) {
-        if (typeof token !== 'string') return null;
-        const dot = token.indexOf('.');
-        if (dot < 1 || dot === token.length - 1) return null;
-        const bodyB64 = token.slice(0, dot);
-        const sig = token.slice(dot + 1);
-
-        const expected = crypto.createHmac('sha256', signingKey).update(bodyB64).digest('base64url');
-        const sigBuf = Buffer.from(sig, 'base64url');
-        const expBuf = Buffer.from(expected, 'base64url');
-        if (sigBuf.length !== expBuf.length) return null;
-        if (!crypto.timingSafeEqual(sigBuf, expBuf)) return null;
-
-        let body;
-        try {
-            body = JSON.parse(Buffer.from(bodyB64, 'base64url').toString('utf8'));
-        } catch {
-            return null;
-        }
-        if (!body || typeof body !== 'object' || Array.isArray(body)) return null;
-        if (typeof body.exp !== 'number' || body.exp < Math.floor(Date.now() / 1000)) return null;
-        return body;
-    }
-
-    return { encryptCoords, decryptCoords, encryptEmail, decryptEmail, fingerprint, signToken, verifyToken };
+    return { encryptCoords, decryptCoords, encryptEmail, decryptEmail };
 }
 
 function assertKey(key, name) {

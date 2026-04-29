@@ -1,7 +1,6 @@
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
-import nodeCrypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { createRouter } from './router.js';
 import { mapLinks } from './maplinks.js';
@@ -22,18 +21,28 @@ const STATIC_FILES = new Map([
     ['/favicon.ico', { file: 'favicon.svg', type: 'image/svg+xml' }],
 ]);
 
-// Confirmation tokens live as long as the unconfirmed pin (72 h);
-// login tokens are 15 min per PRD §5;
-// session cookies are 30 days per PRD §9.
-const CONFIRM_TTL_SEC = 72 * 60 * 60;
-const LOGIN_TTL_SEC = 15 * 60;
-const SESSION_TTL_SEC = 30 * 24 * 60 * 60;
-
 // Build an http.Server given the wired modules. Pure construction —
 // the caller decides when to listen() and on which port. This shape
 // lets integration tests spin up an ephemeral server per test.
-export function createServer({ db, crypto, limiters, mailer, baseUrl = '', webDir = DEFAULT_WEB_DIR, now = () => Date.now() }) {
+export function createServer({ db, crypto, limiters, mailer, auth, baseUrl = '', webDir = DEFAULT_WEB_DIR, now = () => Date.now() }) {
     const router = createRouter();
+
+    // Resolve the requesting session's handle and, as a side effect,
+    // promote any pins still flagged 'unconfirmed' that this handle
+    // owns. The promotion is the integration's binding mechanism for
+    // pin-creation magic links: clicking the confirmation link sets a
+    // session cookie, the next authenticated request walks through here,
+    // and the pending pin flips to confirmed. The UPDATE is indexed and
+    // idempotent (zero rows when the user has nothing pending), so the
+    // overhead on hot management endpoints is negligible. Returns the
+    // handle string, or null if the request isn't authenticated.
+    function maybePromotePending(req) {
+        if (!auth) return null;
+        const handle = auth.handleFromRequest(req);
+        if (!handle) return null;
+        db.confirmPinsByOwner(handle, Math.floor(now() / 1000));
+        return handle;
+    }
 
     // ─── Routes ────────────────────────────────────────────────────────────────
 
@@ -54,7 +63,7 @@ export function createServer({ db, crypto, limiters, mailer, baseUrl = '', webDi
         return serveStatic(path.join(webDir, 'maplogos'), f, LOGO_TYPES[m[2].toLowerCase()]);
     });
 
-    router.post('/api/pins', (req, _params, body) => {
+    router.post('/api/pins', async (req, _params, body) => {
         if (!limiters.create.take(clientIp(req))) {
             return json(429, { error: 'rate_limited' });
         }
@@ -82,8 +91,19 @@ export function createServer({ db, crypto, limiters, mailer, baseUrl = '', webDi
             }
         }
 
+        // knowless rejects emails that fail its strict ASCII regex. Mirror
+        // the same gate so we don't insert a pin we can't email about.
+        // Both auth.deriveHandle (v0.1.9+) and auth.startLogin call
+        // normalize() internally — pass the raw email and let knowless own
+        // the canonical form.
+        let ownerHandle;
+        try {
+            ownerHandle = auth.deriveHandle(email);
+        } catch {
+            return json(400, { error: 'invalid_email' });
+        }
+
         const { ciphertext, iv } = crypto.encryptCoords(lat, lng);
-        const fingerprint = crypto.fingerprint(email);
         // Encrypted owner email is stored ONLY during the 72h unconfirmed
         // window so the expiry worker can send a 48h reminder. On confirm
         // (see db.confirmPin / confirmPinsByOwner) it's nulled out —
@@ -92,7 +112,7 @@ export function createServer({ db, crypto, limiters, mailer, baseUrl = '', webDi
         const nowSec = Math.floor(now() / 1000);
 
         db.insertPin({
-            shortcode, ciphertext, iv, fingerprint,
+            shortcode, ciphertext, iv, ownerHandle,
             emailCiphertext: emailEnc.ciphertext,
             emailIv: emailEnc.iv,
             status: 'unconfirmed',
@@ -100,51 +120,23 @@ export function createServer({ db, crypto, limiters, mailer, baseUrl = '', webDi
             expiresAt: nowSec + UNCONFIRMED_TTL_SEC,
         });
 
-        // Fire the confirmation email. Failures are logged but do NOT
-        // fail the request — the pin exists, will auto-expire if the
-        // user can't confirm. They can re-trigger via resend@ in M8.
-        if (mailer) {
-            const token = crypto.signToken(
-                { shortcode, action: 'confirm' },
-                CONFIRM_TTL_SEC,
-            );
-            const confirmUrl = `${effectiveBaseUrl(req, baseUrl)}/confirm?token=${encodeURIComponent(token)}`;
-            mailer.sendConfirmation({ to: email, shortcode, confirmUrl })
-                .catch((err) => {
-                    console.error(`[mail] confirmation send failed for ${shortcode}: ${err.message}`);
-                });
-        }
+        // Fire the confirmation magic link via knowless. Click → /auth/callback
+        // → cookie set → redirect to /SHORTCODE?confirmed=1. /manage's
+        // promotion sweep then flips the pending pin to confirmed when the
+        // user navigates there. Failure here is logged but does NOT fail
+        // the request — the pin exists, dies in 72h if never confirmed
+        // (recovery via resend@ inbound flow).
+        const nextUrl = `${effectiveBaseUrl(req, baseUrl)}/${shortcode}?confirmed=1`;
+        auth.startLogin({
+            email,
+            nextUrl,
+            sourceIp: clientIp(req),
+            subjectOverride: `Confirm your addypin: ${shortcode}`,
+        }).catch((err) => {
+            console.error(`[auth] startLogin failed for ${shortcode}: ${err.message}`);
+        });
 
         return json(201, { shortcode });
-    });
-
-    router.get('/confirm', (_req, _params, _body, query) => {
-        const token = query?.token;
-        const payload = token ? crypto.verifyToken(token) : null;
-        if (!payload || payload.action !== 'confirm' || typeof payload.shortcode !== 'string') {
-            return text(400, 'invalid or expired confirmation link');
-        }
-        const code = payload.shortcode;
-        const pin = db.getPinByShortcode(code);
-        if (!pin) return text(404, 'pin not found (it may have expired)');
-
-        const nowSec = Math.floor(now() / 1000);
-        // confirmPin is a no-op if already confirmed — that's fine; same magic
-        // link doubles as a login per PRD §5.
-        if (pin.status === 'unconfirmed') db.confirmPin(code, nowSec);
-
-        const sessionToken = crypto.signToken(
-            { fp: pin.fingerprint.toString('hex') },
-            SESSION_TTL_SEC,
-        );
-        return {
-            status: 302,
-            headers: {
-                'set-cookie': sessionCookie(sessionToken, SESSION_TTL_SEC),
-                'location': `/${code}?confirmed=1`,
-            },
-            body: '',
-        };
     });
 
     router.get('/api/pins/:shortcode', (req, params) => {
@@ -162,82 +154,51 @@ export function createServer({ db, crypto, limiters, mailer, baseUrl = '', webDi
     // ─── M7: login + manage ────────────────────────────────────────────────
 
     // Always returns 202 — no email enumeration. If the submitted email
-    // actually owns at least one confirmed pin, a magic link is emailed.
-    // Rate-limited per email fingerprint (3/hr) so the login endpoint can't
-    // be weaponized for targeted email probing.
+    // actually owns at least one confirmed pin, a magic link is emailed
+    // via knowless. Rate-limited per derived handle (3/hr) so the login
+    // endpoint can't be weaponized for targeted email probing.
     router.post('/api/login', async (_req, _params, body) => {
         const email = body?.email;
         if (typeof email !== 'string' || !email.includes('@')) {
             return json(400, { error: 'invalid_email' });
         }
-        const fp = crypto.fingerprint(email);
-        const fpHex = fp.toString('hex');
-        if (limiters.login && !limiters.login.take(fpHex)) {
+        let handle;
+        try {
+            handle = auth.deriveHandle(email);
+        } catch {
+            return json(202, {}); // knowless's strict normalize; treat as silent miss
+        }
+        if (limiters.login && !limiters.login.take(handle)) {
             return json(202, {}); // silent rate-limit
         }
-        const pins = db.listPinsByOwner(fp);
+        const pins = db.listPinsByOwner(handle);
         if (pins.length === 0) return json(202, {}); // silent no-op
-        if (mailer) {
-            const token = crypto.signToken({ fp: fpHex, action: 'login' }, LOGIN_TTL_SEC);
-            const loginUrl = `${effectiveBaseUrl(_req, baseUrl)}/manage?token=${encodeURIComponent(token)}`;
-            mailer.sendLogin({ to: email, loginUrl })
-                .catch((err) => console.error(`[mail] login send failed: ${err.message}`));
-        }
+        auth.startLogin({
+            email,
+            nextUrl: `${effectiveBaseUrl(_req, baseUrl)}/manage`,
+            sourceIp: clientIp(_req),
+        }).catch((err) => console.error(`[auth] startLogin failed: ${err.message}`));
         return json(202, {});
     });
 
-    // /manage is the single owner-facing entry point. Three modes:
-    //   - with ?token=  → verify, set cookie, redirect to /manage
-    //   - with cookie   → serve manage.html (client fetches /api/me/pins)
-    //   - neither       → serve manage.html anyway; the page shows a
-    //                     login form inline
-    router.get('/manage', (req, _params, _body, query) => {
-        const token = query?.token;
-        if (token) {
-            const payload = crypto.verifyToken(token);
-            if (!payload || payload.action !== 'login' || typeof payload.fp !== 'string') {
-                return text(400, 'invalid or expired login link');
-            }
-            // Single-use: mark the token consumed. If insert-or-ignore
-            // didn't insert, the token was already used — reject. The
-            // 30-day session cookie is the durable auth; this just
-            // prevents magic-link replay if an email is later exposed.
-            const tokenHash = nodeCrypto.createHash('sha256').update(token).digest('hex');
-            if (!db.consumeToken(tokenHash, payload.exp)) {
-                return text(400, 'this login link has already been used — request a new one');
-            }
-            // Magic-link click == proof of email ownership, same proof the
-            // confirmation flow requires. Promote any still-pending pins
-            // owned by this fingerprint to confirmed so /manage treats them
-            // as permanent from the start.
-            const fpBuf = Buffer.from(payload.fp, 'hex');
-            db.confirmPinsByOwner(fpBuf, Math.floor(Date.now() / 1000));
-            const sessionToken = crypto.signToken({ fp: payload.fp }, SESSION_TTL_SEC);
-            return {
-                status: 302,
-                headers: {
-                    'set-cookie': sessionCookie(sessionToken, SESSION_TTL_SEC),
-                    'location': '/manage',
-                },
-                body: '',
-            };
-        }
+    // /manage is the owner-facing entry point. Two modes:
+    //   - with cookie   → promote any pending pins owned by the session
+    //                     handle, serve manage.html
+    //   - without       → serve manage.html anyway; the page shows a
+    //                     login form inline (POSTs to /api/login)
+    // Magic-link redemption now lives at /auth/callback (knowless),
+    // which always 302s here on success.
+    router.get('/manage', (req) => {
+        maybePromotePending(req);
         return serveStatic(webDir, 'manage.html', 'text/html; charset=utf-8');
     });
-
-    // Clear the session cookie. Empty response; client just redirects.
-    router.post('/api/logout', () => ({
-        status: 204,
-        headers: { 'set-cookie': sessionCookie('', 0) },
-        body: '',
-    }));
 
     // Pins owned by the current session. 401 if no valid cookie —
     // the manage.html page uses this signal to swap to the login form.
     router.get('/api/me/pins', (req) => {
-        const session = getSession(req, crypto);
-        if (!session) return json(401, { error: 'unauthorized' });
-        const rows = db.listPinsByOwner(session.fp);
+        const handle = maybePromotePending(req);
+        if (!handle) return json(401, { error: 'unauthorized' });
+        const rows = db.listPinsByOwner(handle);
         const out = rows.map((p) => {
             const { lat, lng } = crypto.decryptCoords(p.ciphertext, p.iv);
             return { shortcode: p.shortcode, lat, lng, createdAt: p.createdAt };
@@ -246,13 +207,13 @@ export function createServer({ db, crypto, limiters, mailer, baseUrl = '', webDi
     });
 
     router.patch('/api/pins/:shortcode', (req, params, body) => {
-        const session = getSession(req, crypto);
-        if (!session) return json(401, { error: 'unauthorized' });
+        const handle = maybePromotePending(req);
+        if (!handle) return json(401, { error: 'unauthorized' });
         const code = normalizeShortcode(params.shortcode);
         if (!isValidShortcode(code)) return json(404, { error: 'not_found' });
         const pin = db.getPinByShortcode(code);
         if (!pin) return json(404, { error: 'not_found' });
-        if (!pin.fingerprint.equals(session.fp)) return json(403, { error: 'forbidden' });
+        if (pin.ownerHandle !== handle) return json(403, { error: 'forbidden' });
 
         const { lat, lng } = body || {};
         if (typeof lat !== 'number' || typeof lng !== 'number' ||
@@ -267,13 +228,13 @@ export function createServer({ db, crypto, limiters, mailer, baseUrl = '', webDi
     });
 
     router.delete('/api/pins/:shortcode', (req, params) => {
-        const session = getSession(req, crypto);
-        if (!session) return json(401, { error: 'unauthorized' });
+        const handle = maybePromotePending(req);
+        if (!handle) return json(401, { error: 'unauthorized' });
         const code = normalizeShortcode(params.shortcode);
         if (!isValidShortcode(code)) return json(404, { error: 'not_found' });
         const pin = db.getPinByShortcode(code);
         if (!pin) return json(404, { error: 'not_found' });
-        if (!pin.fingerprint.equals(session.fp)) return json(403, { error: 'forbidden' });
+        if (pin.ownerHandle !== handle) return json(403, { error: 'forbidden' });
         db.deletePin(code, Math.floor(now() / 1000));
         return { status: 204, headers: {}, body: '' };
     });
@@ -300,9 +261,27 @@ export function createServer({ db, crypto, limiters, mailer, baseUrl = '', webDi
 
     // ─── Server glue ───────────────────────────────────────────────────────────
 
+    // knowless handlers expect raw (req, res) and write the response
+    // themselves — they don't fit addypin's router (which returns response
+    // objects). Mount them by short-circuiting the router for these
+    // exact path/method pairs.
+    const knowlessRoutes = auth ? [
+        { method: 'GET',  path: '/auth/callback', handler: auth.callback },
+        { method: 'POST', path: '/api/logout',    handler: auth.logout   },
+    ] : [];
+
     const server = http.createServer(async (req, res) => {
         try {
             const url = new URL(req.url, 'http://localhost');
+
+            const knowlessMatch = knowlessRoutes.find(
+                (r) => r.method === req.method && r.path === url.pathname,
+            );
+            if (knowlessMatch) {
+                await knowlessMatch.handler(req, res);
+                return;
+            }
+
             // HEAD ≡ GET per HTTP spec, just no body. Route on GET, drop body in send().
             const isHead = req.method === 'HEAD';
             const matchMethod = isHead ? 'GET' : req.method;
@@ -373,37 +352,6 @@ function effectiveBaseUrl(req, configured) {
     const proto = req.headers['x-forwarded-proto'] || (req.socket.encrypted ? 'https' : 'http');
     const host = req.headers.host || 'localhost';
     return `${proto}://${host}`;
-}
-
-// Read + verify the session cookie. Returns { fp: Buffer } on success, null
-// on anything missing/expired/tampered. Caller is responsible for reacting
-// (401, skip, etc).
-function getSession(req, crypto) {
-    const cookieHeader = req.headers.cookie;
-    if (typeof cookieHeader !== 'string') return null;
-    const m = /(?:^|;\s*)addypin_session=([^;]+)/.exec(cookieHeader);
-    if (!m) return null;
-    const payload = crypto.verifyToken(m[1]);
-    if (!payload || typeof payload.fp !== 'string') return null;
-    try {
-        return { fp: Buffer.from(payload.fp, 'hex') };
-    } catch {
-        return null;
-    }
-}
-
-function sessionCookie(value, ttlSec) {
-    const parts = [
-        `addypin_session=${value}`,
-        'Path=/',
-        'HttpOnly',
-        'SameSite=Lax',
-        `Max-Age=${ttlSec}`,
-    ];
-    // Production traffic comes through nginx with HTTPS; mark Secure when
-    // nginx forwards x-forwarded-proto=https. Skipped on plain-http localhost
-    // so the cookie is still set during dev.
-    return parts.join('; ');
 }
 
 // Read a static asset off disk. Files are tiny (< 50 KB) and the OS

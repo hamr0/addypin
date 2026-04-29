@@ -120,6 +120,7 @@
     <section id="pins" class="state">
         <h1>Your pins</h1>
         <p class="lede">Edit coordinates or delete. Deleted shortcodes are retired permanently (they can never be reused).</p>
+        <p id="signedInAs" class="lede" style="display:none"></p>
         <div id="pinList"></div>
         <div class="footer">
             <a href="/" class="new">+ drop another pin</a>
@@ -136,6 +137,16 @@
     if (!res.ok) { show('login'); return; }
     const data = await res.json();
     renderPins(data.pins);
+    // Surface the email the user typed earlier (login form or pin-create).
+    // Pure UX cue — server never knows it after the request is over.
+    try {
+        const email = localStorage.getItem('addypin:email');
+        if (email) {
+            const el = document.getElementById('signedInAs');
+            el.textContent = `Signed in as ${email}.`;
+            el.style.display = '';
+        }
+    } catch {}
     show('pins');
 })();
 
@@ -158,6 +169,10 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
             body: JSON.stringify({ email }),
         });
         if (res.status === 202) {
+            // Stash for the post-magic-link "Signed in as ..." cue. Server
+            // stores no plaintext email; this is purely client-side memory
+            // of what the user just typed.
+            try { localStorage.setItem('addypin:email', email.toLowerCase()); } catch {}
             msg.className = 'msg ok show';
             msg.textContent = `If ${email} owns any pins, a login link is on its way. Check your inbox — expires in 15 minutes.`;
         } else {
@@ -221,6 +236,8 @@ document.getElementById('logout').addEventListener('click', async (e) => {
     e.preventDefault();
     // Session cookie is HttpOnly — only the server can clear it.
     try { await fetch('/api/logout', { method: 'POST' }); } catch {}
+    // Drop the local "Signed in as ..." memory too — clean slate next visit.
+    try { localStorage.removeItem('addypin:email'); } catch {}
     location.reload();
 });
 </script>

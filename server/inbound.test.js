@@ -9,26 +9,42 @@ import { createRateLimiter } from './ratelimit.js';
 
 // ─── shared setup ──────────────────────────────────────────────────────────
 
+function makeMockAuth() {
+    const startLoginCalls = [];
+    function handleFor(email) {
+        return crypto.createHash('sha256')
+            .update(email.trim().toLowerCase(), 'utf8')
+            .digest('hex');
+    }
+    return {
+        deriveHandle: (email) => {
+            if (typeof email !== 'string' || !email.includes('@')) {
+                throw new Error('invalid email');
+            }
+            return handleFor(email);
+        },
+        startLogin: async (opts) => { startLoginCalls.push(opts); },
+        startLoginCalls,
+        handleFor,
+    };
+}
+
 function freshDeps() {
     const db = createDb({ path: ':memory:' });
-    const cryptoMod = createCrypto({
-        dataKey: crypto.randomBytes(32),
-        emailKey: crypto.randomBytes(32),
-        signingKey: crypto.randomBytes(32),
-    });
+    const cryptoMod = createCrypto({ dataKey: crypto.randomBytes(32) });
     const sent = [];
     const mailer = createMailer({
-        from: 'noreply@addypin.com',
+        from: 'auth@addypin.com',
         transport: async (to, subject, body) => { sent.push({ to, subject, body }); },
     });
+    const auth = makeMockAuth();
     const limiters = {
         login: createRateLimiter({ capacity: 1000, refillPerSec: 1000 }),
         resend: createRateLimiter({ capacity: 1000, refillPerSec: 1000 }),
     };
-    return { db, crypto: cryptoMod, mailer, sent, limiters, baseUrl: 'https://addypin.com' };
+    return { db, crypto: cryptoMod, mailer, auth, sent, limiters, baseUrl: 'https://addypin.com' };
 }
 
-// Build a minimal RFC-5322 message.
 function msg({ from, to, subject = '', body = '' }) {
     return [
         `From: ${from}`,
@@ -41,25 +57,23 @@ function msg({ from, to, subject = '', body = '' }) {
     ].join('\r\n');
 }
 
-// Create a confirmed pin owned by `email` with shortcode `code`.
-function confirmedPin(db, cryptoMod, { code, email, lat = 1, lng = 2 }) {
+function confirmedPin(db, cryptoMod, auth, { code, email, lat = 1, lng = 2 }) {
     const enc = cryptoMod.encryptCoords(lat, lng);
-    const fp = cryptoMod.fingerprint(email);
+    const ownerHandle = auth.handleFor(email);
     const now = Math.floor(Date.now() / 1000);
     db.insertPin({
         shortcode: code, ciphertext: enc.ciphertext, iv: enc.iv,
-        fingerprint: fp, status: 'confirmed', createdAt: now, expiresAt: null,
+        ownerHandle, status: 'confirmed', createdAt: now, expiresAt: null,
     });
 }
 
-// Create an unconfirmed pin (within the 72h window) owned by `email`.
-function unconfirmedPin(db, cryptoMod, { code, email, lat = 1, lng = 2 }) {
+function unconfirmedPin(db, cryptoMod, auth, { code, email, lat = 1, lng = 2 }) {
     const enc = cryptoMod.encryptCoords(lat, lng);
-    const fp = cryptoMod.fingerprint(email);
+    const ownerHandle = auth.handleFor(email);
     const now = Math.floor(Date.now() / 1000);
     db.insertPin({
         shortcode: code, ciphertext: enc.ciphertext, iv: enc.iv,
-        fingerprint: fp, status: 'unconfirmed', createdAt: now, expiresAt: now + 72 * 3600,
+        ownerHandle, status: 'unconfirmed', createdAt: now, expiresAt: now + 72 * 3600,
     });
 }
 
@@ -122,19 +136,18 @@ test('extractLocalPart returns the part before @', () => {
 
 // ─── login@ ────────────────────────────────────────────────────────────────
 
-test('login@ with pins sends a login email', async () => {
+test('login@ with pins fires auth.startLogin', async () => {
     const d = freshDeps();
-    confirmedPin(d.db, d.crypto, { code: 'LGN001', email: 'alice@example.com' });
+    confirmedPin(d.db, d.crypto, d.auth, { code: 'LGN001', email: 'alice@example.com' });
     const r = await handleInbound({
         raw: msg({ from: 'alice@example.com', to: 'login@addypin.com' }),
         ...d,
     });
     assert.equal(r.action, 'sent');
     assert.equal(r.type, 'login');
-    assert.equal(d.sent.length, 1);
-    assert.equal(d.sent[0].to, 'alice@example.com');
-    assert.match(d.sent[0].subject, /login link/i);
-    assert.match(d.sent[0].body, /\/manage\?token=/);
+    assert.equal(d.auth.startLoginCalls.length, 1);
+    assert.equal(d.auth.startLoginCalls[0].email, 'alice@example.com');
+    assert.match(d.auth.startLoginCalls[0].nextUrl, /\/manage$/);
 });
 
 test('login@ with NO pins is silently dropped (no enumeration)', async () => {
@@ -145,12 +158,12 @@ test('login@ with NO pins is silently dropped (no enumeration)', async () => {
     });
     assert.equal(r.action, 'drop');
     assert.equal(r.reason, 'no_pins');
-    assert.equal(d.sent.length, 0);
+    assert.equal(d.auth.startLoginCalls.length, 0);
 });
 
 test('login@ handles "Display Name <addr>" in From', async () => {
     const d = freshDeps();
-    confirmedPin(d.db, d.crypto, { code: 'LGN002', email: 'maria@example.com' });
+    confirmedPin(d.db, d.crypto, d.auth, { code: 'LGN002', email: 'maria@example.com' });
     const r = await handleInbound({
         raw: msg({ from: '"Maria Q." <maria@example.com>', to: 'login@addypin.com' }),
         ...d,
@@ -158,9 +171,9 @@ test('login@ handles "Display Name <addr>" in From', async () => {
     assert.equal(r.action, 'sent');
 });
 
-test('login@ is rate-limited per fingerprint', async () => {
+test('login@ is rate-limited per handle', async () => {
     const d = freshDeps();
-    confirmedPin(d.db, d.crypto, { code: 'LGN003', email: 'rate@example.com' });
+    confirmedPin(d.db, d.crypto, d.auth, { code: 'LGN003', email: 'rate@example.com' });
     d.limiters.login = createRateLimiter({ capacity: 2, refillPerSec: 0.00001 });
     for (let i = 0; i < 2; i++) {
         const r = await handleInbound({
@@ -179,7 +192,7 @@ test('login@ is rate-limited per fingerprint', async () => {
 
 test('SHORTCODE@ replies with coords + map links for a confirmed pin', async () => {
     const d = freshDeps();
-    confirmedPin(d.db, d.crypto, { code: 'MAPPIN', email: 'o@example.com', lat: 37.7749, lng: -122.4194 });
+    confirmedPin(d.db, d.crypto, d.auth, { code: 'MAPPIN', email: 'o@example.com', lat: 37.7749, lng: -122.4194 });
     const r = await handleInbound({
         raw: msg({ from: 'visitor@example.com', to: 'MAPPIN@addypin.com' }),
         ...d,
@@ -195,7 +208,7 @@ test('SHORTCODE@ replies with coords + map links for a confirmed pin', async () 
 
 test('SHORTCODE@ reply includes a "Near:" line when reverse-geocode succeeds', async () => {
     const d = freshDeps();
-    confirmedPin(d.db, d.crypto, { code: 'NEARME', email: 'o@example.com', lat: 30.047741, lng: 31.243899 });
+    confirmedPin(d.db, d.crypto, d.auth, { code: 'NEARME', email: 'o@example.com', lat: 30.047741, lng: 31.243899 });
     const r = await handleInbound({
         raw: msg({ from: 'visitor@example.com', to: 'NEARME@addypin.com' }),
         reverseGeocode: async () => 'Mohamed Farid Street, Cairo, Egypt',
@@ -207,7 +220,7 @@ test('SHORTCODE@ reply includes a "Near:" line when reverse-geocode succeeds', a
 
 test('SHORTCODE@ reply omits "Near:" when reverse-geocode returns null', async () => {
     const d = freshDeps();
-    confirmedPin(d.db, d.crypto, { code: 'NONEAR', email: 'o@example.com' });
+    confirmedPin(d.db, d.crypto, d.auth, { code: 'NONEAR', email: 'o@example.com' });
     const r = await handleInbound({
         raw: msg({ from: 'visitor@example.com', to: 'NONEAR@addypin.com' }),
         reverseGeocode: async () => null,
@@ -219,7 +232,7 @@ test('SHORTCODE@ reply omits "Near:" when reverse-geocode returns null', async (
 
 test('SHORTCODE@ reply still goes out when reverse-geocode throws', async () => {
     const d = freshDeps();
-    confirmedPin(d.db, d.crypto, { code: 'GEOERR', email: 'o@example.com' });
+    confirmedPin(d.db, d.crypto, d.auth, { code: 'GEOERR', email: 'o@example.com' });
     const r = await handleInbound({
         raw: msg({ from: 'visitor@example.com', to: 'GEOERR@addypin.com' }),
         reverseGeocode: async () => { throw new Error('nominatim down'); },
@@ -231,7 +244,7 @@ test('SHORTCODE@ reply still goes out when reverse-geocode throws', async () => 
 
 test('SHORTCODE@ is case-insensitive on the local part', async () => {
     const d = freshDeps();
-    confirmedPin(d.db, d.crypto, { code: 'CASECA', email: 'o@example.com' });
+    confirmedPin(d.db, d.crypto, d.auth, { code: 'CASECA', email: 'o@example.com' });
     const r = await handleInbound({
         raw: msg({ from: 'v@example.com', to: 'caseca@addypin.com' }), ...d,
     });
@@ -240,7 +253,7 @@ test('SHORTCODE@ is case-insensitive on the local part', async () => {
 
 test('SHORTCODE@ replies for unconfirmed pins (live during 72h window)', async () => {
     const d = freshDeps();
-    unconfirmedPin(d.db, d.crypto, { code: 'UNCNFX', email: 'o@example.com' });
+    unconfirmedPin(d.db, d.crypto, d.auth, { code: 'UNCNFX', email: 'o@example.com' });
     const r = await handleInbound({
         raw: msg({ from: 'v@example.com', to: 'UNCNFX@addypin.com' }), ...d,
     });
@@ -260,23 +273,24 @@ test('SHORTCODE@ drops for unknown pins', async () => {
 
 // ─── resend@ ───────────────────────────────────────────────────────────────
 
-test('resend@ reissues a confirmation email to the owner', async () => {
+test('resend@ fires auth.startLogin for the owner with shortcode-flavored subject', async () => {
     const d = freshDeps();
-    unconfirmedPin(d.db, d.crypto, { code: 'RESND1', email: 'owner@example.com' });
+    unconfirmedPin(d.db, d.crypto, d.auth, { code: 'RESND1', email: 'owner@example.com' });
     const r = await handleInbound({
         raw: msg({ from: 'owner@example.com', to: 'resend@addypin.com', subject: 'RESND1' }),
         ...d,
     });
     assert.equal(r.action, 'sent');
     assert.equal(r.type, 'resend');
-    assert.equal(d.sent[0].to, 'owner@example.com');
-    assert.match(d.sent[0].subject, /RESND1/);
-    assert.match(d.sent[0].body, /\/confirm\?token=/);
+    assert.equal(d.auth.startLoginCalls.length, 1);
+    assert.equal(d.auth.startLoginCalls[0].email, 'owner@example.com');
+    assert.match(d.auth.startLoginCalls[0].subjectOverride, /RESND1/);
+    assert.match(d.auth.startLoginCalls[0].nextUrl, /\/RESND1\?confirmed=1$/);
 });
 
 test('resend@ drops when sender does not own the pin', async () => {
     const d = freshDeps();
-    unconfirmedPin(d.db, d.crypto, { code: 'NOTMYN', email: 'owner@example.com' });
+    unconfirmedPin(d.db, d.crypto, d.auth, { code: 'NOTMYN', email: 'owner@example.com' });
     const r = await handleInbound({
         raw: msg({ from: 'stranger@example.com', to: 'resend@addypin.com', subject: 'NOTMYN' }),
         ...d,
@@ -287,7 +301,7 @@ test('resend@ drops when sender does not own the pin', async () => {
 
 test('resend@ drops when pin is already confirmed', async () => {
     const d = freshDeps();
-    confirmedPin(d.db, d.crypto, { code: 'DONE01', email: 'owner@example.com' });
+    confirmedPin(d.db, d.crypto, d.auth, { code: 'DONE01', email: 'owner@example.com' });
     const r = await handleInbound({
         raw: msg({ from: 'owner@example.com', to: 'resend@addypin.com', subject: 'DONE01' }),
         ...d,
@@ -308,7 +322,7 @@ test('resend@ drops when subject is not a valid shortcode', async () => {
 
 test('resend@ is rate-limited per shortcode', async () => {
     const d = freshDeps();
-    unconfirmedPin(d.db, d.crypto, { code: 'RLIM01', email: 'owner@example.com' });
+    unconfirmedPin(d.db, d.crypto, d.auth, { code: 'RLIM01', email: 'owner@example.com' });
     d.limiters.resend = createRateLimiter({ capacity: 2, refillPerSec: 0.00001 });
     for (let i = 0; i < 2; i++) {
         const r = await handleInbound({

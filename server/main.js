@@ -4,6 +4,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { execSync } from 'node:child_process';
+import { knowless } from 'knowless';
 import { createDb } from './db.js';
 import { createCrypto } from './crypto.js';
 import { createRateLimiter } from './ratelimit.js';
@@ -16,20 +17,65 @@ const cfg = {
     port: parseInt(process.env.PORT || '3000', 10),
     dataDir: process.env.DATA_DIR || './data',
     baseUrl: process.env.BASE_URL || '',
-    mailFromAddress: process.env.MAIL_FROM_ADDRESS || 'noreply@addypin.com',
+    mailFromAddress: process.env.MAIL_FROM_ADDRESS || 'auth@addypin.com',
     mailFromName: process.env.MAIL_FROM_NAME || 'addypin',
     dataKey: hexKey('ADDYPIN_DATA_KEY'),
-    emailKey: hexKey('ADDYPIN_EMAIL_KEY'),
-    signingKey: hexKey('ADDYPIN_SIGNING_KEY'),
+    // KNOWLESS_SECRET is the renamed ADDYPIN_EMAIL_KEY: the same
+    // 32-byte HMAC secret that handles owner-email derivation. v0.1.6
+    // hex-decodes it before HMAC, so the secret bytes match what
+    // crypto.fingerprint produced under the previous shape.
+    knowlessSecret: process.env.KNOWLESS_SECRET || process.env.ADDYPIN_EMAIL_KEY,
 };
+
+if (!cfg.knowlessSecret || !/^[0-9a-f]{64}$/i.test(cfg.knowlessSecret)) {
+    throw new Error('KNOWLESS_SECRET (or legacy ADDYPIN_EMAIL_KEY) must be 64 hex chars');
+}
 
 fs.mkdirSync(cfg.dataDir, { recursive: true });
 
 const db = createDb({ path: path.join(cfg.dataDir, 'addypin.db') });
-const crypto = createCrypto({
-    dataKey: cfg.dataKey,
-    emailKey: cfg.emailKey,
-    signingKey: cfg.signingKey,
+const crypto = createCrypto({ dataKey: cfg.dataKey });
+
+// knowless owns: magic-link mail, sessions, tokens, handle derivation.
+// Mounted on /login, /auth/callback, /logout. POST /api/login is a
+// thin JSON wrapper around auth.startLogin in http.js so addypin's
+// existing API contract (202 JSON) is preserved.
+const auth = knowless({
+    secret: cfg.knowlessSecret,
+    baseUrl: cfg.baseUrl || `http://localhost:${cfg.port}`,
+    from: cfg.mailFromAddress,
+    dbPath: path.join(cfg.dataDir, 'knowless.db'),
+    cookieName: 'addypin_session',
+    cookieDomain: hostnameOf(cfg.baseUrl) || undefined,
+    cookieSecure: process.env.NODE_ENV === 'production',
+    sessionTtlSeconds: 30 * 24 * 60 * 60,
+    tokenTtlSeconds: 15 * 60,
+    subject: 'Your addypin login link',  // factory default; pin-creation
+                                          // and expiry-reminder paths
+                                          // override via subjectOverride.
+    bodyFooter: "feedback@addypin.com | we don't keep your email",
+    // Reminder/confirmation mails shouldn't carry a "Last sign-in"
+    // line — they're not login UX. Off everywhere keeps all three
+    // outbound shapes uniform.
+    includeLastLoginInEmail: false,
+    smtpHost: 'localhost',
+    smtpPort: 25,
+    openRegistration: true,
+    trustedProxies: ['127.0.0.1', '::1'],
+    devLogMagicLinks: process.env.NODE_ENV !== 'production',
+    // In dev all traffic comes from 127.0.0.1 and the default per-IP
+    // caps (30 logins/hr, 3 new handles/hr) starve testing within
+    // minutes. Disable them locally; production keeps the defaults.
+    ...(process.env.NODE_ENV !== 'production' ? {
+        maxLoginRequestsPerIpPerHour: 0,
+        maxNewHandlesPerIpPerHour: 0,
+    } : {}),
+    // On magic-link replay or invalid token, knowless 302s to loginPath
+    // (default /login). addypin doesn't mount /login (we wrap startLogin
+    // in /api/login instead), so let replays fall to /manage — the page
+    // either shows the user's pins (if their session is still valid) or
+    // the inline login form. No dead-end 404.
+    failureRedirect: '/manage',
 });
 
 // Per PRD §8.
@@ -46,31 +92,34 @@ setInterval(() => {
 // past their 72h window. Called at boot and hourly. Both phases are
 // transactional/idempotent — overlapping ticks are safe.
 const REMINDER_WINDOW_SEC = 24 * 60 * 60; // remind when <= 24h remaining
-const CONFIRM_TTL_SEC = 72 * 60 * 60;
 
 async function sweep() {
     const nowSec = Math.floor(Date.now() / 1000);
 
-    // 1. reminders — only runs once mailer is ready (see bottom of file).
-    if (mailerReady) {
-        try {
-            const due = db.listPinsNeedingReminder(nowSec, REMINDER_WINDOW_SEC);
-            for (const p of due) {
-                try {
-                    const email = crypto.decryptEmail(p.emailCiphertext, p.emailIv);
-                    const token = crypto.signToken({ shortcode: p.shortcode, action: 'confirm' }, CONFIRM_TTL_SEC);
-                    const confirmUrl = `${cfg.baseUrl.replace(/\/$/, '')}/confirm?token=${encodeURIComponent(token)}`;
-                    const hoursLeft = Math.max(1, Math.round((p.expiresAt - nowSec) / 3600));
-                    await mailer.sendExpiryReminder({ to: email, shortcode: p.shortcode, confirmUrl, hoursLeft });
-                    db.markReminderSent(p.shortcode, nowSec);
-                    console.log(`[reminder] sent for ${p.shortcode} (${hoursLeft}h left)`);
-                } catch (e) {
-                    console.error(`[reminder] ${p.shortcode}: ${e.message}`);
-                }
+    // 1. reminders — fire a fresh magic link with an expiry-flavored
+    //    subject. Click → /auth/callback → /manage promotes any pending
+    //    pins owned by this handle. Drop reminder mail (no separate
+    //    informational mail) — the subject conveys urgency.
+    try {
+        const due = db.listPinsNeedingReminder(nowSec, REMINDER_WINDOW_SEC);
+        for (const p of due) {
+            try {
+                const email = crypto.decryptEmail(p.emailCiphertext, p.emailIv);
+                const hoursLeft = Math.max(1, Math.round((p.expiresAt - nowSec) / 3600));
+                await auth.startLogin({
+                    email,
+                    nextUrl: `${(cfg.baseUrl || '').replace(/\/$/, '')}/manage`,
+                    sourceIp: '127.0.0.1',
+                    subjectOverride: `Your addypin expires in ${hoursLeft}h: ${p.shortcode}`,
+                });
+                db.markReminderSent(p.shortcode, nowSec);
+                console.log(`[reminder] sent for ${p.shortcode} (${hoursLeft}h left)`);
+            } catch (e) {
+                console.error(`[reminder] ${p.shortcode}: ${e.message}`);
             }
-        } catch (e) {
-            console.error(`[reminder] pass: ${e.message}`);
         }
+    } catch (e) {
+        console.error(`[reminder] pass: ${e.message}`);
     }
 
     // 2. cleanup
@@ -81,21 +130,19 @@ async function sweep() {
         console.error(`[cleanup] ${e.message}`);
     }
 }
-let mailerReady = false;
-// kick off initial sweep on next tick so mailer can be created first
 setImmediate(() => { sweep(); });
 setInterval(sweep, 60 * 60 * 1000).unref();
 
-// Pick the mail transport at boot. msmtp on the VPS, console fallback in dev.
+// addypin still owns non-auth outbound: the SHORTCODE@ auto-reply
+// (lookup-via-email). msmtp on the VPS, console fallback locally.
 const transport = pickTransport();
 const mailer = createMailer({
     from: cfg.mailFromAddress,
     fromName: cfg.mailFromName,
     transport,
 });
-mailerReady = true;
 
-const server = createServer({ db, crypto, limiters, mailer, baseUrl: cfg.baseUrl });
+const server = createServer({ db, crypto, limiters, mailer, auth, baseUrl: cfg.baseUrl });
 server.listen(cfg.port, () => {
     console.log(`addypin listening on :${cfg.port}`);
 });
@@ -103,7 +150,7 @@ server.listen(cfg.port, () => {
 for (const sig of ['SIGINT', 'SIGTERM']) {
     process.on(sig, () => {
         console.log(`${sig} received, shutting down`);
-        server.close(() => { db.close(); process.exit(0); });
+        server.close(() => { auth.close(); db.close(); process.exit(0); });
     });
 }
 
@@ -127,6 +174,13 @@ function hexKey(name) {
     if (!v) throw new Error(`${name} is required (see .env.example)`);
     if (!/^[0-9a-f]{64}$/i.test(v)) throw new Error(`${name} must be 64 hex chars`);
     return Buffer.from(v, 'hex');
+}
+
+// Returns the hostname of a URL string, or null if input is empty/invalid.
+// Used to derive cookieDomain for knowless from BASE_URL when one is set.
+function hostnameOf(url) {
+    if (!url) return null;
+    try { return new URL(url).hostname; } catch { return null; }
 }
 
 function pickTransport() {

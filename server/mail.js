@@ -1,7 +1,12 @@
 import { spawn } from 'node:child_process';
 import crypto from 'node:crypto';
 
-// createMailer({ from, transport }) → { sendConfirmation }
+// createMailer({ from, transport }) → { sendShortcodeReply }
+//
+// Slimmed for the knowless integration. knowless owns all auth + reminder
+// outbound via startLogin (with subjectOverride for confirmation + expiry
+// flavors). addypin still sends one mail kind itself — the SHORTCODE@
+// auto-reply, which is a pin-lookup feature, not auth.
 //
 // `transport` is required: an async (to, subject, body) → void function.
 // We expose two shipping transports:
@@ -9,8 +14,8 @@ import crypto from 'node:crypto';
 //                     Used in production (and locally if msmtp is
 //                     installed).
 //   - consoleTransport: prints the message to stdout. Dev convenience
-//                       so the create-pin flow works without a mail
-//                       binary configured.
+//                       so the lookup-via-email flow works without a
+//                       mail binary configured.
 // The factory pattern lets tests inject a capturing transport.
 export function createMailer({ from, fromName = '', transport }) {
     if (typeof from !== 'string' || !from.includes('@')) {
@@ -23,42 +28,16 @@ export function createMailer({ from, fromName = '', transport }) {
     // Standard sig-delim ("-- " trailing-space) tells well-behaved mail
     // clients to collapse the footer in quoted replies. Without the
     // trailing space (which some intermediates strip) it still renders
-    // fine as plain text. See RFC 3676 §4.3.
+    // fine as plain text. See RFC 3676 §4.3. Pipe instead of middle-dot
+    // because knowless's bodyFooter is ASCII-only and we keep all addypin
+    // outbound footers identical across mailers.
     const FOOTER = [
         '',
         '-- ',
-        "feedback@addypin.com · we don't keep your email, only a one-way fingerprint",
+        "feedback@addypin.com | we don't keep your email",
     ].join('\n');
 
     function withFooter(body) { return body + '\n' + FOOTER; }
-
-    async function sendConfirmation({ to, shortcode, confirmUrl }) {
-        const subject = `Confirm your addypin: ${shortcode}`;
-        const body = [
-            `Click to confirm and keep your pin:`,
-            ``,
-            confirmUrl,
-            ``,
-            `Once confirmed, the pin is yours permanently. You can edit or delete it anytime by emailing login@addypin.com.`,
-            ``,
-            `If you did not create this pin, ignore this email — it auto-deletes within 72 hours.`,
-        ].join('\n');
-        await transport(to, subject, withFooter(body));
-    }
-
-    async function sendLogin({ to, loginUrl }) {
-        const subject = `Your addypin login link`;
-        const body = [
-            `Click to log in and manage your pins:`,
-            ``,
-            loginUrl,
-            ``,
-            `This link expires in 15 minutes and can only be used once.`,
-            ``,
-            `If you didn't request this, ignore the email — no action is needed.`,
-        ].join('\n');
-        await transport(to, subject, withFooter(body));
-    }
 
     // Auto-reply to SHORTCODE@addypin.com with the coordinates and a list of
     // map-app deep links. `links` is the ordered array mapLinks() returns.
@@ -74,23 +53,7 @@ export function createMailer({ from, fromName = '', transport }) {
         await transport(to, subject, withFooter(lines.join('\n')));
     }
 
-    async function sendExpiryReminder({ to, shortcode, confirmUrl, hoursLeft }) {
-        const subject = `Your addypin expires in ${hoursLeft}h: ${shortcode}`;
-        const body = [
-            `Reminder — the pin "${shortcode}" will expire in about ${hoursLeft} hours`,
-            `and will be permanently deleted if it isn't confirmed first.`,
-            ``,
-            `Confirm and keep it forever:`,
-            ``,
-            confirmUrl,
-            ``,
-            `After expiry the shortcode is retired and cannot be reused —`,
-            `nobody will be able to claim the same code later.`,
-        ].join('\n');
-        await transport(to, subject, withFooter(body));
-    }
-
-    return { sendConfirmation, sendLogin, sendShortcodeReply, sendExpiryReminder };
+    return { sendShortcodeReply };
 }
 
 // Format an RFC-5322 message and pipe it into msmtp's stdin.

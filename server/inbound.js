@@ -19,10 +19,7 @@
 import { normalizeShortcode, isValidShortcode } from './shortcode.js';
 import { mapLinks } from './maplinks.js';
 
-const UNCONFIRMED_TTL_SEC = 72 * 60 * 60;
-const LOGIN_TTL_SEC = 15 * 60;
-
-export async function handleInbound({ raw, db, crypto, mailer, baseUrl, limiters, reverseGeocode, now = () => Date.now() }) {
+export async function handleInbound({ raw, db, crypto, mailer, auth, baseUrl, limiters, reverseGeocode, now = () => Date.now() }) {
     const msg = parseRfc5322(raw);
     if (!msg) return drop('invalid_message');
 
@@ -33,11 +30,11 @@ export async function handleInbound({ raw, db, crypto, mailer, baseUrl, limiters
     const localPart = extractLocalPart(to).toLowerCase();
 
     if (localPart === 'login') {
-        return handleLogin({ from, db, crypto, mailer, baseUrl, limiters });
+        return handleLogin({ from, db, auth, baseUrl, limiters });
     }
     if (localPart === 'resend') {
         const subject = (msg.headers.subject || '').trim();
-        return handleResend({ from, subjectCode: subject, db, crypto, mailer, baseUrl, limiters, now });
+        return handleResend({ from, subjectCode: subject, db, auth, baseUrl, limiters });
     }
     // Otherwise treat the local part as a candidate shortcode.
     const code = normalizeShortcode(localPart);
@@ -49,21 +46,25 @@ export async function handleInbound({ raw, db, crypto, mailer, baseUrl, limiters
 
 // ─── Handlers ───────────────────────────────────────────────────────────────
 
-async function handleLogin({ from, db, crypto, mailer, baseUrl, limiters }) {
-    const fp = crypto.fingerprint(from);
-    const fpHex = fp.toString('hex');
-    if (limiters?.login && !limiters.login.take(fpHex)) return drop('rate_limited');
+async function handleLogin({ from, db, auth, baseUrl, limiters }) {
+    let handle;
+    try { handle = auth.deriveHandle(from); }
+    catch { return drop('invalid_email'); } // knowless's strict normalize
 
-    const pins = db.listPinsByOwner(fp);
+    if (limiters?.login && !limiters.login.take(handle)) return drop('rate_limited');
+
+    const pins = db.listPinsByOwner(handle);
     if (pins.length === 0) return drop('no_pins'); // silent — no enumeration
 
-    const token = crypto.signToken({ fp: fpHex, action: 'login' }, LOGIN_TTL_SEC);
-    const loginUrl = `${normalizeBase(baseUrl)}/manage?token=${encodeURIComponent(token)}`;
-    await mailer.sendLogin({ to: from, loginUrl });
+    await auth.startLogin({
+        email: from,
+        nextUrl: `${normalizeBase(baseUrl)}/manage`,
+        sourceIp: '127.0.0.1', // inbound mail; no requesting IP
+    });
     return { action: 'sent', type: 'login' };
 }
 
-async function handleResend({ from, subjectCode, db, crypto, mailer, baseUrl, limiters, now }) {
+async function handleResend({ from, subjectCode, db, auth, baseUrl, limiters }) {
     const code = normalizeShortcode(subjectCode);
     if (!isValidShortcode(code)) return drop('invalid_subject_code');
     if (limiters?.resend && !limiters.resend.take(code)) return drop('rate_limited');
@@ -72,17 +73,21 @@ async function handleResend({ from, subjectCode, db, crypto, mailer, baseUrl, li
     if (!pin) return drop('no_such_pin');
     if (pin.status !== 'unconfirmed') return drop('pin_already_confirmed');
 
-    const fp = crypto.fingerprint(from);
-    if (!pin.fingerprint.equals(fp)) return drop('sender_not_owner');
+    let handle;
+    try { handle = auth.deriveHandle(from); }
+    catch { return drop('invalid_email'); }
+    if (pin.ownerHandle !== handle) return drop('sender_not_owner');
 
-    // Reissue a fresh confirmation token with full remaining TTL. The
-    // pin's own expires_at isn't reset — we don't grant extra time;
-    // a resend just refreshes the link.
-    const nowSec = Math.floor(now() / 1000);
-    const remainingSec = Math.max(60, (pin.expiresAt ?? nowSec + UNCONFIRMED_TTL_SEC) - nowSec);
-    const token = crypto.signToken({ shortcode: code, action: 'confirm' }, remainingSec);
-    const confirmUrl = `${normalizeBase(baseUrl)}/confirm?token=${encodeURIComponent(token)}`;
-    await mailer.sendConfirmation({ to: from, shortcode: code, confirmUrl });
+    // Re-trigger the same confirmation magic-link flow as pin creation.
+    // The pin's own expires_at isn't reset — a resend just gives the
+    // owner a fresh login link; clicking promotes the pending pin via
+    // the /:shortcode handler's promotion path.
+    await auth.startLogin({
+        email: from,
+        nextUrl: `${normalizeBase(baseUrl)}/${code}?confirmed=1`,
+        sourceIp: '127.0.0.1',
+        subjectOverride: `Confirm your addypin: ${code}`,
+    });
     return { action: 'sent', type: 'resend' };
 }
 

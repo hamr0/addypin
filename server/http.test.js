@@ -7,7 +7,7 @@ import { createCrypto } from './crypto.js';
 import { createMailer } from './mail.js';
 import { createRateLimiter } from './ratelimit.js';
 
-let server, baseUrl, db, cryptoMod, sentEmails;
+let server, baseUrl, db, cryptoMod, sentEmails, auth;
 
 function generousLimiters() {
     return {
@@ -17,19 +17,77 @@ function generousLimiters() {
     };
 }
 
+// Stand-in for knowless. Implements the surface http.js touches:
+// deriveHandle, startLogin, handleFromRequest, callback, logout. The
+// shape doesn't need to match knowless byte-for-byte — addypin treats
+// `auth` as a black box. Tests assert on the call records this exposes.
+function makeMockAuth() {
+    const startLoginCalls = [];
+    function handleFor(email) {
+        return crypto.createHash('sha256')
+            .update(email.trim().toLowerCase(), 'utf8')
+            .digest('hex');
+    }
+    return {
+        deriveHandle: (email) => {
+            if (typeof email !== 'string' || !email.includes('@')) {
+                throw new Error('invalid email');
+            }
+            return handleFor(email);
+        },
+        startLogin: async (opts) => { startLoginCalls.push(opts); },
+        handleFromRequest: (req) => {
+            const cookieHeader = req.headers.cookie;
+            if (typeof cookieHeader !== 'string') return null;
+            const m = /addypin_session=([a-f0-9]{64})/.exec(cookieHeader);
+            return m ? m[1] : null;
+        },
+        // Mock callback: token is base64url(email).base64url(nextUrl). Sets
+        // a cookie keyed to the email's handle, redirects to nextUrl. This
+        // mirrors knowless's behavior without needing a real token store.
+        callback: async (req, res) => {
+            const url = new URL(req.url, 'http://localhost');
+            const t = url.searchParams.get('t');
+            if (!t) { res.writeHead(302, { location: '/login' }); res.end(); return; }
+            const [emailB64, nextB64] = t.split('.');
+            const email = Buffer.from(emailB64, 'base64url').toString('utf8');
+            const nextUrl = nextB64 ? Buffer.from(nextB64, 'base64url').toString('utf8') : '/manage';
+            const handle = handleFor(email);
+            res.writeHead(302, {
+                location: nextUrl,
+                'set-cookie': `addypin_session=${handle}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000`,
+            });
+            res.end();
+        },
+        logout: async (req, res) => {
+            res.writeHead(200, {
+                'set-cookie': 'addypin_session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0',
+                'content-type': 'text/plain',
+            });
+            res.end('ok');
+        },
+        startLoginCalls,
+        handleFor,
+        close: () => {},
+    };
+}
+
+// Build a cookie that the mock auth will accept as "logged in as <email>".
+function cookieFor(email) {
+    const h = crypto.createHash('sha256').update(email.trim().toLowerCase(), 'utf8').digest('hex');
+    return `addypin_session=${h}`;
+}
+
 before(async () => {
     db = createDb({ path: ':memory:' });
-    cryptoMod = createCrypto({
-        dataKey: crypto.randomBytes(32),
-        emailKey: crypto.randomBytes(32),
-        signingKey: crypto.randomBytes(32),
-    });
+    cryptoMod = createCrypto({ dataKey: crypto.randomBytes(32) });
     sentEmails = [];
     const mailer = createMailer({
-        from: 'noreply@addypin.com',
+        from: 'auth@addypin.com',
         transport: async (to, subject, body) => { sentEmails.push({ to, subject, body }); },
     });
-    server = createServer({ db, crypto: cryptoMod, limiters: generousLimiters(), mailer });
+    auth = makeMockAuth();
+    server = createServer({ db, crypto: cryptoMod, limiters: generousLimiters(), mailer, auth });
     await new Promise((r) => server.listen(0, r));
     const port = server.address().port;
     baseUrl = `http://127.0.0.1:${port}`;
@@ -42,6 +100,7 @@ after(() => {
 
 beforeEach(() => {
     sentEmails.length = 0;
+    auth.startLoginCalls.length = 0;
 });
 
 async function req(method, path, body) {
@@ -53,6 +112,32 @@ async function req(method, path, body) {
     const ct = res.headers.get('content-type') || '';
     const data = ct.includes('json') ? await res.json() : await res.text();
     return { status: res.status, body: data };
+}
+
+async function reqWithCookie(method, path, cookie, body) {
+    const headers = { cookie };
+    if (body) headers['content-type'] = 'application/json';
+    const res = await fetch(baseUrl + path, {
+        method, headers, body: body ? JSON.stringify(body) : undefined,
+        redirect: 'manual',
+    });
+    const ct = res.headers.get('content-type') || '';
+    const data = res.status === 204 ? null : (ct.includes('json') ? await res.json() : await res.text());
+    return { status: res.status, body: data, setCookie: res.headers.get('set-cookie') };
+}
+
+// Helper: insert a confirmed pin owned by `email` and return the cookie
+// that authenticates as that owner. Bypasses the magic-link round-trip
+// (those flows are tested separately).
+function seedConfirmedPin(shortcode, email, lat = 1, lng = 2) {
+    const handle = auth.handleFor(email);
+    const { ciphertext, iv } = cryptoMod.encryptCoords(lat, lng);
+    const nowSec = Math.floor(Date.now() / 1000);
+    db.insertPin({
+        shortcode, ciphertext, iv, ownerHandle: handle,
+        status: 'confirmed', createdAt: nowSec, expiresAt: null,
+    });
+    return cookieFor(email);
 }
 
 // ─── /api/health ────────────────────────────────────────────────────────────
@@ -121,6 +206,42 @@ test('POST /api/pins requires email', async () => {
     assert.equal(r.body.error, 'invalid_email');
 });
 
+test('POST /api/pins fires auth.startLogin with shortcode-flavored subject', async () => {
+    auth.startLoginCalls.length = 0;
+    const r = await req('POST', '/api/pins', { lat: 1, lng: 2, email: 'maria@example.com', shortcode: 'EMTST1' });
+    assert.equal(r.status, 201);
+    await new Promise((res) => setImmediate(res));
+    assert.equal(auth.startLoginCalls.length, 1);
+    const call = auth.startLoginCalls[0];
+    assert.equal(call.email, 'maria@example.com');
+    assert.match(call.subjectOverride, /EMTST1/);
+    assert.match(call.nextUrl, /\/EMTST1\?confirmed=1$/);
+});
+
+test('startLogin failure does not fail pin creation', async () => {
+    // Spin up an isolated server whose mock auth always rejects startLogin.
+    const tightDb = createDb({ path: ':memory:' });
+    const angryAuth = makeMockAuth();
+    angryAuth.startLogin = async () => { throw new Error('mail down'); };
+    const tightServer = createServer({
+        db: tightDb, crypto: cryptoMod, limiters: generousLimiters(),
+        mailer: undefined, auth: angryAuth,
+    });
+    await new Promise((r) => tightServer.listen(0, r));
+    const url = `http://127.0.0.1:${tightServer.address().port}`;
+
+    const r = await fetch(url + '/api/pins', {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ lat: 1, lng: 2, email: 'a@b.com', shortcode: 'MAILDN' }),
+    });
+    assert.equal(r.status, 201);
+    const data = await r.json();
+    assert.equal(data.shortcode, 'MAILDN');
+
+    tightServer.close();
+    tightDb.close();
+});
+
 // ─── GET /api/pins/:shortcode ───────────────────────────────────────────────
 
 test('GET /api/pins/:shortcode resolves unconfirmed pins (live during 72h window)', async () => {
@@ -134,10 +255,7 @@ test('GET /api/pins/:shortcode resolves unconfirmed pins (live during 72h window
 });
 
 test('GET /api/pins/:shortcode returns coords + maplinks for confirmed pin', async () => {
-    const created = await req('POST', '/api/pins', { lat: 37.7749, lng: -122.4194, email: 'a@b.com', shortcode: 'CONFR1' });
-    assert.equal(created.status, 201);
-    db.confirmPin('CONFR1', Math.floor(Date.now() / 1000));
-
+    seedConfirmedPin('CONFR1', 'a@b.com', 37.7749, -122.4194);
     const r = await req('GET', '/api/pins/CONFR1');
     assert.equal(r.status, 200);
     assert.equal(r.body.lat, 37.7749);
@@ -149,8 +267,7 @@ test('GET /api/pins/:shortcode returns coords + maplinks for confirmed pin', asy
 });
 
 test('GET /api/pins/:shortcode response leaks no owner info', async () => {
-    await req('POST', '/api/pins', { lat: 1, lng: 2, email: 'leak@me.com', shortcode: 'LEAKY1' });
-    db.confirmPin('LEAKY1', Math.floor(Date.now() / 1000));
+    seedConfirmedPin('LEAKY1', 'leak@me.com');
     const r = await req('GET', '/api/pins/LEAKY1');
     assert.deepEqual(Object.keys(r.body).sort(), ['lat', 'lng', 'mapLinks']);
 });
@@ -161,17 +278,14 @@ test('GET /api/pins/:shortcode returns 404 for unknown', async () => {
 });
 
 test('GET /api/pins/:shortcode normalizes case', async () => {
-    await req('POST', '/api/pins', { lat: 1, lng: 2, email: 'a@b.com', shortcode: 'CASE01' });
-    db.confirmPin('CASE01', Math.floor(Date.now() / 1000));
+    seedConfirmedPin('CASE01', 'a@b.com');
     const r = await req('GET', '/api/pins/case01');
     assert.equal(r.status, 200);
 });
 
-// ─── GET /:shortcode → serves pin.html (the page itself does the lookup) ────
+// ─── GET /:shortcode → serves pin.html (page does the lookup) ───────────────
 
 test('GET /:shortcode returns the pin viewer HTML for any valid 6-char code', async () => {
-    // We serve the same HTML for any syntactically valid code; the page
-    // fetches /api/pins/:code itself and renders 404 client-side if needed.
     const r = await req('GET', '/ANYCD1');
     assert.equal(r.status, 200);
     assert.match(r.body, /<!doctype html>/i);
@@ -190,8 +304,6 @@ test('GET /:shortcode returns 404 for malformed shortcodes', async () => {
 });
 
 test('GET /edit/:shortcode serves the editor HTML for any valid code', async () => {
-    // Ownership is enforced client-side via /api/me/pins; the server serves
-    // the HTML shell unconditionally.
     const r = await req('GET', '/edit/ANYCD3');
     assert.equal(r.status, 200);
     assert.match(r.body, /<!doctype html>/i);
@@ -247,161 +359,24 @@ test('unknown route returns 404 json', async () => {
     assert.equal(r.status, 404);
 });
 
-// ─── Rate limiting ──────────────────────────────────────────────────────────
+// ─── M7: login + manage + edit/delete ──────────────────────────────────────
 
-// ─── helper: create a confirmed pin and return the session cookie for its owner.
-async function createConfirmedPinAndLogin(shortcode, email) {
-    await req('POST', '/api/pins', { lat: 10, lng: 20, email, shortcode });
-    await new Promise((r) => setTimeout(r, 30));
-    const confirmUrl = sentEmails.at(-1).body.match(/\/confirm\?token=([^\s]+)/)[1];
-    const res = await fetch(baseUrl + `/confirm?token=${confirmUrl}`, { redirect: 'manual' });
-    return extractCookie(res.headers.get('set-cookie'));
-}
-
-function extractCookie(setCookieHeader) {
-    const m = /(addypin_session=[^;]+)/.exec(setCookieHeader || '');
-    return m ? m[1] : '';
-}
-
-async function reqWithCookie(method, path, cookie, body) {
-    const headers = { cookie };
-    if (body) headers['content-type'] = 'application/json';
-    const res = await fetch(baseUrl + path, {
-        method, headers, body: body ? JSON.stringify(body) : undefined,
-        redirect: 'manual',
-    });
-    const ct = res.headers.get('content-type') || '';
-    const data = res.status === 204 ? null : (ct.includes('json') ? await res.json() : await res.text());
-    return { status: res.status, body: data, setCookie: res.headers.get('set-cookie') };
-}
-
-// ─── M6: confirmation email + /confirm route ───────────────────────────────
-
-test('POST /api/pins fires a confirmation email with a magic link', async () => {
-    const r = await req('POST', '/api/pins', { lat: 1, lng: 2, email: 'maria@example.com', shortcode: 'EMTST1' });
-    assert.equal(r.status, 201);
-    // sendConfirmation is fired but not awaited by the route — give it a tick.
-    await new Promise((res) => setTimeout(res, 30));
-    assert.equal(sentEmails.length, 1);
-    assert.equal(sentEmails[0].to, 'maria@example.com');
-    assert.match(sentEmails[0].subject, /EMTST1/);
-    assert.match(sentEmails[0].body, /\/confirm\?token=/);
-});
-
-test('GET /confirm with a valid token confirms the pin, sets a cookie, and redirects', async () => {
-    await req('POST', '/api/pins', { lat: 1, lng: 2, email: 'a@b.com', shortcode: 'CFM001' });
-    await new Promise((res) => setTimeout(res, 30));
-    // Pull the URL out of the captured email.
-    const m = sentEmails.at(-1).body.match(/\/confirm\?token=([^\s]+)/);
-    assert.ok(m, 'no confirm URL in email');
-    const tokenEncoded = m[1];
-
-    const res = await fetch(baseUrl + `/confirm?token=${tokenEncoded}`, { redirect: 'manual' });
-    assert.equal(res.status, 302);
-    assert.match(res.headers.get('location'), /^\/CFM001/);
-
-    const cookie = res.headers.get('set-cookie');
-    assert.ok(cookie, 'no Set-Cookie header');
-    assert.match(cookie, /addypin_session=/);
-    assert.match(cookie, /HttpOnly/);
-    assert.match(cookie, /SameSite=Lax/);
-    assert.match(cookie, /Max-Age=2592000/); // 30 days
-
-    // Pin should be confirmed in the DB now.
-    const pin = db.getPinByShortcode('CFM001');
-    assert.equal(pin.status, 'confirmed');
-    assert.equal(pin.expiresAt, null);
-});
-
-test('GET /confirm is idempotent (re-clicking same link still 302s)', async () => {
-    await req('POST', '/api/pins', { lat: 1, lng: 2, email: 'a@b.com', shortcode: 'CFMIDM' });
-    await new Promise((res) => setTimeout(res, 30));
-    const tokenEncoded = sentEmails.at(-1).body.match(/\/confirm\?token=([^\s]+)/)[1];
-
-    const r1 = await fetch(baseUrl + `/confirm?token=${tokenEncoded}`, { redirect: 'manual' });
-    assert.equal(r1.status, 302);
-    const r2 = await fetch(baseUrl + `/confirm?token=${tokenEncoded}`, { redirect: 'manual' });
-    assert.equal(r2.status, 302);
-    // Pin still confirmed (no error).
-    assert.equal(db.getPinByShortcode('CFMIDM').status, 'confirmed');
-});
-
-test('GET /confirm with no token returns 400', async () => {
-    const res = await fetch(baseUrl + '/confirm', { redirect: 'manual' });
-    assert.equal(res.status, 400);
-});
-
-test('GET /confirm with a malformed token returns 400', async () => {
-    const res = await fetch(baseUrl + '/confirm?token=not.a.real.token', { redirect: 'manual' });
-    assert.equal(res.status, 400);
-});
-
-test('GET /confirm with a token signed by a different key returns 400', async () => {
-    const otherCrypto = createCrypto({
-        dataKey: crypto.randomBytes(32),
-        emailKey: crypto.randomBytes(32),
-        signingKey: crypto.randomBytes(32),
-    });
-    const tok = otherCrypto.signToken({ shortcode: 'WHATEV', action: 'confirm' }, 600);
-    const res = await fetch(baseUrl + `/confirm?token=${encodeURIComponent(tok)}`, { redirect: 'manual' });
-    assert.equal(res.status, 400);
-});
-
-test('GET /confirm for a deleted pin returns 404', async () => {
-    await req('POST', '/api/pins', { lat: 1, lng: 2, email: 'a@b.com', shortcode: 'GONE01' });
-    await new Promise((res) => setTimeout(res, 30));
-    const tokenEncoded = sentEmails.at(-1).body.match(/\/confirm\?token=([^\s]+)/)[1];
-    // Delete the pin (simulating an expiry sweep that retired the shortcode).
-    db.deletePin('GONE01', Math.floor(Date.now() / 1000));
-    const res = await fetch(baseUrl + `/confirm?token=${tokenEncoded}`, { redirect: 'manual' });
-    assert.equal(res.status, 404);
-});
-
-test('mailer failure does not fail pin creation', async () => {
-    // Spin up an isolated server whose mailer always throws.
-    const tightDb = createDb({ path: ':memory:' });
-    const angryMailer = createMailer({
-        from: 'noreply@addypin.com',
-        transport: async () => { throw new Error('smtp down'); },
-    });
-    const tightServer = createServer({
-        db: tightDb, crypto: cryptoMod,
-        limiters: generousLimiters(), mailer: angryMailer,
-    });
-    await new Promise((r) => tightServer.listen(0, r));
-    const url = `http://127.0.0.1:${tightServer.address().port}`;
-
-    const r = await fetch(url + '/api/pins', {
-        method: 'POST', headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ lat: 1, lng: 2, email: 'a@b.com', shortcode: 'MAILDN' }),
-    });
-    assert.equal(r.status, 201);
-    const data = await r.json();
-    assert.equal(data.shortcode, 'MAILDN');
-
-    tightServer.close();
-    tightDb.close();
-});
-
-// ─── M7: login + /manage + edit/delete ────────────────────────────────────
-
-test('POST /api/login sends a login email when the address owns confirmed pins', async () => {
-    await createConfirmedPinAndLogin('LOGIN1', 'loginuser@example.com');
-    sentEmails.length = 0; // only the confirmation was there; clear for clean assertion
+test('POST /api/login fires auth.startLogin when the address owns confirmed pins', async () => {
+    seedConfirmedPin('LOGIN1', 'loginuser@example.com');
     const r = await req('POST', '/api/login', { email: 'loginuser@example.com' });
     assert.equal(r.status, 202);
-    await new Promise((res) => setTimeout(res, 30));
-    assert.equal(sentEmails.length, 1);
-    assert.match(sentEmails[0].subject, /login link/i);
-    assert.match(sentEmails[0].body, /\/manage\?token=/);
+    await new Promise((res) => setImmediate(res));
+    assert.equal(auth.startLoginCalls.length, 1);
+    assert.equal(auth.startLoginCalls[0].email, 'loginuser@example.com');
+    assert.match(auth.startLoginCalls[0].nextUrl, /\/manage$/);
 });
 
-test('POST /api/login is silent (no email) when the address owns nothing', async () => {
-    sentEmails.length = 0;
+test('POST /api/login is silent (no startLogin) when the address owns nothing', async () => {
+    auth.startLoginCalls.length = 0;
     const r = await req('POST', '/api/login', { email: 'stranger@nowhere.com' });
-    assert.equal(r.status, 202); // same status as success — no enumeration
-    await new Promise((res) => setTimeout(res, 30));
-    assert.equal(sentEmails.length, 0);
+    assert.equal(r.status, 202);
+    await new Promise((res) => setImmediate(res));
+    assert.equal(auth.startLoginCalls.length, 0);
 });
 
 test('POST /api/login rejects malformed email with 400', async () => {
@@ -409,50 +384,33 @@ test('POST /api/login rejects malformed email with 400', async () => {
     assert.equal(r.status, 400);
 });
 
-test('GET /manage?token=<login> sets a session cookie and 302s to /manage', async () => {
-    await createConfirmedPinAndLogin('LGNTST', 'lg@example.com');
-    sentEmails.length = 0;
-    await req('POST', '/api/login', { email: 'lg@example.com' });
-    await new Promise((res) => setTimeout(res, 30));
-    const tokenMatch = sentEmails[0].body.match(/\/manage\?token=([^\s]+)/);
-    assert.ok(tokenMatch, 'login URL missing in email');
-    const res = await fetch(baseUrl + `/manage?token=${tokenMatch[1]}`, { redirect: 'manual' });
+test('GET /auth/callback (mock) sets a session cookie and redirects to nextUrl', async () => {
+    const email = 'callback@example.com';
+    const t = Buffer.from(email).toString('base64url') + '.' + Buffer.from('/manage').toString('base64url');
+    const res = await fetch(baseUrl + `/auth/callback?t=${encodeURIComponent(t)}`, { redirect: 'manual' });
     assert.equal(res.status, 302);
     assert.equal(res.headers.get('location'), '/manage');
-    assert.match(res.headers.get('set-cookie'), /addypin_session=/);
+    assert.match(res.headers.get('set-cookie'), /addypin_session=[a-f0-9]{64}/);
 });
 
-test('GET /manage?token=<login> auto-confirms any still-pending pins owned by the fingerprint', async () => {
-    // Create an unconfirmed pin
-    const create = await req('POST', '/api/pins', { lat: 40, lng: -74, email: 'autocf@example.com', shortcode: 'AUTOCF' });
+test('GET /manage with an authenticated session promotes pending pins owned by handle', async () => {
+    const email = 'autocf@example.com';
+    // Create an unconfirmed pin under that email.
+    const create = await req('POST', '/api/pins', { lat: 40, lng: -74, email, shortcode: 'AUTOCF' });
     assert.equal(create.status, 201);
-    // Request login link
-    sentEmails.length = 0;
-    await req('POST', '/api/login', { email: 'autocf@example.com' });
-    await new Promise((res) => setTimeout(res, 30));
-    const tokenMatch = sentEmails[0].body.match(/\/manage\?token=([^\s]+)/);
-    assert.ok(tokenMatch, 'login URL missing (unconfirmed pins should still trigger login mail)');
-    // Click the magic link
-    const res = await fetch(baseUrl + `/manage?token=${tokenMatch[1]}`, { redirect: 'manual' });
-    assert.equal(res.status, 302);
-    // Pin should now be publicly resolvable (it already was) AND listed as confirmed via the session
-    const cookie = res.headers.get('set-cookie').split(';')[0];
-    const me = await reqWithCookie('GET', '/api/me/pins', cookie);
-    assert.equal(me.status, 200);
-    assert.equal(me.body.pins.length, 1);
-    assert.equal(me.body.pins[0].shortcode, 'AUTOCF');
-    // Direct DB check: status should be 'confirmed' now
-    const raw = db.getPinByShortcode('AUTOCF');
-    assert.equal(raw.status, 'confirmed');
-    assert.equal(raw.expiresAt, null);
+    assert.equal(db.getPinByShortcode('AUTOCF').status, 'unconfirmed');
+
+    // Visit /manage with the cookie that authenticates as that email.
+    const r = await reqWithCookie('GET', '/manage', cookieFor(email));
+    assert.equal(r.status, 200);
+
+    // Pin is now confirmed.
+    const pin = db.getPinByShortcode('AUTOCF');
+    assert.equal(pin.status, 'confirmed');
+    assert.equal(pin.expiresAt, null);
 });
 
-test('GET /manage?token=<invalid> returns 400', async () => {
-    const res = await fetch(baseUrl + '/manage?token=not.a.real', { redirect: 'manual' });
-    assert.equal(res.status, 400);
-});
-
-test('GET /manage without token or cookie serves manage.html (client handles login)', async () => {
+test('GET /manage without cookie serves manage.html (client handles login)', async () => {
     const res = await fetch(baseUrl + '/manage');
     assert.equal(res.status, 200);
     const body = await res.text();
@@ -460,17 +418,22 @@ test('GET /manage without token or cookie serves manage.html (client handles log
     assert.match(body, /manage/i);
 });
 
+test('POST /api/logout clears the session cookie', async () => {
+    const r = await reqWithCookie('POST', '/api/logout', cookieFor('logger@example.com'));
+    // Mock auth.logout returns 200 with cleared cookie. Real knowless behavior
+    // is equivalent: addypin's contract is "cookie cleared, success status."
+    assert.ok(r.status === 200 || r.status === 204);
+    assert.match(r.setCookie, /addypin_session=;/);
+});
+
 test('GET /api/me/pins returns 401 without a session cookie', async () => {
     const r = await reqWithCookie('GET', '/api/me/pins', '');
     assert.equal(r.status, 401);
 });
 
-test('GET /api/me/pins returns the session owner\'s confirmed pins', async () => {
-    const cookie = await createConfirmedPinAndLogin('MINEEE', 'mine@example.com');
-    // Add a second pin for the same owner.
-    await req('POST', '/api/pins', { lat: 1, lng: 2, email: 'mine@example.com', shortcode: 'MINEE2' });
-    await new Promise((r) => setTimeout(r, 30));
-    db.confirmPin('MINEE2', Math.floor(Date.now() / 1000));
+test("GET /api/me/pins returns the session owner's confirmed pins", async () => {
+    const cookie = seedConfirmedPin('MINEEE', 'mine@example.com', 10, 20);
+    seedConfirmedPin('MINEE2', 'mine@example.com', 1, 2);
 
     const r = await reqWithCookie('GET', '/api/me/pins', cookie);
     assert.equal(r.status, 200);
@@ -483,9 +446,9 @@ test('GET /api/me/pins returns the session owner\'s confirmed pins', async () =>
     }
 });
 
-test('GET /api/me/pins excludes another user\'s pins', async () => {
-    const aliceCookie = await createConfirmedPinAndLogin('ALICE1', 'alice.mine@example.com');
-    await createConfirmedPinAndLogin('BOBBY1', 'bobby.mine@example.com');
+test("GET /api/me/pins excludes another user's pins", async () => {
+    const aliceCookie = seedConfirmedPin('ALICE1', 'alice.mine@example.com');
+    seedConfirmedPin('BOBBY1', 'bobby.mine@example.com');
 
     const r = await reqWithCookie('GET', '/api/me/pins', aliceCookie);
     const codes = r.body.pins.map((p) => p.shortcode);
@@ -494,44 +457,41 @@ test('GET /api/me/pins excludes another user\'s pins', async () => {
 });
 
 test('PATCH /api/pins/:code updates coords for the owner', async () => {
-    const cookie = await createConfirmedPinAndLogin('PCHTST', 'patcher@example.com');
+    const cookie = seedConfirmedPin('PCHTST', 'patcher@example.com');
     const r = await reqWithCookie('PATCH', '/api/pins/PCHTST', cookie, { lat: 40.7128, lng: -74.006 });
     assert.equal(r.status, 200);
     assert.equal(r.body.lat, 40.7128);
 
-    // Verify the public lookup reflects the change.
     const lookup = await req('GET', '/api/pins/PCHTST');
     assert.equal(lookup.body.lat, 40.7128);
     assert.equal(lookup.body.lng, -74.006);
 });
 
 test('PATCH /api/pins/:code returns 401 without session', async () => {
-    await createConfirmedPinAndLogin('PATCH2', 'p2@example.com');
+    seedConfirmedPin('PATCH2', 'p2@example.com');
     const r = await reqWithCookie('PATCH', '/api/pins/PATCH2', '', { lat: 1, lng: 2 });
     assert.equal(r.status, 401);
 });
 
 test('PATCH /api/pins/:code returns 403 when session owns a different pin', async () => {
-    const aliceCookie = await createConfirmedPinAndLogin('OWN001', 'alice.own@example.com');
-    await createConfirmedPinAndLogin('NOTOUR', 'bob.own@example.com');
+    const aliceCookie = seedConfirmedPin('OWN001', 'alice.own@example.com');
+    seedConfirmedPin('NOTOUR', 'bob.own@example.com');
     const r = await reqWithCookie('PATCH', '/api/pins/NOTOUR', aliceCookie, { lat: 1, lng: 2 });
     assert.equal(r.status, 403);
 });
 
 test('PATCH /api/pins/:code rejects invalid coords with 400', async () => {
-    const cookie = await createConfirmedPinAndLogin('BADCOR', 'bad@example.com');
+    const cookie = seedConfirmedPin('BADCOR', 'bad@example.com');
     const r = await reqWithCookie('PATCH', '/api/pins/BADCOR', cookie, { lat: 999, lng: 0 });
     assert.equal(r.status, 400);
 });
 
 test('DELETE /api/pins/:code removes the pin, retires the shortcode', async () => {
-    const cookie = await createConfirmedPinAndLogin('DELTST', 'del@example.com');
+    const cookie = seedConfirmedPin('DELTST', 'del@example.com');
     const r = await reqWithCookie('DELETE', '/api/pins/DELTST', cookie);
     assert.equal(r.status, 204);
-    // Lookup 404s (pin gone).
     const lookup = await req('GET', '/api/pins/DELTST');
     assert.equal(lookup.status, 404);
-    // Trying to re-create with the same shortcode is blocked (retired).
     const recreate = await req('POST', '/api/pins', {
         lat: 1, lng: 2, email: 'someone@new.com', shortcode: 'DELTST',
     });
@@ -540,23 +500,25 @@ test('DELETE /api/pins/:code removes the pin, retires the shortcode', async () =
 });
 
 test('DELETE /api/pins/:code returns 401 without session', async () => {
-    await createConfirmedPinAndLogin('DELAUT', 'da@example.com');
+    seedConfirmedPin('DELAUT', 'da@example.com');
     const r = await reqWithCookie('DELETE', '/api/pins/DELAUT', '');
     assert.equal(r.status, 401);
 });
 
 test('DELETE /api/pins/:code returns 403 when session does not own the pin', async () => {
-    const aliceCookie = await createConfirmedPinAndLogin('AL0001', 'alice.del@example.com');
-    await createConfirmedPinAndLogin('BO0001', 'bob.del@example.com');
+    const aliceCookie = seedConfirmedPin('AL0001', 'alice.del@example.com');
+    seedConfirmedPin('BO0001', 'bob.del@example.com');
     const r = await reqWithCookie('DELETE', '/api/pins/BO0001', aliceCookie);
     assert.equal(r.status, 403);
 });
 
 test('rate limiter returns 429 after capacity exhausted', async () => {
     const tightDb = createDb({ path: ':memory:' });
+    const tightAuth = makeMockAuth();
     const tightServer = createServer({
         db: tightDb,
         crypto: cryptoMod,
+        auth: tightAuth,
         limiters: {
             create: createRateLimiter({ capacity: 2, refillPerSec: 0.0001 }),
             lookup: createRateLimiter({ capacity: 1000, refillPerSec: 1000 }),
