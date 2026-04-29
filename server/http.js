@@ -139,7 +139,7 @@ export function createServer({ db, crypto, limiters, mailer, auth, baseUrl = '',
                 `Confirm your addypin "${shortcode}":\n\n` +
                 `${url}\n\n` +
                 `This link expires in 15 minutes. If you didn't request this,\n` +
-                `ignore this email — the pin will auto-delete in 72 hours.\n`,
+                `ignore this email - the pin will auto-delete in 72 hours.\n`,
         }).catch((err) => {
             console.error(`[auth] startLogin failed for ${shortcode}: ${err.message}`);
         });
