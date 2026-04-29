@@ -5,6 +5,30 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Changed
+
+- **M11 — Replaced bespoke auth/sessions/auth-mail with [`knowless`](https://github.com/hamr0/knowless).**
+  knowless now owns the magic-link round-trip: handle derivation
+  (HMAC), sham-work timing equivalence, single-use SHA-256-hashed
+  token store, session cookie signing, magic-link mail composition,
+  and SMTP submission. addypin keeps everything pin-shaped (CRUD,
+  lookup, shortcode retirement, the 48 h reminder, the `SHORTCODE@`
+  auto-reply). User-visible behavior is preserved: drop-pin-confirm
+  cycle, `/api/login` 202-JSON contract, email-in `login@`/`resend@`,
+  the 48 h reminder, `/manage` UI, edit/delete. Net delta: ~1,150 LOC
+  removed from `server/`, ~50 LOC added; two new transitive deps
+  (`nodemailer`, `better-sqlite3`) via knowless. Threat-model gains
+  documented in PRD §7: timing equivalence on `/api/login` and
+  `/api/pins` is now a real property (knowless ships a CI test
+  asserting `< 1ms` delta), and DB-leak no longer exposes live
+  tokens (hashed at rest). Schema changes: `pins.owner_email_fingerprint
+  BLOB` → `pins.owner_handle TEXT`, `consumed_tokens` table dropped.
+  Pass entry `addypin/server/email_key` auto-migrates to
+  `addypin/server/knowless_secret` on first dev.sh run after upgrade.
+  Manage UI now shows "Signed in as `<email>`" — sourced from
+  `localStorage` (the user typed it on the form), since the server
+  can't know it post-confirm. Pinned at `knowless@0.1.10`.
+
 ### Added
 
 - **Geolocation accuracy signal on the create + edit pages.** When a

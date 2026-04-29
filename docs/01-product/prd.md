@@ -16,8 +16,9 @@
 | M8 | Email in (Postfix pipe, `login@`/`SHORTCODE@`/`resend@`) | ✅ shipped |
 | M9 | Expiry cleanup worker | ✅ shipped |
 | M10 | Deploy to VPS + ops must-haves (§14) | ✅ shipped 2026-04-20 — see `docs/03-logs/m10-deploy-log.md` |
+| M11 | knowless integration: replace bespoke auth/sessions/auth-mail with [`knowless`](https://github.com/hamr0/knowless) | ✅ shipped 2026-04-29 |
 
-No runtime dependencies have been added at any milestone. `node:sqlite` + `node:crypto` + `node:http` cover every need the design calls for.
+Through M10 no runtime dependencies were added; `node:sqlite` + `node:crypto` + `node:http` covered every need. M11 introduces two transitive deps via `knowless` (`nodemailer` for SMTP submission, `better-sqlite3` for knowless's own store). Both are conventional, well-maintained, and targeted at the exact role (localhost SMTP, embedded SQLite) addypin would have used stdlib for if a stdlib option existed. See §9 for posture.
 
 ## Cutover
 
@@ -64,14 +65,15 @@ Explicit list of things v2 will **not** do. Each of these was in v1.
 
 ## 4. Data model
 
-Single SQLite file: `data/addypin.db`. Two tables.
+Two SQLite files. addypin owns `data/addypin.db` with the pin tables; knowless owns `data/knowless.db` with its own handles, tokens, sessions, and rate-limit tables (knowless's internal schema, see [knowless SPEC §13](https://github.com/hamr0/knowless/blob/main/docs/02-design/SPEC.md)). Two files because addypin uses Node's `node:sqlite` driver and knowless uses `better-sqlite3` — different drivers shouldn't share a file handle.
 
 ```sql
+-- addypin.db
 CREATE TABLE pins (
     shortcode               TEXT PRIMARY KEY,      -- 6-char, uppercased, user-chosen or generated
     coords_ciphertext       BLOB NOT NULL,         -- AES-256-GCM("lat,lng"), server key
     coords_iv               BLOB NOT NULL,         -- per-row 12-byte nonce
-    owner_email_fingerprint BLOB NOT NULL,         -- HMAC-SHA256(server_key, lowercase_email) — see below
+    owner_handle            TEXT NOT NULL,         -- knowless handle: HMAC-SHA256(KNOWLESS_SECRET, normalize(email)), 64-char hex
     owner_email_ciphertext  BLOB,                  -- AES-GCM of the email; set ONLY while unconfirmed
     owner_email_iv          BLOB,                  -- paired IV; both nulled on confirm
     reminder_sent_at        INTEGER,               -- NULL until the 48h reminder fires, then stamp
@@ -80,8 +82,8 @@ CREATE TABLE pins (
     updated_at              INTEGER NOT NULL,
     expires_at              INTEGER                -- unix seconds, NULL once confirmed
 );
-CREATE INDEX idx_owner_fp ON pins (owner_email_fingerprint);
-CREATE INDEX idx_expires  ON pins (expires_at) WHERE expires_at IS NOT NULL;
+CREATE INDEX idx_owner_handle ON pins (owner_handle);
+CREATE INDEX idx_expires      ON pins (expires_at) WHERE expires_at IS NOT NULL;
 
 -- Tombstone for retired shortcodes. A shortcode is retired the moment
 -- its pin is deleted or its unconfirmed expiry elapses. Retired codes
@@ -90,53 +92,43 @@ CREATE TABLE retired_shortcodes (
     shortcode   TEXT PRIMARY KEY,
     retired_at  INTEGER NOT NULL                   -- unix seconds
 );
-
--- One-time-use record for magic login links. Hash of the full token
--- is inserted on first click; duplicate inserts are rejected, making
--- the magic link truly single-use even within its TTL. Rows age out
--- as part of the hourly cleanup sweep.
-CREATE TABLE consumed_tokens (
-    token_hash  TEXT PRIMARY KEY,                  -- sha256(token)
-    expires_at  INTEGER NOT NULL
-);
 ```
 
 Notes:
-- **Two separate server secrets, two env vars:** `ADDYPIN_DATA_KEY` (AES-256 key for coords) and `ADDYPIN_EMAIL_KEY` (HMAC key for email fingerprints). Compromising one does not compromise the other.
+- **Two server secrets, two env vars:** `ADDYPIN_DATA_KEY` (AES-256 key for coords + the encrypted-email blob during the unconfirmed window) and `KNOWLESS_SECRET` (HMAC key for handle derivation, also used by knowless for cookie signing). Compromising one does not compromise the other. The legacy `ADDYPIN_EMAIL_KEY` was renamed to `KNOWLESS_SECRET` at M11 — same hex value, same role; pin ownership is unaffected by the rename.
 - **No label column.** Minimal data, minimal exposure. The encrypted blob is exactly `"lat,lng"` — nothing else.
-- **No users table, no sessions table, no analytics table, no rate-limit table.** Sessions are signed cookies; rate-limit state is in-process.
-- **Email is never stored in a confirmed pin.** The HMAC fingerprint is permanent; the AES-GCM ciphertext of the email is stored *only* while the pin is unconfirmed, so the 48 h reminder worker can send mail. On confirm (via `/confirm?token=` or auto-confirm through magic-link login), both `owner_email_ciphertext` and `owner_email_iv` are set to NULL. After that, reversible PII for the pin is gone.
-- **Reminder email state is self-gating.** The worker only emails pins where `reminder_sent_at IS NULL` and `expires_at - now <= 24h`. The marker row is nulled alongside the email on confirm so it can't linger.
-- **Magic login links are single-use.** The `consumed_tokens` table records the sha256 of each used token. A second click returns "already used" — the 30-day session cookie issued on first click is the durable auth. Rows are cleaned out by the hourly cleanup sweep once their `expires_at` passes.
+- **No users table on addypin's side.** knowless owns its own handles + sessions + tokens table in `data/knowless.db`. addypin's pin row carries only `owner_handle` (the same hex string knowless puts in the session cookie via `auth.handleFromRequest`).
+- **Email is never stored in a confirmed pin.** The handle is permanent; the AES-GCM ciphertext of the email is stored *only* while the pin is unconfirmed, so the 48 h reminder worker can decrypt it to compose mail. On confirm (via the magic-link click + `/manage` promotion sweep), both `owner_email_ciphertext` and `owner_email_iv` are set to NULL. After that, reversible PII for the pin is gone.
+- **Reminder email state is self-gating.** The worker only emails pins where `reminder_sent_at IS NULL` and `expires_at - now <= 24h`. The marker is nulled alongside the email on confirm so it can't linger.
+- **Magic-link single-use is enforced inside knowless.** knowless stores `sha256(token)` in its own table and atomically marks each token used on first redemption — replays redirect to `/manage` (knowless's `failureRedirect`). addypin no longer carries a `consumed_tokens` table; that logic lived in `crypto.signToken/verifyToken` + `db.consumeToken` pre-M11 and was deleted with the rest of the bespoke auth.
 
 **Why HMAC instead of salted argon2id (answer to the fair question):**
 A per-row salted hash (argon2id) is what password storage uses. It is the gold standard for "we never need to query by this value." The problem: we *do* need to query by it — the login flow is "given this email, show me their pins." With per-row salts, every row hashes differently, so finding the matches requires hashing the candidate email with every row's salt, i.e. a full table scan on every login. Doesn't scale past a few hundred pins.
 
-HMAC solves this: it's still a one-way hash, but the "salt" is a single server secret (the `ADDYPIN_EMAIL_KEY` env var) shared across all rows. Same email → same fingerprint → O(log n) indexed lookup.
+HMAC solves this: it's still a one-way hash, but the "salt" is a single server secret (the `KNOWLESS_SECRET` env var) shared across all rows. Same email → same handle → O(log n) indexed lookup. knowless's `auth.deriveHandle(email)` is the canonical computation; addypin uses it directly for `pins.owner_handle` so handle equality between session cookie and pin row is exact.
 
 Threat implications:
-- **DB-only leak:** attacker sees 32-byte opaque fingerprints. Cannot reverse without the HMAC key (which is not in the DB). No email exposure.
-- **DB + env-var leak (full server compromise):** attacker can test `"is user@example.com in this DB?"` by computing its HMAC and searching. This is the accepted cost of an O(1) login lookup. Full server compromise was already out of scope in §7.
-
-If this still feels like too much exposure, the only real alternative is to drop the email column entirely and accept that users can only log in via the exact confirmation email they received when they created the pin (no "forgot my shortcode" recovery). Flag in §12 if you want to switch.
+- **DB-only leak:** attacker sees 64-hex opaque handles. Cannot reverse without the HMAC key (which is not in the DB). No email exposure.
+- **DB + env-var leak (full server compromise):** attacker can test `"is user@example.com in this DB?"` by computing its handle and searching. This is the accepted cost of an O(1) login lookup. Full server compromise was already out of scope in §7.
 
 ## 5. Endpoints
 
 ### Web (minimum viable UI)
 
-| Method | Path | Purpose |
-|--------|------|---------|
-| GET | `/` | Landing + map. Drop a pin, pick custom shortcode (optional), enter email (required to own the pin). |
-| POST | `/api/pins` | Create pin. Body: `{lat, lng, shortcode?, email}`. Returns `{shortcode}`. Triggers confirmation email. Rate-limited. Pin starts `status='unconfirmed'`, `expires_at = now + 72h`. |
-| GET | `/api/pins/:shortcode` | Public lookup. Returns `{lat, lng, mapLinks}`. **Nothing else.** Returns 404 only for non-existent pins (retired or never created). **Unconfirmed pins resolve** — they are live for the full 72 h window. |
-| GET | `/:shortcode` | HTML page showing the map + map-app shortcut buttons. Subdomain `:shortcode.addypin.com` resolves to the same handler. |
-| POST | `/api/login` | Body: `{email}`. Always returns 202 (no email enumeration). Sends magic link if the email owns any pins (confirmed **or** unconfirmed), silently drops otherwise. Rate-limited. |
-| GET | `/manage?token=...` | Magic-link landing. Validates token, **marks it consumed** (rejects replays), **auto-confirms** any still-pending pins owned by the token's fingerprint (clicking the link is the same proof of ownership a confirm link requires), sets signed session cookie, redirects to `/manage`. |
-| GET | `/manage` | Lists pins owned by the cookie's email fingerprint. |
-| POST | `/api/logout` | Clears the session cookie (HttpOnly, so only the server can). No body. Returns 204. |
-| PATCH | `/api/pins/:shortcode` | Owner edits lat/lng. Requires owner cookie. |
-| DELETE | `/api/pins/:shortcode` | Owner deletes pin. Requires owner cookie. Shortcode enters 24h cooldown before reusable. |
-| GET | `/confirm?token=...` | Confirmation magic link (from the creation email). Marks pin `status='confirmed'`, `expires_at=NULL`. Same token also logs the user into `/manage`. Token TTL 72 h (same as pin life). |
+| Method | Path | Owner | Purpose |
+|--------|------|-------|---------|
+| GET | `/` | addypin | Landing + map. Drop a pin, pick custom shortcode (optional), enter email (required). |
+| POST | `/api/pins` | addypin | Create pin. Body: `{lat, lng, shortcode?, email}`. Returns `{shortcode}`. Fires `auth.startLogin` (knowless) with `subjectOverride: 'Confirm your addypin: SHORTCODE'` and `nextUrl: /SHORTCODE?confirmed=1`. Rate-limited. Pin starts `status='unconfirmed'`, `expires_at = now + 72h`. |
+| GET | `/api/pins/:shortcode` | addypin | Public lookup. Returns `{lat, lng, mapLinks}`. **Nothing else.** Returns 404 only for non-existent pins (retired or never created). **Unconfirmed pins resolve** — they are live for the full 72 h window. |
+| GET | `/:shortcode` | addypin | HTML page showing the map + map-app shortcut buttons. Subdomain `:shortcode.addypin.com` resolves to the same handler. |
+| POST | `/api/login` | addypin | Body: `{email}`. Always returns 202 (no email enumeration). Wraps `auth.startLogin` (knowless) when the email owns at least one pin; silently no-ops otherwise. Rate-limited per handle. |
+| GET | `/auth/callback?t=...` | knowless | Magic-link landing. knowless atomically marks the token used (rejects replays — replay 302s to `/manage` per `failureRedirect`), creates a session, sets the `addypin_session` cookie, redirects to the bound `nextUrl` (either `/SHORTCODE?confirmed=1` for a pin-creation link or `/manage` for a login link). |
+| GET | `/manage` | addypin | When authenticated, runs a promotion sweep — `UPDATE pins SET status='confirmed', expires_at=NULL WHERE owner_handle = session.handle AND status='unconfirmed'`. Then serves manage.html. The page calls `/api/me/pins` to render the owner's list (or shows the inline login form on 401). |
+| POST | `/api/logout` | knowless | Clears the session row + cookie. addypin configures knowless's `logoutPath` to `/api/logout` to preserve the original API. |
+| PATCH | `/api/pins/:shortcode` | addypin | Owner edits lat/lng. Requires session via `auth.handleFromRequest`. |
+| DELETE | `/api/pins/:shortcode` | addypin | Owner deletes pin. Requires session via `auth.handleFromRequest`. Shortcode is retired permanently (never reusable). |
+
+Pre-M11, addypin owned the magic-link pipeline itself — `/confirm?token=` and `/manage?token=` redeemed bespoke `crypto.signToken`-signed payloads against the `consumed_tokens` table. Both routes are gone; clicking either kind of magic link now lands on `/auth/callback`, and `/manage`'s promotion sweep is what flips a pending pin to confirmed once the handle equality is established.
 
 ### Email triggers
 
@@ -176,10 +168,12 @@ Pure function in `server/maplinks.js`: `(lat, lng) → [{ name, url, icon, darkB
 ## 7. Threat model
 
 **In scope (what we protect against):**
-- **DB file theft / backup leak.** Attacker with `addypin.db` sees: shortcodes, encrypted coord blobs, email HMACs, per-pin nonces, timestamps, and — for pins still in the 72 h unconfirmed window — encrypted email blobs. They cannot recover coords or emails without the AES key. Confirmed pins never carry a reversible email.
+- **DB file theft / backup leak.** Attacker with `addypin.db` sees: shortcodes, encrypted coord blobs, owner handles (HMACs), per-pin nonces, timestamps, and — for pins still in the 72 h unconfirmed window — encrypted email blobs. They cannot recover coords or emails without `ADDYPIN_DATA_KEY`. Confirmed pins never carry a reversible email. Attacker with `knowless.db` sees opaque handles, SHA-256-hashed token rows (no live tokens are recoverable from a leak), and signed session IDs they cannot forge without `KNOWLESS_SECRET`.
 - **Casual DB inspection.** Same protection.
-- **Email enumeration from public endpoints.** `GET /api/pins/:shortcode` never reveals the owner. `POST /api/login` returns 202 regardless of whether the email owns anything.
-- **Magic-link replay.** Single-use enforcement via `consumed_tokens`. Even if a token is intercepted within its 15-min TTL, it works at most once.
+- **Email enumeration via timing on `POST /api/login` or `POST /api/pins`.** knowless runs a sham-work pipeline: registered and unregistered emails do the same DB lookups, the same token insert, the same SMTP submission (sham mail goes to a null-routed recipient). knowless ships a CI test asserting `|mean(hit_time) - mean(miss_time)| < 1ms` over 1000 interleaved iterations. addypin's wrappers preserve the property.
+- **Email enumeration via response shape.** `GET /api/pins/:shortcode` never reveals the owner. `POST /api/login` returns 202 regardless of whether the email owns anything (and falls through to a silent no-op when the address owns no pins, *before* any startLogin call — same shape, same status, no internal hint).
+- **Magic-link replay.** knowless enforces single-use atomically inside `markTokenUsed`. Tokens are hashed at rest (SHA-256) — a DB leak does not expose live tokens, only the hashes. Even if a token is intercepted within its 15-min TTL, it works at most once.
+- **Email-bombing a target mailbox.** knowless caps active tokens per handle (default 5) so an attacker can't flood a victim's inbox with many in-flight magic links from a single IP. addypin layers a per-handle 3/hr cap on `POST /api/login` on top.
 
 **Out of scope (accepted risks):**
 - **Server compromise.** Attacker with root on the VPS has the AES key, HMAC key, and signing key (env vars) — they can decrypt everything. We accept this; see non-goals for why we are not doing E2E.
@@ -207,9 +201,10 @@ On restart, counters reset. Acceptable for v2 scale (~hundreds of requests/day).
 | DB | `node:sqlite` (`DatabaseSync`, `--experimental-sqlite`) | Built-in, synchronous, WAL. No external dep. |
 | Crypto | `node:crypto` stdlib (AES-256-GCM, HMAC-SHA256) | No argon2, no bcrypt — we don't store passwords. HMAC with a server key gives indexed lookup (see §4). |
 | Frontend | Plain HTML + vanilla JS + Leaflet (CDN) | Four files. No build step. |
-| Email out | `msmtp` (system binary) → `127.0.0.1:25` local Postfix → OpenDKIM signs → public MX | Zero SaaS, DKIM-aligned. mail-tester 10/10. msmtp config lives at `/etc/msmtprc` with `auth off, tls off` since it only talks to the loopback Postfix. |
-| Email in | Postfix `transport_maps` → pipe → `/opt/addypin/ops/inbound-wrapper.sh` → `node server/inbound-cli.js` | One-shot per message. `addypin.com` is in `relay_domains` so Postfix accepts at RCPT TO then hands off to the pipe. |
-| Session | Signed cookie (HMAC, `ADDYPIN_SIGNING_KEY`). Magic links share the scheme with a 15-min TTL + single-use record. | No session table. 30-day absolute cookie, HttpOnly, SameSite=Lax. |
+| Auth + auth-mail | [`knowless`](https://github.com/hamr0/knowless) (M11+) | Owns the magic-link pipeline: handle derivation, sham-work timing equivalence, single-use token store (SHA-256-hashed at rest), session cookie signing, magic-link mail composition + SMTP submission via nodemailer to localhost Postfix. Ships its own SQLite store (`data/knowless.db`). addypin's `/api/login` wraps `auth.startLogin`; pin-creation triggers `auth.startLogin` with a `subjectOverride`; pin endpoints resolve session via `auth.handleFromRequest`. |
+| Email out (non-auth) | `msmtp` (system binary) → `127.0.0.1:25` local Postfix → OpenDKIM signs → public MX | Only one outbound path remains in addypin: the `SHORTCODE@` auto-reply. Zero SaaS, DKIM-aligned, mail-tester 10/10. msmtp config lives at `/etc/msmtprc` with `auth off, tls off` since it only talks to the loopback Postfix. knowless's nodemailer takes the same path (SMTP submission to localhost) for auth mail. |
+| Email in | Postfix `transport_maps` → pipe → `/opt/addypin/ops/inbound-wrapper.sh` → `node server/inbound-cli.js` | One-shot per message. The CLI instantiates its own knowless instance (sharing `data/knowless.db` with the web process via WAL) and dispatches `login@`, `resend@`, and `SHORTCODE@` flows to addypin's `handleInbound`. `addypin.com` is in `relay_domains` so Postfix accepts at RCPT TO then hands off to the pipe. |
+| Session | knowless-managed signed cookie (`addypin_session`). 30-day absolute, HttpOnly, SameSite=Lax. Tokens are 15-min TTL + atomic single-use; replay redirects to `/manage` per `failureRedirect`. |
 | Process mgmt | systemd unit on the VPS | `ProtectSystem=strict`, `ProtectHome`, `PrivateTmp`, `ReadWritePaths` limited to `/var/lib/addypin` and `/var/log/addypin`. |
 | Reverse proxy | nginx + Let's Encrypt (certbot webroot) | TLS termination + HTTP→HTTPS + single `proxy_pass` to `127.0.0.1:3000`. |
 

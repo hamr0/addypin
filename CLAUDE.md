@@ -25,10 +25,11 @@ For full development and testing standards, see `.claude/memory/AGENT_RULES.md`.
 - **Runtime:** Node.js 20
 - **Web framework:** Minimal Express (or native `node:http` if it fits)
 - **DB:** SQLite via `better-sqlite3` — one file, two tables
-- **Crypto:** `node:crypto` stdlib (AES-256-GCM, HMAC-SHA256)
+- **Crypto:** `node:crypto` stdlib (AES-256-GCM for coords + the encrypted-email blob in the unconfirmed window)
+- **Auth + auth-mail:** [`knowless`](https://github.com/hamr0/knowless) (since M11). Owns magic-link round-trip, sham-work timing equivalence, single-use SHA-256-hashed token store, session cookies, and SMTP submission for auth mail. Ships its own SQLite file at `data/knowless.db` (separate driver, separate handle from `data/addypin.db`). Pulls in `nodemailer` + `better-sqlite3` as transitives — the only runtime deps in the tree.
 - **Frontend:** Plain HTML + vanilla JS + Leaflet (CDN). No React, no Vite, no Tailwind build step.
-- **Email out:** `msmtp` system binary via `child_process`
-- **Email in:** Postfix `virtual_alias_maps` → pipe transport to a Node script
+- **Email out (non-auth):** `msmtp` system binary via `child_process` for the `SHORTCODE@` auto-reply.
+- **Email in:** Postfix `virtual_alias_maps` → pipe transport to a Node script (instantiates its own knowless instance per message).
 - **Process:** systemd unit on the VPS. No Docker, no Compose.
 - **Reverse proxy:** Existing nginx with Let's Encrypt wildcard cert for `*.addypin.com`.
 
@@ -41,7 +42,7 @@ npm test            # Run all tests (no env vars needed)
 npm start           # Production-style run; expects env vars set externally
 ```
 
-**Secrets live in `pass`, never on disk.** `dev.sh` reads three required keys and four optional values from the password store under `addypin/server/*` (paths in `dev.sh`). On first run, any missing key is generated, inserted into `pass`, and used. `pass` prompts your GPG agent on first call per shell session.
+**Secrets live in `pass`, never on disk.** `dev.sh` reads two required keys (`addypin/server/data_key`, `addypin/server/knowless_secret`) and four optional values from the password store. On first run, any missing key is generated, inserted into `pass`, and used. `pass` prompts your GPG agent on first call per shell session. The legacy `addypin/server/email_key` entry is auto-migrated to `knowless_secret` on first run after M11 — same hex, new name.
 
 Production / VPS uses environment variables loaded from a systemd `EnvironmentFile=` (or `.env` next to `main.js`). The shape is documented in `.env.example`. Never commit a real `.env`.
 

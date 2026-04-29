@@ -329,3 +329,51 @@ curl -I https://addypin.com/api/health    # should be 200 without --insecure
 - Immutable (`chattr +i`) files in `/opt/addypin/config-backup-immutable/` from v1 — `rm -rf` fails until `chattr -R -i` clears them.
 - `certbot renew` with `standalone` authenticator hangs when nginx occupies port 80.
 - git inside `/opt/addypin` complains "dubious ownership" when run as root against addypin-owned files. `sudo -u addypin git ...` fixes it.
+
+---
+
+## M11 cutover (2026-04-29)
+
+Bespoke auth/sessions/auth-mail replaced by [`knowless`](https://github.com/hamr0/knowless) on branch `try/knowless`. Manual VPS steps once the merge to `main` lands:
+
+1. **Drain the DB** — pre-launch, no real data; PRD says clean cutover. As `addypin` user on the VPS:
+   ```
+   systemctl stop addypin
+   rm -f /var/lib/addypin/addypin.db /var/lib/addypin/addypin.db-shm /var/lib/addypin/addypin.db-wal
+   ```
+   Schema rename (`owner_email_fingerprint` BLOB → `owner_handle` TEXT) can't be done with `ALTER TABLE` on a NOT NULL column, and there's nothing worth migrating.
+
+2. **Populate `KNOWLESS_SECRET`.** Same hex value the legacy `ADDYPIN_EMAIL_KEY` carried — handle bytes are preserved for the (zero) existing rows. In `/etc/addypin/env`:
+   ```
+   # delete: ADDYPIN_EMAIL_KEY=...
+   # delete: ADDYPIN_SIGNING_KEY=... (no longer used)
+   KNOWLESS_SECRET=<64 hex chars, same value as the old ADDYPIN_EMAIL_KEY>
+   ```
+   `ADDYPIN_DATA_KEY` is unchanged.
+
+3. **Postfix `transport_maps`** for the sham-recipient null-route. Add to `/etc/postfix/transport`:
+   ```
+   knowless.invalid    discard:silently dropped by knowless null-route
+   ```
+   Then `postmap /etc/postfix/transport && systemctl reload postfix`. Without this, sham submissions to `null@knowless.invalid` will pollute the mail log on every silent-miss.
+
+4. **Drop the `login@`/`resend@` virtual aliases** (they still route correctly through the inbound CLI, no change needed at the alias map layer; the CLI now instantiates its own knowless instance and dispatches to addypin's `handleInbound`). The `SHORTCODE@` and `feedback@` aliases stay.
+
+5. **Deploy + restart:**
+   ```
+   sudo -u addypin git pull
+   sudo -u addypin npm ci --omit=dev
+   systemctl start addypin
+   systemctl status addypin --no-pager -l | head -20
+   ```
+   Watch for `addypin listening on :3000` and *no* `[knowless] WARNING: cookieSecure is false` (production must run with `NODE_ENV=production`, which flips `cookieSecure: true`).
+
+6. **Smoke against real DNS:**
+   - Drop a pin at https://addypin.com with your real email → confirmation mail lands in inbox (subject: `Confirm your addypin: SHORTCODE`).
+   - Click magic link → 302 to `https://SHORTCODE.addypin.com/?confirmed=1`. Cookie set with `Secure; HttpOnly; SameSite=Lax`.
+   - Visit https://addypin.com/manage → "Signed in as ..." cue + the pin.
+   - Edit, delete, log out cycle.
+   - Email `login@addypin.com` from your inbox → magic link replies.
+   - Email `SHORTCODE@addypin.com` from any inbox → auto-reply with coords + map-app links.
+
+If anything fails at step 6, roll back: `git checkout <pre-M11 sha> && systemctl restart addypin`. The DB is empty, no data loss.
