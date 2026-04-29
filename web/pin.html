@@ -138,6 +138,15 @@
 const code = (location.pathname.replace(/^\//, '').replace(/\/$/, '') ||
               location.hostname.split('.')[0]).toUpperCase();
 
+// On a shortcode subdomain (`F5J6KK.addypin.com`), the wildcard nginx
+// block rewrites `/` → `/SHORTCODE`, so a relative `href="/"` loops back
+// to this same page. Point home links at the apex explicitly.
+if (/^[A-Z0-9]{6}\.addypin\.com$/i.test(location.hostname)) {
+    for (const a of document.querySelectorAll('a[href="/"]')) {
+        a.href = 'https://addypin.com/';
+    }
+}
+
 (async () => {
     if (!/^[A-Z0-9]{6}$/.test(code)) { showNotFound(); return; }
     try {
