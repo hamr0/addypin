@@ -7,6 +7,16 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
 
 ### Added
 
+- **Geolocation accuracy signal on the create + edit pages.** When a
+  user taps the locate (crosshair) button, the browser's reported
+  accuracy radius is now drawn as a red dashed circle around the
+  pin, with a matching red `±N m · tap exact spot` line in the
+  bottom panel. Protects against the IP-fix-on-desktop case where
+  `navigator.geolocation` returns a 30 km guess that the user
+  silently confirms as their pin. Triggered only by the locate
+  button — search results and manual map clicks are user picks, not
+  browser guesses, so they paint nothing. Any refine action (click,
+  drag, search, re-locate) clears the signal.
 - **Feedback channel + signed footer on every outbound email.**
   New Postfix alias `feedback@addypin.com → avoidaccess@gmail.com`
   (alongside the existing `postmaster@` and `abuse@` RFC-2142

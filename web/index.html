@@ -98,6 +98,9 @@
                  color: var(--brand-bright); font-weight: 700; }
     .row1 .coords { font-size: 14px; color: white; font-weight: 700; }
     .row1 .coords.empty { color: var(--muted); font-weight: 400; }
+    .row1 .accuracy { font-size: 11px; color: #ef4444; font-weight: 600;
+                      letter-spacing: 0.04em; display: none; }
+    .row1 .accuracy.show { display: inline; }
 
     .expand { max-height: 0; opacity: 0; overflow: hidden;
               transition: max-height .35s ease, opacity .25s ease, margin-top .25s ease; }
@@ -219,6 +222,7 @@
     <div class="row1">
         <span class="tag">Pin</span>
         <span class="coords empty" id="coords">click the map or search above</span>
+        <span class="accuracy" id="accuracy"></span>
     </div>
     <div class="expand">
         <div class="row2">
@@ -251,7 +255,18 @@ L.control.zoom({ position: 'bottomright' }).addTo(map);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
     { attribution: '© OpenStreetMap', maxZoom: 19 }).addTo(map);
 
-let pin = null, coords = null;
+let pin = null, coords = null, accuracyCircle = null;
+
+// One-mode accuracy signal: red halo + radius tip, drawn after a locate.
+// Cleared by any refine action (click, search, locate again). Search and
+// click never paint it — they're explicit user picks, not browser guesses.
+const ACCURACY_COLOR = '#ef4444';
+
+function clearAccuracy() {
+    if (accuracyCircle) { map.removeLayer(accuracyCircle); accuracyCircle = null; }
+    document.getElementById('accuracy').classList.remove('show');
+}
+
 function setCoords(latlng, opts = {}) {
     coords = latlng;
     if (pin) pin.setLatLng(latlng); else pin = L.marker(latlng).addTo(map);
@@ -260,6 +275,21 @@ function setCoords(latlng, opts = {}) {
     c.textContent = `${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)}`;
     document.getElementById('go').disabled = false;
     document.getElementById('bottom').classList.add('active');
+
+    clearAccuracy();
+    if (opts.accuracy != null) {
+        accuracyCircle = L.circle(latlng, {
+            radius: opts.accuracy,
+            color: ACCURACY_COLOR, weight: 2, opacity: 0.7, dashArray: '6 4',
+            fillColor: ACCURACY_COLOR, fillOpacity: 0.15,
+            interactive: false,
+        }).addTo(map);
+        const label = document.getElementById('accuracy');
+        const km = opts.accuracy >= 1000;
+        label.textContent = `±${km ? Math.round(opts.accuracy / 1000) + ' km' : Math.round(opts.accuracy) + ' m'} · tap exact spot`;
+        label.classList.add('show');
+    }
+
     if (opts.fly) map.flyTo(latlng, Math.max(map.getZoom(), 15), { duration: 0.6 });
 }
 map.on('click', (e) => setCoords(e.latlng));
@@ -274,7 +304,8 @@ if (!('geolocation' in navigator)) {
         navigator.geolocation.getCurrentPosition(
             (pos) => {
                 locateBtn.classList.remove('busy');
-                setCoords(L.latLng(pos.coords.latitude, pos.coords.longitude), { fly: true });
+                setCoords(L.latLng(pos.coords.latitude, pos.coords.longitude),
+                          { fly: true, accuracy: pos.coords.accuracy });
             },
             (err) => {
                 locateBtn.classList.remove('busy');
