@@ -132,6 +132,14 @@ export function createServer({ db, crypto, limiters, mailer, auth, baseUrl = '',
             nextUrl,
             sourceIp: clientIp(req),
             subjectOverride: `Confirm your addypin: ${shortcode}`,
+            // AF-26: phrase the body to match the subject. Without this, the
+            // recipient sees "Click to sign in:" under a "Confirm your addypin"
+            // subject — link works, body reads as cut off.
+            bodyOverride: ({ url }) =>
+                `Confirm your addypin "${shortcode}":\n\n` +
+                `${url}\n\n` +
+                `This link expires in 15 minutes. If you didn't request this,\n` +
+                `ignore this email — the pin will auto-delete in 72 hours.\n`,
         }).catch((err) => {
             console.error(`[auth] startLogin failed for ${shortcode}: ${err.message}`);
         });

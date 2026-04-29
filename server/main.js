@@ -111,6 +111,17 @@ async function sweep() {
                     nextUrl: `${(cfg.baseUrl || '').replace(/\/$/, '')}/manage`,
                     sourceIp: '127.0.0.1',
                     subjectOverride: `Your addypin expires in ${hoursLeft}h: ${p.shortcode}`,
+                    // AF-26: body matches subject. Without this, the body
+                    // reads "Click to sign in:" under an expiry-warning
+                    // subject — confuses the user into thinking it's a
+                    // login attempt they didn't make.
+                    bodyOverride: ({ url }) =>
+                        `Your addypin "${p.shortcode}" expires in ${hoursLeft} hours.\n\n` +
+                        `Click to confirm and keep it permanent:\n\n` +
+                        `${url}\n\n` +
+                        `If you do nothing, the pin and shortcode will be\n` +
+                        `retired automatically. The shortcode can never be\n` +
+                        `reused after retirement.\n`,
                 });
                 db.markReminderSent(p.shortcode, nowSec);
                 console.log(`[reminder] sent for ${p.shortcode} (${hoursLeft}h left)`);

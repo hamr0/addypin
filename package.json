@@ -13,6 +13,6 @@
     "test": "node --experimental-sqlite --test --test-reporter=spec \"server/**/*.test.js\""
   },
   "dependencies": {
-    "knowless": "^0.2.0"
+    "knowless": "^0.2.2"
   }
 }
