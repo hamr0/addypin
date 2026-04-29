@@ -87,6 +87,11 @@ async function handleResend({ from, subjectCode, db, auth, baseUrl, limiters }) 
         nextUrl: `${normalizeBase(baseUrl)}/${code}?confirmed=1`,
         sourceIp: '127.0.0.1',
         subjectOverride: `Confirm your addypin: ${code}`,
+        bodyOverride: ({ url }) =>
+            `Confirm your addypin "${code}":\n\n` +
+            `${url}\n\n` +
+            `This link expires in 15 minutes. If you didn't request this,\n` +
+            `ignore this email - the pin will auto-delete in 72 hours.\n`,
     });
     return { action: 'sent', type: 'resend' };
 }
@@ -96,7 +101,7 @@ async function handleShortcode({ from, code, baseUrl, db, crypto, mailer, revers
     if (!pin) return drop('no_such_pin');
     const { lat, lng } = crypto.decryptCoords(pin.ciphertext, pin.iv);
     const links = mapLinks(lat, lng);
-    const webUrl = `${normalizeBase(baseUrl)}/${code}`;
+    const webUrl = canonicalPinUrl(baseUrl, code);
     // Reverse-geocode is best-effort: if Nominatim is down, slow, or returns
     // nothing, we still send the reply — just without the "Near:" line.
     let address = null;
@@ -109,6 +114,23 @@ async function handleShortcode({ from, code, baseUrl, db, crypto, mailer, revers
 
 function drop(reason) { return { action: 'drop', reason }; }
 function normalizeBase(b) { return (b || '').replace(/\/$/, '') || 'https://addypin.com'; }
+
+// Canonical share URL for a pin. On real hosts, prefer the subdomain
+// shape (`https://CODE.addypin.com`) — matches the inbox-side email
+// alias `CODE@addypin.com` and what web/index.html now advertises.
+// Local dev falls back to path-based since `*.localhost` won't resolve.
+function canonicalPinUrl(baseUrl, code) {
+    const base = normalizeBase(baseUrl);
+    try {
+        const u = new URL(base);
+        const isLocal = /^(localhost|127\.|\[)/.test(u.hostname);
+        if (isLocal) return `${base}/${code}`;
+        const baseDomain = u.hostname.replace(/^www\./, '');
+        return `${u.protocol}//${code}.${baseDomain}`;
+    } catch {
+        return `${base}/${code}`;
+    }
+}
 
 // ─── RFC-5322 parsing (just enough) ─────────────────────────────────────────
 // We only need to read From / To / Subject. Body is ignored. Header

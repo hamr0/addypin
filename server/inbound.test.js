@@ -203,7 +203,7 @@ test('SHORTCODE@ replies with coords + map links for a confirmed pin', async () 
     assert.match(d.sent[0].subject, /^Re: MAPPIN$/);
     assert.match(d.sent[0].body, /37\.774900/);
     assert.match(d.sent[0].body, /Google Maps/);
-    assert.match(d.sent[0].body, /addypin\.com\/MAPPIN/);
+    assert.match(d.sent[0].body, /MAPPIN\.addypin\.com/);
 });
 
 test('SHORTCODE@ reply includes a "Near:" line when reverse-geocode succeeds', async () => {
