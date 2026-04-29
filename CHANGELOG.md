@@ -5,6 +5,50 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Changed
+
+- **Outbound mail polish (knowless 0.2.1 → 0.2.3).** Three knowless
+  upgrades close gaps that surfaced from the v0.2.0 cutover:
+  - **`bodyOverride` (AF-26, knowless 0.2.2).** `auth.startLogin` now
+    accepts a per-call body template alongside `subjectOverride`.
+    Pin-creation (`server/http.js`), 48 h expiry-reminder
+    (`server/main.js`), and the `resend@` confirmation
+    (`server/inbound.js`) all pass tailored bodies so the recipient's
+    email doesn't say "Click to sign in:" under a "Confirm your
+    addypin" subject. Plain login flow (`POST /api/login`, `login@`
+    inbound) keeps the default body — that path actually IS sign-in.
+  - **`fromName` (AF-27, knowless 0.2.3).** Wired
+    `fromName: cfg.mailFromName` into both knowless factories. Inbox
+    preview now reads `addypin` instead of `noreply@addypin.com`.
+    knowless splits the conflated `from` field internally — RFC 5322
+    `From:` header gets the display name, SMTP envelope sender stays
+    bare per RFC 5321.
+  - **Footer reads complete.** Static footer extended from
+    `feedback@addypin.com | we don't keep your email` to
+    `…we don't keep your email, only a one-way fingerprint`. The
+    earlier truncation read as cut off mid-sentence. Applied to
+    `server/main.js`, `server/inbound-cli.js`, and `server/mail.js`
+    so all four outbound types match.
+- **`SHORTCODE@` auto-reply uses the canonical subdomain URL.** The
+  `Web:` line in the lookup-via-email reply now reads
+  `https://CODE.addypin.com` instead of `https://addypin.com/CODE`
+  — matches the email alias shape and what `web/index.html`
+  advertises after pin creation. New `canonicalPinUrl()` helper in
+  `server/inbound.js` picks subdomain on real hosts and path on
+  localhost dev (since `*.localhost` won't resolve without
+  `/etc/hosts` hacks).
+- **`pin.html`: home link escapes to apex on shortcode subdomains.**
+  On `F5J6KK.addypin.com` the wildcard nginx block rewrites `/` to
+  `/F5J6KK`, so the relative `href="/"` on the brand logo and the
+  404 "create one" link looped back to the same pin page. Detect
+  the shortcode-subdomain shape and rewrite both anchors to
+  `https://addypin.com/` on script load.
+- **`pin.html`: Copy URL produces the canonical subdomain shape.**
+  Visitors arriving via the post-confirm redirect (`/CODE?confirmed=1`)
+  or any path-based link were copying the non-canonical form.
+  Build the URL from the shortcode + base domain so the clipboard
+  always gets `https://CODE.addypin.com/` on real hosts.
+
 ### Added
 
 - **Subdomain-per-shortcode is live (`F5J6KK.addypin.com`).** PRD §14
