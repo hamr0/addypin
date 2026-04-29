@@ -60,7 +60,7 @@ const auth = knowless({
     smtpHost: 'localhost',
     smtpPort: 25,
     openRegistration: true,
-    bodyFooter: "feedback@addypin.com | we don't keep your email",
+    bodyFooter: "feedback@addypin.com | we don't keep your email, only a one-way fingerprint",
     includeLastLoginInEmail: false,
     subject: 'Your addypin login link',
     maxLoginRequestsPerIpPerHour: 0,

@@ -53,7 +53,7 @@ const auth = knowless({
     subject: 'Your addypin login link',  // factory default; pin-creation
                                           // and expiry-reminder paths
                                           // override via subjectOverride.
-    bodyFooter: "feedback@addypin.com | we don't keep your email",
+    bodyFooter: "feedback@addypin.com | we don't keep your email, only a one-way fingerprint",
     // Reminder/confirmation mails shouldn't carry a "Last sign-in"
     // line — they're not login UX. Off everywhere keeps all three
     // outbound shapes uniform.

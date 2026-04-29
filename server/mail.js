@@ -34,7 +34,7 @@ export function createMailer({ from, fromName = '', transport }) {
     const FOOTER = [
         '',
         '-- ',
-        "feedback@addypin.com | we don't keep your email",
+        "feedback@addypin.com | we don't keep your email, only a one-way fingerprint",
     ].join('\n');
 
     function withFooter(body) { return body + '\n' + FOOTER; }
