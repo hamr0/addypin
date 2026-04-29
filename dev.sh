@@ -16,9 +16,10 @@
 set -euo pipefail
 
 # ─── pass entry paths ───────────────────────────────────────────────────────
-DATA_KEY_PATH=addypin/server/data_key            # required, 32-byte hex
-EMAIL_KEY_PATH=addypin/server/email_key          # required, 32-byte hex
-SIGNING_KEY_PATH=addypin/server/signing_key      # required, 32-byte hex
+DATA_KEY_PATH=addypin/server/data_key                # required, 32-byte hex
+KNOWLESS_SECRET_PATH=addypin/server/knowless_secret  # required, 32-byte hex
+                                                     # (renamed from email_key —
+                                                     #  same role, same value)
 
 PORT_PATH=addypin/server/port                    # optional, default 3000
 DATA_DIR_PATH=addypin/server/data_dir            # optional, default ./data
@@ -48,13 +49,21 @@ with_default() {
 
 # ─── load secrets + config ──────────────────────────────────────────────────
 export ADDYPIN_DATA_KEY=$(ensure_hex_key "$DATA_KEY_PATH")
-export ADDYPIN_EMAIL_KEY=$(ensure_hex_key "$EMAIL_KEY_PATH")
-export ADDYPIN_SIGNING_KEY=$(ensure_hex_key "$SIGNING_KEY_PATH")
+
+# One-time migration: if the old email_key entry exists and the new
+# knowless_secret entry does not, copy across so handle derivation
+# stays stable across the rename.
+if pass show addypin/server/email_key >/dev/null 2>&1 && \
+   ! pass show "$KNOWLESS_SECRET_PATH" >/dev/null 2>&1; then
+    echo "→ migrating addypin/server/email_key → $KNOWLESS_SECRET_PATH" >&2
+    pass show addypin/server/email_key | head -1 | pass insert -e "$KNOWLESS_SECRET_PATH" >/dev/null
+fi
+export KNOWLESS_SECRET=$(ensure_hex_key "$KNOWLESS_SECRET_PATH")
 
 export PORT=$(with_default "$PORT_PATH" 3000)
 export DATA_DIR=$(with_default "$DATA_DIR_PATH" ./data)
 export BASE_URL=$(with_default "$BASE_URL_PATH" "")
-export MAIL_FROM_ADDRESS=$(with_default "$MAIL_FROM_ADDR_PATH" noreply@addypin.com)
+export MAIL_FROM_ADDRESS=$(with_default "$MAIL_FROM_ADDR_PATH" auth@addypin.com)
 export MAIL_FROM_NAME=$(with_default "$MAIL_FROM_NAME_PATH" addypin)
 
 # ─── run ────────────────────────────────────────────────────────────────────
