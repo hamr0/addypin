@@ -18,7 +18,7 @@
 | M10 | Deploy to VPS + ops must-haves (§14) | ✅ shipped 2026-04-20 — see `docs/03-logs/m10-deploy-log.md` |
 | M11 | knowless integration: replace bespoke auth/sessions/auth-mail with [`knowless`](https://github.com/hamr0/knowless) | ✅ shipped 2026-04-29 |
 
-Through M10 no runtime dependencies were added; `node:sqlite` + `node:crypto` + `node:http` covered every need. M11 introduces two transitive deps via `knowless` (`nodemailer` for SMTP submission, `better-sqlite3` for knowless's own store). Both are conventional, well-maintained, and targeted at the exact role (localhost SMTP, embedded SQLite) addypin would have used stdlib for if a stdlib option existed. See §9 for posture.
+Through M10 no runtime dependencies were added; `node:sqlite` + `node:crypto` + `node:http` covered every need. M11 introduces one transitive runtime dep via `knowless`: `nodemailer` for SMTP submission. (Earlier `knowless@0.1.x` also pulled in `better-sqlite3`, which broke installs on long-LTS distros without a C++20 toolchain; `knowless@0.2.0` swapped to `node:sqlite` and the native dep is gone.) See §9 for posture.
 
 ## Cutover
 
@@ -65,7 +65,7 @@ Explicit list of things v2 will **not** do. Each of these was in v1.
 
 ## 4. Data model
 
-Two SQLite files. addypin owns `data/addypin.db` with the pin tables; knowless owns `data/knowless.db` with its own handles, tokens, sessions, and rate-limit tables (knowless's internal schema, see [knowless SPEC §13](https://github.com/hamr0/knowless/blob/main/docs/02-design/SPEC.md)). Two files because addypin uses Node's `node:sqlite` driver and knowless uses `better-sqlite3` — different drivers shouldn't share a file handle.
+Two SQLite files. addypin owns `data/addypin.db` with the pin tables; knowless owns `data/knowless.db` with its own handles, tokens, sessions, and rate-limit tables (knowless's internal schema, see [knowless SPEC §13](https://github.com/hamr0/knowless/blob/main/docs/02-design/SPEC.md)). As of `knowless@0.2.0` both sides use `node:sqlite`; the files stay separate so the two domains can be backed up, wiped, or migrated independently (knowless tokens/sessions don't share a lifecycle with the pin store).
 
 ```sql
 -- addypin.db

@@ -5,6 +5,63 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Added
+
+- **Subdomain-per-shortcode is live (`F5J6KK.addypin.com`).** PRD §14
+  flagged it as v2.1 work; ended up shipping in v2.0 cleanup once the
+  cert was sorted. Two HTTPS server blocks in nginx: apex and a
+  wildcard `~^(?<sc>[A-Za-z0-9]{6})\.addypin\.com$` (regex quoted —
+  nginx 1.14 on RHEL 8 rejects the `$` anchor unquoted). The wildcard
+  block internally rewrites `/` → `/SHORTCODE` before `proxy_pass`,
+  so the existing `GET /:shortcode` route serves `pin.html`
+  unchanged. Sub-paths (`/api/pins/X`, `/maplogos/*`) pass through.
+  `web/pin.html` falls back to `location.hostname` for shortcode
+  derivation when the path is `/`. The success screen on
+  `web/index.html` advertises `SHORTCODE.host` on real domains and
+  `host/SHORTCODE` on `localhost` (since `*.localhost` won't resolve
+  without /etc/hosts hacks). Old `addypin.com/SHORTCODE` URLs keep
+  working — the byte-identical `pin.html` is served either way, so
+  no shared link, bookmark, QR code, or printed flyer breaks.
+
+### Changed
+
+- **knowless 0.1.10 → 0.2.0.** Upstream swapped `better-sqlite3` →
+  `node:sqlite`, eliminating the only native compile in the tree.
+  Lockfile sheds 38 transitives (`prebuild-install`, `node-gyp`,
+  `tar-fs`, etc.). Long-LTS distros (RHEL 8/9, Alma, Rocky, Amazon
+  Linux 2) install vanilla — no C++20 toolchain required. Bumped
+  `engines.node` floor to `>=22.5.0` (knowless's `node:sqlite`
+  requirement). knowless's public surface is unchanged: no addypin
+  code edits needed. Discovered the hard way during the M11 VPS
+  cutover when stock g++ 8.5 / glibc 2.28 on RHEL 8 couldn't build
+  `better-sqlite3@11.10.0`'s C++20 sources or run its prebuilt
+  binary; this upgrade closes that whole class of install failure.
+- **M11 production cutover.** Live VPS now runs the knowless-backed
+  build (`addypin → knowless@0.2.0 → nodemailer`, three packages
+  total, zero native deps). End-to-end smoke verified: pin creation
+  → magic-link via knowless → Postfix submission to localhost:25 →
+  OpenDKIM signing → Gmail relay (`status=sent`). `BASE_URL` and
+  `NODE_ENV=production` added to `/etc/addypin/env` so cookie
+  `Secure` flag is set and magic links render as
+  `https://addypin.com/auth/callback?t=…`.
+
+### Fixed
+
+- **Wildcard cert renewal.** The `*.addypin.com` cert
+  (`addypin.com-0001` lineage) had silently expired on 2025-12-02 —
+  no DNS plugin was installed, so certbot's auto-renew couldn't
+  satisfy the DNS-01 challenge that wildcards require, and the
+  failure had no visible blast radius until subdomain serving became
+  load-bearing today. Installed `python3-certbot-dns-route53`,
+  staged AWS IAM credentials at `/root/.aws/credentials` (chmod 600),
+  forced renewal, verified `certbot renew --dry-run`. New expiry
+  2026-07-28; auto-renewals resume via `certbot-renew.timer`. IAM
+  user has `AmazonRoute53FullAccess` for now — should tighten to a
+  scoped inline policy on hosted zone `Z1CHOY92OEU194` when there's
+  time. Credential halves stored in `pass` at
+  `addypin/prod/aws_r53_ssl_key` (access key id) and
+  `addypin/prod/aws_r53_ssl` (secret).
+
 ### Changed
 
 - **M11 — Replaced bespoke auth/sessions/auth-mail with [`knowless`](https://github.com/hamr0/knowless).**
@@ -16,8 +73,8 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
   auto-reply). User-visible behavior is preserved: drop-pin-confirm
   cycle, `/api/login` 202-JSON contract, email-in `login@`/`resend@`,
   the 48 h reminder, `/manage` UI, edit/delete. Net delta: ~1,150 LOC
-  removed from `server/`, ~50 LOC added; two new transitive deps
-  (`nodemailer`, `better-sqlite3`) via knowless. Threat-model gains
+  removed from `server/`, ~50 LOC added; one new transitive runtime
+  dep (`nodemailer`) via knowless. Threat-model gains
   documented in PRD §7: timing equivalence on `/api/login` and
   `/api/pins` is now a real property (knowless ships a CI test
   asserting `< 1ms` delta), and DB-leak no longer exposes live
@@ -27,7 +84,8 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
   `addypin/server/knowless_secret` on first dev.sh run after upgrade.
   Manage UI now shows "Signed in as `<email>`" — sourced from
   `localStorage` (the user typed it on the form), since the server
-  can't know it post-confirm. Pinned at `knowless@0.1.10`.
+  can't know it post-confirm. Pinned at `knowless@0.2.0` (see the
+  `knowless 0.1.10 → 0.2.0` entry above for the in-flight bump).
 
 ### Added
 

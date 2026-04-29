@@ -3,9 +3,11 @@
 **Drop a pin, get a link.**
 
 ```
-https://addypin.com/HOUSE1          ← resolves to lat/lng + 12 map-app buttons
+https://HOUSE1.addypin.com           ← resolves to lat/lng + 12 map-app buttons
 HOUSE1@addypin.com                   ← email it, get an auto-reply with the same
 ```
+
+(`https://addypin.com/HOUSE1` also resolves to the same page — old links keep working.)
 
 ## What it solves
 
@@ -94,15 +96,15 @@ production surface.
 |---|---|---|
 | Runtime | Node.js 22 | Because `node:sqlite` + `node:http` + `node:crypto` remove three dependencies. TypeScript adds nothing here — plain ESM with JSDoc where it matters. |
 | HTTP | `node:http` + a tiny router | Express/Fastify were overkill for ~20 routes. The router is 80 lines and you can read it in two minutes. |
-| DB | `better-sqlite3`-ish via `node:sqlite` (built-in, experimental flag) | Pins are ~1 KB each. We're not going to have 100 M rows. Postgres solves problems we don't have. One `.db` file = one-command backups. |
+| DB | `node:sqlite` (built-in, experimental flag) | Pins are ~1 KB each. We're not going to have 100 M rows. Postgres solves problems we don't have. One `.db` file = one-command backups. As of `knowless@0.2.0` both addypin and knowless use `node:sqlite`, so the runtime tree has zero native deps. |
 | Crypto | `node:crypto` stdlib | AES-256-GCM for coords + the encrypted-email blob in the unconfirmed window. Handle derivation + magic-link token signing live in knowless (HMAC-SHA256). No key rotation story because we're not claiming to need one. See PRD §4. |
-| Auth + auth-mail | [`knowless`](https://github.com/hamr0/knowless) | Replaces ~1,150 LOC of bespoke magic-link plumbing (signed tokens, sessions table, mailers) with one library. Sham-work timing equivalence on POST /login (CI-tested `< 1ms` delta) and SHA-256-hashed-at-rest tokens are wins addypin couldn't justify implementing itself but inherits for free. Two transitive runtime deps (`nodemailer`, `better-sqlite3`); knowless ships its own SQLite at `data/knowless.db`. |
+| Auth + auth-mail | [`knowless`](https://github.com/hamr0/knowless) | Replaces ~1,150 LOC of bespoke magic-link plumbing (signed tokens, sessions table, mailers) with one library. Sham-work timing equivalence on POST /login (CI-tested `< 1ms` delta) and SHA-256-hashed-at-rest tokens are wins addypin couldn't justify implementing itself but inherits for free. One transitive runtime dep (`nodemailer`); knowless ships its own SQLite at `data/knowless.db` via `node:sqlite`. |
 | Frontend | Plain HTML + vanilla JS + Leaflet (CDN) | Four HTML files. No build step, no bundler, no framework. Leaflet is 42 KB and it's the only page dep. |
 | Maps search | OpenStreetMap Nominatim (public API) | Rate-limited, but free, and never phones home per-user. We also add +11 map-app deep links via a pure `mapLinks(lat, lng)` function. |
 | Outbound mail (non-auth) | `msmtp` → local Postfix → OpenDKIM sign → public MX | Replaces Resend ($). Only the `SHORTCODE@` auto-reply is left on this path; auth mail moved to knowless's nodemailer (same Postfix, different SMTP submitter). DKIM=pass, SPF=pass, DMARC=pass end-to-end (mail-tester 10/10). |
 | Inbound mail | Postfix `transport_maps` → pipe → `node server/inbound-cli.js` | Replaces Resend's paid inbound webhook. Three local-part handlers: `login@`, `resend@`, any 6-char shortcode. Anything else silently drops. |
 | Process supervision | systemd unit | No Docker, no Compose, no PM2. `systemctl restart addypin`. |
-| Reverse proxy | nginx + Let's Encrypt (certbot webroot) | Handles TLS termination and the HTTP→HTTPS redirect. Also the wildcard cert for future `SHORTCODE.addypin.com` subdomains (v2.1). |
+| Reverse proxy | nginx + Let's Encrypt wildcard (`certbot --dns-route53`) | Handles TLS termination, HTTP→HTTPS redirect, and two HTTPS server blocks: the apex (`addypin.com`) and a wildcard (`*.addypin.com`) that rewrites `/` → `/SHORTCODE` so `https://F5J6KK.addypin.com/` and `https://addypin.com/F5J6KK` both serve the same `pin.html`. Wildcard cert via DNS-01 (Route 53), automated by certbot's systemd timer. |
 | Secrets (dev) | `pass` (GPG password-store), never on disk | `./dev.sh` reads two required keys + config values from pass. First run generates anything missing; legacy `email_key` entry auto-migrates to `knowless_secret`. |
 | Secrets (prod) | systemd `EnvironmentFile=/etc/addypin/env` mode 640 | Two 32-byte hex keys: `ADDYPIN_DATA_KEY` (AES, coords + encrypted-email-while-unconfirmed) and `KNOWLESS_SECRET` (HMAC, handle derivation + cookie signing). Losing `DATA_KEY` bricks the DB; losing `KNOWLESS_SECRET` invalidates every existing handle and session. Backed up in `pass` under `addypin/prod/*`. |
 | Ops monitor | `ops/health-check.sh` + `ops/systemd/addypin-health.{service,timer}` | 15-min oneshot. Checks units, disk, local API, mailq, journal errors, cert expiry, DB sanity. Emails on failure via local Postfix (DKIM-signed). |
