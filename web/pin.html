@@ -135,7 +135,8 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-const code = location.pathname.replace(/^\//, '').replace(/\/$/, '').toUpperCase();
+const code = (location.pathname.replace(/^\//, '').replace(/\/$/, '') ||
+              location.hostname.split('.')[0]).toUpperCase();
 
 (async () => {
     if (!/^[A-Z0-9]{6}$/.test(code)) { showNotFound(); return; }

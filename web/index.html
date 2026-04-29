@@ -433,8 +433,15 @@ document.getElementById('bottom').addEventListener('submit', async (e) => {
 
 function showSuccess(shortcode) {
     const host = location.host;
-    document.getElementById('webLink').textContent = `${host}/${shortcode}`;
-    document.getElementById('emailLink').textContent = `${shortcode}@${host.replace(/^www\./, '')}`;
+    // Subdomain canonical (`F5J6KK.addypin.com`) on real hosts; localhost
+    // dev keeps path-based since `*.localhost` won't resolve without
+    // /etc/hosts surgery.
+    const baseDomain = host.replace(/^www\./, '');
+    const isLocal = /^(localhost|127\.|\[)/.test(host) || host.includes(':');
+    document.getElementById('webLink').textContent = isLocal
+        ? `${host}/${shortcode}`
+        : `${shortcode}.${baseDomain}`;
+    document.getElementById('emailLink').textContent = `${shortcode}@${baseDomain}`;
     document.getElementById('bottom').classList.add('done');
 }
 // Whole-card tap-to-copy. No separate copy button.
