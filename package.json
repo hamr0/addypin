@@ -12,6 +12,7 @@
     "dev": "node --experimental-sqlite --watch server/main.js",
     "test": "node --experimental-sqlite --test --test-reporter=spec \"server/**/*.test.js\""
   },
-  "dependencies": {},
-  "devDependencies": {}
+  "dependencies": {
+    "knowless": "^0.1.10"
+  }
 }
