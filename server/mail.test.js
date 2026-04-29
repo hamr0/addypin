@@ -30,6 +30,26 @@ test('sendConfirmation passes the right args to the transport', async () => {
     assert.match(sent[0].body, /72 hours/);
 });
 
+test('every outbound message carries the feedback + privacy footer', async () => {
+    const sent = [];
+    const m = createMailer({
+        from: 'noreply@addypin.com',
+        transport: async (to, subject, body) => { sent.push(body); },
+    });
+    await m.sendConfirmation({ to: 'a@b.com', shortcode: 'ABC123', confirmUrl: 'x' });
+    await m.sendLogin({ to: 'a@b.com', loginUrl: 'x' });
+    await m.sendExpiryReminder({ to: 'a@b.com', shortcode: 'ABC123', confirmUrl: 'x', hoursLeft: 24 });
+    await m.sendShortcodeReply({
+        to: 'a@b.com', shortcode: 'ABC123', lat: 1, lng: 2,
+        address: null, links: [{ name: 'Google Maps', url: 'https://g/' }], webUrl: 'https://w/',
+    });
+    assert.equal(sent.length, 4);
+    for (const body of sent) {
+        assert.match(body, /\n-- \nfeedback@addypin\.com/, 'sig-delim + feedback contact');
+        assert.match(body, /one-way fingerprint/);
+    }
+});
+
 test('sendConfirmation propagates transport errors', async () => {
     const m = createMailer({
         from: 'noreply@addypin.com',

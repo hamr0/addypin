@@ -20,6 +20,18 @@ export function createMailer({ from, fromName = '', transport }) {
         throw new Error('transport must be a function');
     }
 
+    // Standard sig-delim ("-- " trailing-space) tells well-behaved mail
+    // clients to collapse the footer in quoted replies. Without the
+    // trailing space (which some intermediates strip) it still renders
+    // fine as plain text. See RFC 3676 §4.3.
+    const FOOTER = [
+        '',
+        '-- ',
+        "feedback@addypin.com · we don't keep your email, only a one-way fingerprint",
+    ].join('\n');
+
+    function withFooter(body) { return body + '\n' + FOOTER; }
+
     async function sendConfirmation({ to, shortcode, confirmUrl }) {
         const subject = `Confirm your addypin: ${shortcode}`;
         const body = [
@@ -31,7 +43,7 @@ export function createMailer({ from, fromName = '', transport }) {
             ``,
             `If you did not create this pin, ignore this email — it auto-deletes within 72 hours.`,
         ].join('\n');
-        await transport(to, subject, body);
+        await transport(to, subject, withFooter(body));
     }
 
     async function sendLogin({ to, loginUrl }) {
@@ -45,7 +57,7 @@ export function createMailer({ from, fromName = '', transport }) {
             ``,
             `If you didn't request this, ignore the email — no action is needed.`,
         ].join('\n');
-        await transport(to, subject, body);
+        await transport(to, subject, withFooter(body));
     }
 
     // Auto-reply to SHORTCODE@addypin.com with the coordinates and a list of
@@ -59,7 +71,7 @@ export function createMailer({ from, fromName = '', transport }) {
         const lines = [`${shortcode} is at ${lat.toFixed(6)}, ${lng.toFixed(6)}.`];
         if (address) lines.push(`Near: ${address}`);
         lines.push('', 'Open in your map app:', linkLines, '', `Web: ${webUrl}`);
-        await transport(to, subject, lines.join('\n'));
+        await transport(to, subject, withFooter(lines.join('\n')));
     }
 
     async function sendExpiryReminder({ to, shortcode, confirmUrl, hoursLeft }) {
@@ -75,7 +87,7 @@ export function createMailer({ from, fromName = '', transport }) {
             `After expiry the shortcode is retired and cannot be reused —`,
             `nobody will be able to claim the same code later.`,
         ].join('\n');
-        await transport(to, subject, body);
+        await transport(to, subject, withFooter(body));
     }
 
     return { sendConfirmation, sendLogin, sendShortcodeReply, sendExpiryReminder };

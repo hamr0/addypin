@@ -7,6 +7,18 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
 
 ### Added
 
+- **Feedback channel + signed footer on every outbound email.**
+  New Postfix alias `feedback@addypin.com → avoidaccess@gmail.com`
+  (alongside the existing `postmaster@` and `abuse@` RFC-2142
+  contacts — kept separate so deliverability/abuse mailbox stays
+  clean). All four outbound message types (pin confirmation, login
+  magic link, expiry reminder, shortcode auto-reply) now end with
+  the standard `-- ` sig delimiter plus one line:
+  `feedback@addypin.com · we don't keep your email, only a one-way
+  fingerprint`. Privacy claim is accurate everywhere — for owner-
+  facing mails the HMAC fingerprint is the only stored artifact;
+  for the looker-upper auto-reply nothing is stored at all (which
+  the "only a fingerprint" wording bounds correctly).
 - **`ops/deploy.sh` + `docs/04-process/deploy.md`.** Manual deploy
   is no longer a tribal-knowledge incantation — one script enforces
   the gate (on `main`, clean tree, in sync with origin, tests
