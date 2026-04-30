@@ -1,5 +1,5 @@
 [Unit]
-Description=addypin daily stats snapshot (pin + customer counts to data/stats.log)
+Description=addypin daily stats snapshot (pin + customer counts to $DATA_DIR/stats.log)
 After=network-online.target
 
 [Service]
@@ -7,7 +7,18 @@ Type=oneshot
 User=addypin
 Group=addypin
 WorkingDirectory=/opt/addypin
-# /bin/sh wrapper because RHEL 8 ships systemd 239 — StandardOutput=append:
-# (240+) isn't available. Plain shell append is portable.
-ExecStart=/bin/sh -c '/usr/bin/node --experimental-sqlite /opt/addypin/server/stats.js >> /opt/addypin/data/stats.log'
+EnvironmentFile=/etc/addypin/env
+# /bin/sh wrapper: systemd expands ${DATA_DIR} from EnvironmentFile, then sh
+# does the >> redirect. RHEL 8 ships systemd 239 — StandardOutput=append:
+# (240+) isn't available, so we go through sh. The script also reads
+# DATA_DIR from its env to locate addypin.db, so the same env file pins
+# both halves (db read path + log write path).
+ExecStart=/bin/sh -c '/usr/bin/node --experimental-sqlite /opt/addypin/server/stats.js >> ${DATA_DIR}/stats.log'
+
+# Match addypin.service hardening posture.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/addypin
 Nice=10
