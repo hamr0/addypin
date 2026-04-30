@@ -1,0 +1,19 @@
+[Unit]
+Description=addypin weekly stats digest (last 4 weeks of stats.log → operator email)
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=addypin
+Group=addypin
+WorkingDirectory=/opt/addypin
+EnvironmentFile=/etc/addypin/env
+ExecStart=/usr/bin/node /opt/addypin/server/digest.js
+
+# Match addypin.service hardening posture. msmtp + OpenDKIM run as
+# their own users on the system path, no writes needed from this unit.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+Nice=10

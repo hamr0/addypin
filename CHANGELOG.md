@@ -7,6 +7,26 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
 
 ### Added
 
+- **Weekly stats digest email (`server/digest.js` + Sun 09:00 timer).**
+  Reads `${DATA_DIR}/stats.log` (one snapshot per day from the
+  daily timer), buckets entries into the last 4 weeks relative to
+  "now", picks the latest snapshot in each bucket, and mails
+  **one row per week** with a week-over-week delta — not a 28-line
+  raw dump. Sample row:
+  `2026-04-30  pins=5 customers=2  (+1 pins, +0 customers WoW)`.
+  Pipes through msmtp out the same Postfix → OpenDKIM path as the
+  `SHORTCODE@` auto-reply (so DKIM/SPF/DMARC pass — no separate
+  deliverability story). Recipient hard-coded to
+  `avoidaccess@gmail.com`; From / From-name come from
+  `/etc/addypin/env` (`MAIL_FROM_ADDRESS`, `MAIL_FROM_NAME`) so the
+  digest matches user-facing mail's `From: addypin <…>` shape.
+  systemd unit pair `ops/systemd/addypin-stats-digest.{service,timer}`,
+  fires every Sunday at 09:00 local with `Persistent=true` and the
+  same hardening flags as `addypin-stats.service`. Plain Node
+  stdlib (`fs` + `crypto` + `child_process`) — no new deps. If
+  `stats.log` is empty or missing, the script exits 0 silently
+  rather than mailing an empty digest.
+
 - **Stats counter (`server/stats.js`) + daily VPS log — live.**
   Read-only operator script. No decryption, no env vars beyond
   `DATA_DIR`, no new deps. Prints `pins=N customers=M` to stdout
