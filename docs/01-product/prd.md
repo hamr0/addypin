@@ -257,6 +257,7 @@ Non-negotiable for production cutover. Each item replicates something v1 has run
 - **SSH posture:** key-only on the VPS (`PasswordAuthentication no`). Two authorized keys — the primary laptop (`hamr@chaotic`) and the home-server backup user (`addypin-backup@federver`). Every v1-era CI/runner/scaffolding key was pruned.
 - **DR for SSH lockout:** the RackNerd web VNC console is the escape hatch — hypervisor-level, independent of SSH. Auth is the VPS root password stored in pass. If both laptop and federver keys are lost simultaneously AND the pass-store GPG secret is lost, it's a full rebuild from the nightly backup.
 - **Secret store:** everything sensitive (SSH private key, prod env keys, RackNerd panel creds, VPS root password) in `pass` at `addypin/*`. Pass-store is itself a private git repo on GitHub. Single point of failure is the GPG secret key — paperkey or offline-USB backup strongly recommended.
+- **Growth visibility (operator-only):** `server/stats.js` opens `data/addypin.db` read-only and prints `pins=<confirmed> customers=<distinct owner_handle>` to stdout — one-shot via `npm run stats` or polled every 10 min via `npm run stats:log` (redirect + `nohup` to background-log). No new tables, no event recording, no per-user dimensions; just the two row counts the operator needs to see whether the service is growing. Fits within §2's "no usage analytics" line — nothing is *recorded*, it's just `SELECT COUNT(*)` against existing rows.
 
 ## 13. Out for later (v2.1+)
 

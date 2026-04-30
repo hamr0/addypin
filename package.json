@@ -10,7 +10,9 @@
   "scripts": {
     "start": "node --experimental-sqlite server/main.js",
     "dev": "node --experimental-sqlite --watch server/main.js",
-    "test": "node --experimental-sqlite --test --test-reporter=spec \"server/**/*.test.js\""
+    "test": "node --experimental-sqlite --test --test-reporter=spec \"server/**/*.test.js\"",
+    "stats": "node --experimental-sqlite server/stats.js",
+    "stats:log": "node --experimental-sqlite server/stats.js --watch 600"
   },
   "dependencies": {
     "knowless": "^0.2.3"

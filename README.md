@@ -120,6 +120,8 @@ ownership; it doesn't activate the pin.
 ./dev.sh --no-watch # same, no auto-restart
 npm test            # all tests, in-memory SQLite, no env needed
 npm start           # prod-style run; env set externally
+npm run stats       # one-shot: prints "pins=N customers=M" against data/addypin.db
+npm run stats:log   # same, polling every 10 min; redirect + nohup to background-log
 ```
 
 GPG prompts once per shell session. Missing keys are generated on first

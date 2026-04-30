@@ -1,0 +1,10 @@
+[Unit]
+Description=Run addypin stats snapshot once a day
+
+[Timer]
+OnCalendar=daily
+AccuracySec=15min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

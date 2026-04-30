@@ -1,0 +1,13 @@
+[Unit]
+Description=addypin daily stats snapshot (pin + customer counts to data/stats.log)
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=addypin
+Group=addypin
+WorkingDirectory=/opt/addypin
+# /bin/sh wrapper because RHEL 8 ships systemd 239 — StandardOutput=append:
+# (240+) isn't available. Plain shell append is portable.
+ExecStart=/bin/sh -c '/usr/bin/node --experimental-sqlite /opt/addypin/server/stats.js >> /opt/addypin/data/stats.log'
+Nice=10

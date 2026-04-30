@@ -5,6 +5,19 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Added
+
+- **Stats counter (`server/stats.js`) + daily VPS log.** Read-only
+  operator script — no decryption, no env vars, no new deps. Prints
+  `pins=N customers=M` to stdout (confirmed pins + distinct
+  `owner_handle` set). Local: `npm run stats` (one-shot) or
+  `npm run stats:log` (10-min polling). VPS: shipped as
+  `ops/systemd/addypin-stats.{service,timer}` — oneshot unit fires
+  daily, appends a line to `/opt/addypin/data/stats.log`. Mirrors the
+  `addypin-health` unit shape; `User=addypin`, `Nice=10`. Doesn't add
+  a stats table, an event pipeline, or any per-user dimension — the
+  PRD §2 "no usage analytics" line still holds.
+
 ### Changed
 
 - **Outbound mail polish (knowless 0.2.1 → 0.2.3).** Three knowless
