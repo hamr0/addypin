@@ -7,15 +7,23 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
 
 ### Added
 
-- **Stats counter (`server/stats.js`) + daily VPS log.** Read-only
-  operator script — no decryption, no env vars, no new deps. Prints
-  `pins=N customers=M` to stdout (confirmed pins + distinct
-  `owner_handle` set). Local: `npm run stats` (one-shot) or
-  `npm run stats:log` (10-min polling). VPS: shipped as
-  `ops/systemd/addypin-stats.{service,timer}` — oneshot unit fires
-  daily, appends a line to `/opt/addypin/data/stats.log`. Mirrors the
-  `addypin-health` unit shape; `User=addypin`, `Nice=10`. Doesn't add
-  a stats table, an event pipeline, or any per-user dimension — the
+- **Stats counter (`server/stats.js`) + daily VPS log — live.**
+  Read-only operator script. No decryption, no env vars beyond
+  `DATA_DIR`, no new deps. Prints `pins=N customers=M` to stdout
+  (confirmed pins + distinct `owner_handle` set). Local:
+  `npm run stats` (one-shot) or `npm run stats:log` (10-min polling).
+  VPS: `ops/systemd/addypin-stats.{service,timer}` — oneshot unit
+  fires daily, reads `/etc/addypin/env` so `DATA_DIR=/var/lib/addypin`
+  flows through to both the db read path and the log write path
+  (`${DATA_DIR}/stats.log`). Hardening flags mirror `addypin.service`
+  (`NoNewPrivileges`, `ProtectSystem=strict`,
+  `ReadWritePaths=/var/lib/addypin`, etc.); shell-redirect via
+  `/bin/sh -c` because RHEL 8 ships systemd 239 and
+  `StandardOutput=append:` (240+) isn't available. Deployed and
+  enabled on the VPS 2026-04-30 — first datapoint
+  `2026-04-30T19:25:33Z pins=5 customers=2`, next fire midnight EDT
+  with `Persistent=true` so a downed VPS catches up on boot. Doesn't
+  add a stats table, an event pipeline, or any per-user dimension —
   PRD §2 "no usage analytics" line still holds.
 
 ### Changed
