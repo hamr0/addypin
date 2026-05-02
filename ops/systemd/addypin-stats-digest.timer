@@ -2,7 +2,7 @@
 Description=Send the addypin weekly stats digest every Sunday morning
 
 [Timer]
-OnCalendar=Sun *-*-* 09:00:00
+OnCalendar=Sun *-*-* 09:00:00 UTC
 AccuracySec=15min
 Persistent=true
 

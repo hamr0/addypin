@@ -8,6 +8,7 @@
 //   nohup node --experimental-sqlite server/stats.js --watch 600 \
 //     >> data/stats.log 2>&1 &
 
+import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 
@@ -18,6 +19,10 @@ const args = process.argv.slice(2);
 const watchIdx = args.indexOf('--watch');
 const intervalSec = watchIdx >= 0 ? parseInt(args[watchIdx + 1] ?? '600', 10) : 0;
 
+if (!fs.existsSync(dbPath)) {
+    console.error(`stats: ${dbPath} not found — start the server first to create the database`);
+    process.exit(0);
+}
 const db = new DatabaseSync(dbPath, { readOnly: true });
 const stmts = {
     pins:      db.prepare(`SELECT COUNT(*) AS n FROM pins WHERE status = 'confirmed'`),

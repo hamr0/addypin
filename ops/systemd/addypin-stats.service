@@ -20,5 +20,5 @@ NoNewPrivileges=true
 ProtectSystem=strict
 ProtectHome=true
 PrivateTmp=true
-ReadWritePaths=/var/lib/addypin
+ReadWritePaths=/var/lib/addypin  # must match DATA_DIR in /etc/addypin/env
 Nice=10

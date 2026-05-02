@@ -10,14 +10,14 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import crypto from 'node:crypto';
-import { spawn } from 'node:child_process';
+import { msmtpTransport } from './mail.js';
 
 const dataDir  = process.env.DATA_DIR || './data';
 const logPath  = path.join(dataDir, 'stats.log');
 const to       = 'avoidaccess@gmail.com';
-const from     = process.env.MAIL_FROM_ADDRESS || 'auth@addypin.com';
+const from     = process.env.MAIL_FROM_ADDRESS || 'noreply@addypin.com';
 const fromName = process.env.MAIL_FROM_NAME    || 'addypin';
+const send     = msmtpTransport({ from, fromName });
 
 let raw = '';
 try { raw = fs.readFileSync(logPath, 'utf8'); } catch (e) {
@@ -57,7 +57,7 @@ const body =
     'Last 4 weeks of addypin (latest snapshot per week, UTC):\n\n' +
     rows.join('\n') + '\n';
 
-await sendViaMsmtp({ to, from, fromName, subject, body });
+await send(to, subject, body);
 
 // ─── helpers ───────────────────────────────────────────────────────────────
 
@@ -71,32 +71,3 @@ function parseLine(line) {
 }
 
 function signed(n) { return n >= 0 ? `+${n}` : `${n}`; }
-
-function sendViaMsmtp({ to, from, fromName, subject, body }) {
-    const fromHeader = fromName ? `"${fromName.replace(/"/g, '\\"')}" <${from}>` : from;
-    const fromDomain = from.split('@')[1] || 'localhost';
-    const message = [
-        `From: ${fromHeader}`,
-        `To: ${to}`,
-        `Subject: ${subject}`,
-        `Date: ${new Date().toUTCString()}`,
-        `Message-ID: <${crypto.randomBytes(12).toString('hex')}@${fromDomain}>`,
-        `MIME-Version: 1.0`,
-        `Content-Type: text/plain; charset=utf-8`,
-        `Content-Transfer-Encoding: 8bit`,
-        ``,
-        body,
-    ].join('\r\n');
-
-    return new Promise((resolve, reject) => {
-        const child = spawn('msmtp', ['--from', from, to], { stdio: ['pipe', 'ignore', 'pipe'] });
-        let stderr = '';
-        child.stderr.on('data', (d) => { stderr += d; });
-        child.on('error', reject);
-        child.on('close', (code) => {
-            if (code === 0) resolve();
-            else reject(new Error(`msmtp exited ${code}: ${stderr.trim()}`));
-        });
-        child.stdin.end(message);
-    });
-}

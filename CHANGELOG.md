@@ -21,11 +21,11 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
   `/etc/addypin/env` (`MAIL_FROM_ADDRESS`, `MAIL_FROM_NAME`) so the
   digest matches user-facing mail's `From: addypin <…>` shape.
   systemd unit pair `ops/systemd/addypin-stats-digest.{service,timer}`,
-  fires every Sunday at 09:00 local with `Persistent=true` and the
-  same hardening flags as `addypin-stats.service`. Plain Node
-  stdlib (`fs` + `crypto` + `child_process`) — no new deps. If
-  `stats.log` is empty or missing, the script exits 0 silently
-  rather than mailing an empty digest.
+  fires every Sunday at 09:00 UTC with `Persistent=true` and the
+  same hardening flags as `addypin-stats.service`. Uses
+  `msmtpTransport` from `server/mail.js` — no local copy of the
+  msmtp plumbing. No new deps. If `stats.log` is empty or missing,
+  the script exits 0 silently rather than mailing an empty digest.
 
 - **Stats counter (`server/stats.js`) + daily VPS log — live.**
   Read-only operator script. No decryption, no env vars beyond
@@ -45,6 +45,25 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
   with `Persistent=true` so a downed VPS catches up on boot. Doesn't
   add a stats table, an event pipeline, or any per-user dimension —
   PRD §2 "no usage analytics" line still holds.
+
+### Fixed
+
+- **`digest.js` deduplication.** Replaced the local `sendViaMsmtp`
+  copy with an import of `msmtpTransport` from `server/mail.js`.
+  The duplicate would have diverged silently from any future fixes
+  to the shared transport (header changes, error handling, etc.).
+- **`digest.js` `from` fallback.** Changed `'auth@addypin.com'`
+  (the magic-link sender) to `'noreply@addypin.com'` to match
+  `.env.example`. Only matters when no `MAIL_FROM_ADDRESS` env var
+  is set.
+- **`stats.js` missing-DB guard.** Added an `fs.existsSync` check
+  before `new DatabaseSync(…, { readOnly: true })`. Previously a
+  fresh deploy before any pins were created would crash with an
+  opaque SQLite error; now it exits 0 with a clear message.
+- **`addypin-stats-digest.timer` timezone.** Added `UTC` to
+  `OnCalendar` (`Sun *-*-* 09:00:00 UTC`) so the Sunday-morning
+  digest fires at a fixed wall-clock time regardless of the VPS
+  locale or DST transitions.
 
 ### Changed
 
