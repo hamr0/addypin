@@ -55,7 +55,8 @@ for (let i = 3; i >= 0; i--) {
 const subject = `addypin weekly stats — ${new Date().toISOString().slice(0, 10)}`;
 const body =
     'Last 4 weeks of addypin (latest snapshot per week, UTC):\n\n' +
-    rows.join('\n') + '\n';
+    rows.join('\n') + '\n' +
+    '\n-- \naddypin weekly stats digest\n';
 
 await send(to, subject, body);
 
