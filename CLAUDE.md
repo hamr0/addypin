@@ -76,7 +76,7 @@ Production / VPS uses environment variables loaded from a systemd `EnvironmentFi
 
 ## Deployment (v2 target)
 
-Manual: `git pull && npm ci && systemctl restart addypin` on the VPS. No Docker, no GitHub Actions pipeline in v2.0. Automate later only if it hurts.
+**Always deploy via `./ops/deploy.sh`.** Don't ssh into the VPS to `git pull` by hand, and don't tell the user to do it themselves — the script reads SSH host/user/key from `pass` (`addypin/ssh/{host,user,private_key}`), runs pre-flight (on main, clean tree, in sync with origin, `npm test` green), pulls + restarts on the VPS, and smoke-tests `https://addypin.com/`. Full runbook: [`docs/04-process/deploy.md`](docs/04-process/deploy.md). No Docker, no CI/CD pipeline in v2.0.
 
 ## Important notes
 
