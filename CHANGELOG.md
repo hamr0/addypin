@@ -7,6 +7,26 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
 
 ### Added
 
+- **Privacy-respecting discoverability — tier 1 head tags + robots/sitemap.**
+  Per the playbook in `docs/04-process/privacy-seo.md`. Landing
+  page (`web/index.html`) now ships a descriptive `<title>`,
+  privacy-stance `<meta description>` ("…no accounts, no tracking,
+  open source"), `<link rel="canonical">` to the apex, OpenGraph
+  set (`og:type/title/description/url/site_name`), `twitter:card`
+  summary, and `<meta name="theme-color">`. Pin viewer (`pin.html`),
+  manage (`manage.html`), and edit (`edit.html`) get
+  `<meta name="robots" content="noindex, nofollow">` so search
+  engines don't harvest individual pin URLs / coordinates — pins
+  stay reachable by anyone with the link, just not enumerable via
+  Google. New static files served from `web/`: `robots.txt`
+  (sitemap reference + disallow `/api/`, `/auth/`, `/manage`,
+  `/edit/`) and `sitemap.xml` (single entry: the apex). Both wired
+  into `server/http.js`'s `STATIC_FILES` map. JSON-LD skipped on
+  principle for now; `og:image` deferred (design task). No
+  analytics, no tag manager, no third-party JS — declarative
+  machine-readability only. Two new tests in `server/http.test.js`
+  cover the static-file routes.
+
 - **Weekly stats digest email (`server/digest.js` + Sun 09:00 timer).**
   Reads `${DATA_DIR}/stats.log` (one snapshot per day from the
   daily timer), buckets entries into the last 4 weeks relative to

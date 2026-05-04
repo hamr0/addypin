@@ -337,6 +337,22 @@ test('GET /favicon.svg returns 404 (we use /logo.png directly)', async () => {
     assert.equal(res.status, 404);
 });
 
+test('GET /robots.txt serves with text/plain and references the sitemap', async () => {
+    const res = await fetch(baseUrl + '/robots.txt');
+    assert.equal(res.status, 200);
+    assert.match(res.headers.get('content-type'), /^text\/plain/);
+    const body = await res.text();
+    assert.match(body, /Sitemap: https:\/\/addypin\.com\/sitemap\.xml/);
+});
+
+test('GET /sitemap.xml serves XML listing the apex URL', async () => {
+    const res = await fetch(baseUrl + '/sitemap.xml');
+    assert.equal(res.status, 200);
+    assert.match(res.headers.get('content-type'), /xml/);
+    const body = await res.text();
+    assert.match(body, /<loc>https:\/\/addypin\.com\/<\/loc>/);
+});
+
 test('GET /maplogos/<file> serves a real logo with correct content-type', async () => {
     const res = await fetch(baseUrl + '/maplogos/google.ico');
     assert.equal(res.status, 200);

@@ -41,7 +41,7 @@ Sharing a precise location over text or email is painful. Coordinates are ugly, 
 Explicit list of things v2 will **not** do. Each of these was in v1.
 
 - **No usage analytics.** No event tracking, no daily stats tables, no Umami. Server logs go to stdout, rotated by the OS, nothing else.
-- **No public directory, feed, or discovery.** Pins are not listed anywhere. A shortcode is the only way in.
+- **No public directory, feed, or discovery.** Pins are not listed anywhere. A shortcode is the only way in. Pin pages (`/SHORTCODE`, the wildcard subdomain, `/manage`, `/edit/…`) ship `<meta name="robots" content="noindex, nofollow">` so search engines don't enumerate them either; the landing page `addypin.com` is the only URL in `sitemap.xml`. Declarative head tags and `robots.txt`/`sitemap.xml` are expected (see `docs/04-process/privacy-seo.md`) — they're open-web machine-readability, not analytics, and don't conflict with the line above.
 - **No social features.** No comments, likes, follows, shares-back.
 - **No map tiles we host.** OpenStreetMap + Leaflet, client-side only.
 - **No Postgres, no Docker Compose, no multi-service infra.** Single binary or single Node process + a SQLite file.

@@ -19,6 +19,8 @@ const STATIC_FILES = new Map([
     ['/logo.png',    { file: 'logo.png',   type: 'image/png' }],
     ['/favicon.svg', { file: 'favicon.svg', type: 'image/svg+xml' }],
     ['/favicon.ico', { file: 'favicon.svg', type: 'image/svg+xml' }],
+    ['/robots.txt',  { file: 'robots.txt',  type: 'text/plain; charset=utf-8' }],
+    ['/sitemap.xml', { file: 'sitemap.xml', type: 'application/xml; charset=utf-8' }],
 ]);
 
 // Build an http.Server given the wired modules. Pure construction —
