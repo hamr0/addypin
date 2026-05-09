@@ -95,6 +95,7 @@ sudo -u addypin git diff --quiet HEAD origin/main -- || {
     fi
 }
 sudo -u addypin git pull --ff-only origin main
+sudo -u addypin npm ci --omit=dev --silent
 sudo systemctl restart addypin
 sleep 1
 sudo systemctl is-active addypin
