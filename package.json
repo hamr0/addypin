@@ -15,6 +15,6 @@
     "stats:log": "node --experimental-sqlite server/stats.js --watch 600"
   },
   "dependencies": {
-    "knowless": "^0.2.3"
+    "knowless": "^1.1.6"
   }
 }
