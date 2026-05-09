@@ -1,7 +1,7 @@
 # addypin
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-2.0.2-2a4f8c" alt="version 2.0.2">
+  <img src="https://img.shields.io/badge/version-2.0.13-2a4f8c" alt="version 2.0.13">
   <img src="https://img.shields.io/badge/license-Apache%202.0-2a4f8c" alt="license: Apache 2.0">
 </p>
 
