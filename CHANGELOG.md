@@ -5,6 +5,12 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
 
 ## [Unreleased]
 
+_Nothing yet._
+
+---
+
+## [2.0.13] — 2026-05-10
+
 ### Changed
 
 - **knowless 0.2.3 → 1.1.6.** Spans upstream's walk-away release
@@ -58,6 +64,10 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
   `git pull --ff-only` and `systemctl restart addypin` in the
   remote heredoc.
 
+---
+
+## [2.0.12] — 2026-05-04
+
 ### Added
 
 - **Privacy-respecting discoverability — tier 1 head tags + robots/sitemap.**
@@ -80,6 +90,12 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
   machine-readability only. Two new tests in `server/http.test.js`
   cover the static-file routes.
 
+---
+
+## [2.0.11] — 2026-05-03
+
+### Added
+
 - **Weekly stats digest email (`server/digest.js` + Sun 09:00 timer).**
   Reads `${DATA_DIR}/stats.log` (one snapshot per day from the
   daily timer), buckets entries into the last 4 weeks relative to
@@ -99,6 +115,27 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
   `msmtpTransport` from `server/mail.js` — no local copy of the
   msmtp plumbing. No new deps. If `stats.log` is empty or missing,
   the script exits 0 silently rather than mailing an empty digest.
+
+### Fixed
+
+- **`digest.js` deduplication.** Replaced the local `sendViaMsmtp`
+  copy with an import of `msmtpTransport` from `server/mail.js`.
+  The duplicate would have diverged silently from any future fixes
+  to the shared transport (header changes, error handling, etc.).
+- **`digest.js` `from` fallback.** Changed `'auth@addypin.com'`
+  (the magic-link sender) to `'noreply@addypin.com'` to match
+  `.env.example`. Only matters when no `MAIL_FROM_ADDRESS` env var
+  is set.
+- **`addypin-stats-digest.timer` timezone.** Added `UTC` to
+  `OnCalendar` (`Sun *-*-* 09:00:00 UTC`) so the Sunday-morning
+  digest fires at a fixed wall-clock time regardless of the VPS
+  locale or DST transitions.
+
+---
+
+## [2.0.10] — 2026-04-30
+
+### Added
 
 - **Stats counter (`server/stats.js`) + daily VPS log — live.**
   Read-only operator script. No decryption, no env vars beyond
@@ -121,22 +158,14 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
 
 ### Fixed
 
-- **`digest.js` deduplication.** Replaced the local `sendViaMsmtp`
-  copy with an import of `msmtpTransport` from `server/mail.js`.
-  The duplicate would have diverged silently from any future fixes
-  to the shared transport (header changes, error handling, etc.).
-- **`digest.js` `from` fallback.** Changed `'auth@addypin.com'`
-  (the magic-link sender) to `'noreply@addypin.com'` to match
-  `.env.example`. Only matters when no `MAIL_FROM_ADDRESS` env var
-  is set.
 - **`stats.js` missing-DB guard.** Added an `fs.existsSync` check
   before `new DatabaseSync(…, { readOnly: true })`. Previously a
   fresh deploy before any pins were created would crash with an
   opaque SQLite error; now it exits 0 with a clear message.
-- **`addypin-stats-digest.timer` timezone.** Added `UTC` to
-  `OnCalendar` (`Sun *-*-* 09:00:00 UTC`) so the Sunday-morning
-  digest fires at a fixed wall-clock time regardless of the VPS
-  locale or DST transitions.
+
+---
+
+## [2.0.9] — 2026-04-29
 
 ### Changed
 
@@ -182,6 +211,10 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
   Build the URL from the shortcode + base domain so the clipboard
   always gets `https://CODE.addypin.com/` on real hosts.
 
+---
+
+## [2.0.8] — 2026-04-29
+
 ### Added
 
 - **Subdomain-per-shortcode is live (`F5J6KK.addypin.com`).** PRD §14
@@ -199,6 +232,10 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
   without /etc/hosts hacks). Old `addypin.com/SHORTCODE` URLs keep
   working — the byte-identical `pin.html` is served either way, so
   no shared link, bookmark, QR code, or printed flyer breaks.
+
+---
+
+## [2.0.7] — 2026-04-29
 
 ### Changed
 
@@ -238,6 +275,10 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
   time. Credential halves stored in `pass` at
   `addypin/prod/aws_r53_ssl_key` (access key id) and
   `addypin/prod/aws_r53_ssl` (secret).
+
+---
+
+## [2.0.6] — 2026-04-29
 
 ### Changed
 
@@ -296,6 +337,10 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
   onto an orphan local branch with a hot-patched `web/index.html`
   that was never reconciled with `origin/main`.
 
+---
+
+## [2.0.5] — 2026-04-29
+
 ### Fixed
 
 - **VPS branch reconciled.** Live box was on a local `v2-rewrite`
@@ -323,6 +368,10 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
   and there's no clean per-app override that works without an app
   installed.
 
+---
+
+## [2.0.4] — 2026-04-20
+
 ### Added
 
 - RFC-2142 mail contacts: `postmaster@addypin.com` and
@@ -348,6 +397,10 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
   path and every inbound email deferred with `execvp: No such file or
   directory`. Fixed `master.cf`, flushed queue, two stuck messages
   processed. Docs updated so the path stays in sync going forward.
+
+---
+
+## [2.0.3] — 2026-04-20
 
 ### Changed
 
