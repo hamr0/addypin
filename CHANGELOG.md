@@ -5,6 +5,59 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Changed
+
+- **knowless 0.2.3 → 1.1.6.** Spans upstream's walk-away release
+  (v1.0.0, byte-equivalent to 0.2.3) and the four v1.1.x bug-fix
+  drops. No API changes for addypin — surface-equivalent. Effective
+  changes here:
+  - **AF-28: trusted-proxy XFF/X-Real-IP fix (knowless 1.1.0).**
+    `trustedProxies: ['127.0.0.1', '::1']` in `server/main.js` and
+    `server/inbound-cli.js` was silently inert before — knowless's
+    handler path pre-built the trusted-peer set into the wrong shape
+    and `determineSourceIp` discarded it, so per-IP rate limits
+    bucketed everything as 127.0.0.1 (the nginx loopback). Now the
+    config is honored. nginx already forwards `X-Forwarded-For` and
+    `X-Real-IP` on both the apex and wildcard server blocks
+    (`/etc/nginx/conf.d/addypin.conf` lines 185, 228, 241), so the
+    fix takes effect at deploy: `maxLoginRequestsPerIpPerHour` and
+    `maxNewHandlesPerIpPerHour` now bucket on real client IPs
+    instead of starving on a single shared one.
+  - **AF-30: factory `subject` validated at startup (knowless 1.1.0).**
+    The `subject: 'Your addypin login link'` config in both
+    factories is now checked at boot (was first-send before). Same
+    rules as `subjectOverride` (ASCII, ≤60 chars, no CR/LF).
+    addypin's value passes; the change just moves a latent
+    fail-at-first-mail into a fail-at-boot.
+  - **`onTransportFailure` default now stderr (knowless 1.1.4).**
+    Previously a no-op; SMTP submission failures from knowless
+    (`localhost:25` unreachable, Postfix queue full, etc.) were
+    swallowed silently. Now they print
+    `[knowless] mail submit failed: <message>` to stderr →
+    journald. addypin doesn't override the hook, so this lands for
+    free without code changes.
+  - Other v1.1.0 fixes (AF-29 CR/LF in `validateSubject`, AF-31
+    trailing-newline in `validateBodyFooter`) don't touch addypin's
+    code path. v1.1.1–1.1.3 and 1.1.5–1.1.6 are documentation-only.
+  Verified end-to-end on prod after deploy: service `active`, `GET /`
+  → 200, `POST /api/login` → 202, journal clean.
+
+### Fixed
+
+- **`ops/deploy.sh` now runs `npm ci --omit=dev` before
+  `systemctl restart`.** Surfaced by the knowless bump above:
+  `git pull` placed the new `package.json` on the VPS but
+  `node_modules/knowless` stayed at 0.2.3, so the restart loaded
+  stale code. The first deploy of the bump appeared green
+  (smoke 200) but was actually still on the old version — caught
+  only by sshing in to grep the installed package version. Any
+  future dep change (or transitive lockfile change) would have hit
+  the same gap silently. `npm ci` is idempotent and ~1s when
+  nothing changed, so always running it is the right trade vs
+  gating on a lockfile diff. One-line addition between the
+  `git pull --ff-only` and `systemctl restart addypin` in the
+  remote heredoc.
+
 ### Added
 
 - **Privacy-respecting discoverability — tier 1 head tags + robots/sitemap.**

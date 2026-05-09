@@ -26,7 +26,7 @@ For full development and testing standards, see `.claude/memory/AGENT_RULES.md`.
 - **Web framework:** Native `node:http` + ~80-line custom router
 - **DB:** `node:sqlite` (`--experimental-sqlite`) — `data/addypin.db` for pins, `data/knowless.db` for handles/tokens/sessions. Both via the same driver as of `knowless@0.2.0`; files stay separate so the two domains have independent backup/wipe/migration lifecycles.
 - **Crypto:** `node:crypto` stdlib (AES-256-GCM for coords + the encrypted-email blob in the unconfirmed window)
-- **Auth + auth-mail:** [`knowless`](https://github.com/hamr0/knowless) (since M11, on `0.2.0` since the cutover). Owns magic-link round-trip, sham-work timing equivalence, single-use SHA-256-hashed token store, session cookies, and SMTP submission for auth mail. One transitive runtime dep (`nodemailer`) — zero native compiles in the tree.
+- **Auth + auth-mail:** [`knowless`](https://github.com/hamr0/knowless) (since M11, currently pinned at `^1.1.6` — upstream is feature-frozen since `1.0.0` per its walk-away PRD). Owns magic-link round-trip, sham-work timing equivalence, single-use SHA-256-hashed token store, session cookies, and SMTP submission for auth mail. One transitive runtime dep (`nodemailer`) — zero native compiles in the tree.
 - **Frontend:** Plain HTML + vanilla JS + Leaflet (CDN). No React, no Vite, no Tailwind build step.
 - **Email out (non-auth):** `msmtp` system binary via `child_process` for the `SHORTCODE@` auto-reply.
 - **Email in:** Postfix `virtual_alias_maps` → pipe transport to a Node script (instantiates its own knowless instance per message).
@@ -87,4 +87,4 @@ Production / VPS uses environment variables loaded from a systemd `EnvironmentFi
 
 ## Current state (2026-04-29)
 
-M1–M11 shipped. Live `https://addypin.com` and `https://SHORTCODE.addypin.com` both resolve, knowless@0.2.0 backs the auth flow, wildcard cert renewed (auto-renewal via `certbot-renew.timer`). Path-based URLs (`addypin.com/SHORTCODE`) still resolve so old links don't break. Pending tail: tighten the IAM policy from `AmazonRoute53FullAccess` to a scoped inline policy on hosted zone `Z1CHOY92OEU194`; off-VPS backup/watchdog.
+M1–M11 shipped. Live `https://addypin.com` and `https://SHORTCODE.addypin.com` both resolve, `knowless@1.1.6` backs the auth flow (upstream walk-away release, feature-frozen at 1.0.0), wildcard cert renewed (auto-renewal via `certbot-renew.timer`). Path-based URLs (`addypin.com/SHORTCODE`) still resolve so old links don't break. Pending tail: tighten the IAM policy from `AmazonRoute53FullAccess` to a scoped inline policy on hosted zone `Z1CHOY92OEU194`; off-VPS backup/watchdog.

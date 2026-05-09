@@ -18,7 +18,7 @@
 | M10 | Deploy to VPS + ops must-haves (§14) | ✅ shipped 2026-04-20 — see `docs/03-logs/m10-deploy-log.md` |
 | M11 | knowless integration: replace bespoke auth/sessions/auth-mail with [`knowless`](https://github.com/hamr0/knowless) | ✅ shipped 2026-04-29 |
 
-Through M10 no runtime dependencies were added; `node:sqlite` + `node:crypto` + `node:http` covered every need. M11 introduces one transitive runtime dep via `knowless`: `nodemailer` for SMTP submission. (Earlier `knowless@0.1.x` also pulled in `better-sqlite3`, which broke installs on long-LTS distros without a C++20 toolchain; `knowless@0.2.0` swapped to `node:sqlite` and the native dep is gone.) See §9 for posture.
+Through M10 no runtime dependencies were added; `node:sqlite` + `node:crypto` + `node:http` covered every need. M11 introduces one transitive runtime dep via `knowless`: `nodemailer` for SMTP submission. (Earlier `knowless@0.1.x` also pulled in `better-sqlite3`, which broke installs on long-LTS distros without a C++20 toolchain; `knowless@0.2.0` swapped to `node:sqlite` and the native dep is gone.) Currently pinned at `knowless@^1.1.6`; upstream entered walk-away mode at `1.0.0` (feature-frozen, security + bug fixes only — see [knowless PRD §6.3](https://github.com/hamr0/knowless)) so future bumps are low-risk. See §9 for posture.
 
 ## Cutover
 
