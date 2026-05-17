@@ -5,7 +5,18 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
 
 ## [Unreleased]
 
-_Nothing yet._
+### Changed
+
+- **Repo turned public; README rewritten for a public audience.**
+  Dropped the architecture diagram, stack table, schema, lifecycle,
+  local-dev section, docs index, and "not in v2" list — none of that
+  is useful to someone landing on the GitHub page from
+  [addypin.com](https://addypin.com). The new README is product-only:
+  what it does, who it's for (regions with weak addressing; people
+  bridging Google/Apple/Waze ↔ Yandex/Baidu/Amap/Naver/Mappls/Neshan;
+  pins crossing the WGS-84 ↔ GCJ-02 boundary into Chinese apps), and
+  the link. Internals stay in `docs/` and `CLAUDE.md` for contributors;
+  the README no longer points at them.
 
 ---
 
