@@ -18,7 +18,7 @@ addypin is a location sharing service that turns GPS coordinates into short, mem
 
 **Every line must have a purpose.** No speculative code, no premature abstractions.
 
-For full development and testing standards, see `.claude/memory/AGENT_RULES.md`.
+For full development and testing standards, see `/home/hamr/Documents/PycharmProjects/gitdone/.claude/memory/AGENT_RULES.md`.
 
 ## Tech stack
 
