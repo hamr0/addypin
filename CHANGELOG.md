@@ -5,6 +5,34 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
 
 ## [Unreleased]
 
+## [2.0.14] — 2026-05-22
+
+### Security
+
+- **Bind to loopback by default.** `server/main.js` now listens on
+  `127.0.0.1` (override via the new `HOST` env var) instead of `0.0.0.0`.
+  nginx proxies to `127.0.0.1:3000` and `docs/00-context/system-state.md`
+  already described the service as loopback-only — the code now matches
+  that documented posture. Closes incidental LAN/external reachability of
+  the Node port, which is what makes trusting `X-Forwarded-For` for
+  per-IP rate-limit keying sound by construction. Set `HOST=0.0.0.0` only
+  to knowingly expose the port (e.g. LAN/device testing).
+- **Rate-limit authenticated pin writes.** `PATCH`/`DELETE
+  /api/pins/:shortcode` now throttle at 60/hr **per owner handle** (were
+  unbounded). Caps a valid session from pounding pin writes or probing
+  ownership across shortcodes; keyed on the session principal so a shared
+  NAT egress doesn't penalise unrelated owners.
+- **Rate-limit owner-facing reads.** `GET /api/me/pins` and `GET /manage`
+  now throttle at 300/15 min **per IP** — `/api/me/pins` is the heaviest
+  authenticated read (promotion sweep + decrypt-all). Keyed per IP to
+  blunt bots/DoS rather than budget a single owner, and gated before the
+  promotion sweep so a rejected request does no DB work.
+
+### Docs
+
+- PRD §8 documents the new write/read rate limits and the loopback/XFF
+  rationale; `.env.example` documents the new `HOST` variable.
+
 ### Changed
 
 - **Repo turned public; README rewritten for a public audience.**

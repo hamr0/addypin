@@ -1,6 +1,6 @@
 # addypin v2 — Product Requirements
 
-**Status:** Shipped 2026-04-20 · **Branch:** `main` (v1 preserved on `v1` branch) · **Last updated:** 2026-04-20
+**Status:** Shipped 2026-04-20 · **Branch:** `main` (v1 preserved on `v1` branch) · **Last updated:** 2026-05-22
 
 ## Implementation status (as of 2026-04-19)
 
@@ -187,8 +187,12 @@ In-process token bucket. No Redis. Limits applied per IP:
 - `POST /api/pins`: 5 per hour, 20 per day.
 - `GET /api/pins/:shortcode`: 300 per 15 min (lookups are cheap, don't over-constrain).
 - `POST /api/login`: 3 per hour per email fingerprint.
+- `PATCH`/`DELETE /api/pins/:shortcode`: 60 per hour **per owner handle** (not IP). These are authenticated, so the throttle is keyed on the session principal — caps a runaway/abusive session from pounding pin writes or probing ownership across shortcodes, without penalising unrelated owners behind a shared NAT egress.
+- `GET /api/me/pins` and `GET /manage` (owner-facing reads): 300 per 15 min **per IP**. These are hit far more often than writes, and each `/api/me/pins` call runs the promotion sweep plus decrypts every pin the caller owns — so the goal is to blunt bots and crude DoS, not budget a single owner. Same generous cap as public lookups; the throttle runs before the promotion sweep so a rejected request does no DB work.
 - `login@addypin.com` (inbound email): 3 per hour per sender fingerprint.
 - `resend@addypin.com` (inbound email): 3 per hour per shortcode.
+
+The per-IP keys derive from `X-Forwarded-For`. This is only sound because the Node process binds to loopback (`HOST=127.0.0.1` by default) and is reachable solely through the local nginx proxy, so a remote client cannot spoof the header. Exposing the port directly (`HOST=0.0.0.0`) would let any client forge XFF and evade the per-IP limits.
 
 On restart, counters reset. Acceptable for v2 scale (~hundreds of requests/day). If the VPS is ever DDoS'd, nginx-level connection limits are the outer ring before any of these fire.
 

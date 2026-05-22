@@ -15,6 +15,13 @@ loadDotenv();
 
 const cfg = {
     port: parseInt(process.env.PORT || '3000', 10),
+    // Bind to loopback by default. nginx terminates TLS and proxies to
+    // 127.0.0.1:${PORT}, so the Node process never needs a public socket.
+    // This is what makes trusting X-Forwarded-For for rate-limit keying
+    // safe — only the local reverse proxy can reach us, so the header
+    // can't be spoofed by a remote client. Override with HOST=0.0.0.0
+    // only if you knowingly expose the port (e.g. LAN testing).
+    host: process.env.HOST || '127.0.0.1',
     dataDir: process.env.DATA_DIR || './data',
     baseUrl: process.env.BASE_URL || '',
     mailFromAddress: process.env.MAIL_FROM_ADDRESS || 'auth@addypin.com',
@@ -84,9 +91,20 @@ const limiters = {
     create: createRateLimiter({ capacity: 5, refillPerSec: 5 / 3600 }),    // 5/hr per IP
     lookup: createRateLimiter({ capacity: 300, refillPerSec: 300 / 900 }), // 300/15min per IP
     login:  createRateLimiter({ capacity: 3, refillPerSec: 3 / 3600 }),    // 3/hr per email fp
+    // Authenticated pin writes (PATCH/DELETE). Keyed by owner handle, not
+    // IP. Generous enough for legitimate bulk edits, tight enough that a
+    // runaway/abusive session can't pound the DB or probe ownership freely.
+    manage: createRateLimiter({ capacity: 60, refillPerSec: 60 / 3600 }),  // 60/hr per handle
+    // Owner-facing reads (GET /api/me/pins, GET /manage). Keyed per IP —
+    // these are hit far more often than writes, and each call runs the
+    // promotion sweep plus decrypts every pin the caller owns. The goal
+    // here is to blunt bots and crude DoS, not to budget a single owner,
+    // so it mirrors the generous public-lookup cap.
+    read:   createRateLimiter({ capacity: 300, refillPerSec: 300 / 900 }), // 300/15min per IP
 };
 setInterval(() => {
     limiters.create.gc(); limiters.lookup.gc(); limiters.login.gc();
+    limiters.manage.gc(); limiters.read.gc();
 }, 5 * 60 * 1000).unref();
 
 // Expiry tick: runs reminders (24h before expiry) and cleans up pins
@@ -155,8 +173,8 @@ const mailer = createMailer({
 });
 
 const server = createServer({ db, crypto, limiters, mailer, auth, baseUrl: cfg.baseUrl });
-server.listen(cfg.port, () => {
-    console.log(`addypin listening on :${cfg.port}`);
+server.listen(cfg.port, cfg.host, () => {
+    console.log(`addypin listening on ${cfg.host}:${cfg.port}`);
 });
 
 for (const sig of ['SIGINT', 'SIGTERM']) {

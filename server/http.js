@@ -199,13 +199,18 @@ export function createServer({ db, crypto, limiters, mailer, auth, baseUrl = '',
     // Magic-link redemption now lives at /auth/callback (knowless),
     // which always 302s here on success.
     router.get('/manage', (req) => {
+        if (!limiters.read.take(clientIp(req))) return text(429, 'rate limited');
         maybePromotePending(req);
         return serveStatic(webDir, 'manage.html', 'text/html; charset=utf-8');
     });
 
     // Pins owned by the current session. 401 if no valid cookie —
     // the manage.html page uses this signal to swap to the login form.
+    // Per-IP throttle runs first: it's the heaviest authenticated read
+    // (promotion sweep + decrypt-all), and gating before the sweep keeps a
+    // throttled request from doing any DB work.
     router.get('/api/me/pins', (req) => {
+        if (!limiters.read.take(clientIp(req))) return json(429, { error: 'rate_limited' });
         const handle = maybePromotePending(req);
         if (!handle) return json(401, { error: 'unauthorized' });
         const rows = db.listPinsByOwner(handle);
@@ -219,6 +224,11 @@ export function createServer({ db, crypto, limiters, mailer, auth, baseUrl = '',
     router.patch('/api/pins/:shortcode', (req, params, body) => {
         const handle = maybePromotePending(req);
         if (!handle) return json(401, { error: 'unauthorized' });
+        // Authenticated, but still bounded: a valid session shouldn't be able
+        // to hammer pin writes (or probe ownership across shortcodes) without
+        // limit. Keyed by handle — the authenticated principal — not IP, so a
+        // shared NAT egress doesn't penalise unrelated owners.
+        if (!limiters.manage.take(handle)) return json(429, { error: 'rate_limited' });
         const code = normalizeShortcode(params.shortcode);
         if (!isValidShortcode(code)) return json(404, { error: 'not_found' });
         const pin = db.getPinByShortcode(code);
@@ -240,6 +250,7 @@ export function createServer({ db, crypto, limiters, mailer, auth, baseUrl = '',
     router.delete('/api/pins/:shortcode', (req, params) => {
         const handle = maybePromotePending(req);
         if (!handle) return json(401, { error: 'unauthorized' });
+        if (!limiters.manage.take(handle)) return json(429, { error: 'rate_limited' });
         const code = normalizeShortcode(params.shortcode);
         if (!isValidShortcode(code)) return json(404, { error: 'not_found' });
         const pin = db.getPinByShortcode(code);

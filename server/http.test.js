@@ -14,6 +14,8 @@ function generousLimiters() {
         create: createRateLimiter({ capacity: 1000, refillPerSec: 1000 }),
         lookup: createRateLimiter({ capacity: 1000, refillPerSec: 1000 }),
         login:  createRateLimiter({ capacity: 1000, refillPerSec: 1000 }),
+        manage: createRateLimiter({ capacity: 1000, refillPerSec: 1000 }),
+        read:   createRateLimiter({ capacity: 1000, refillPerSec: 1000 }),
     };
 }
 
@@ -553,6 +555,88 @@ test('rate limiter returns 429 after capacity exhausted', async () => {
     assert.equal((await post()).status, 201);
     assert.equal((await post()).status, 201);
     assert.equal((await post()).status, 429);
+
+    tightServer.close();
+    tightDb.close();
+});
+
+test('manage limiter returns 429 on authenticated writes after capacity exhausted', async () => {
+    const tightDb = createDb({ path: ':memory:' });
+    const tightAuth = makeMockAuth();
+    const tightServer = createServer({
+        db: tightDb,
+        crypto: cryptoMod,
+        auth: tightAuth,
+        limiters: {
+            create: createRateLimiter({ capacity: 1000, refillPerSec: 1000 }),
+            lookup: createRateLimiter({ capacity: 1000, refillPerSec: 1000 }),
+            // capacity 2, effectively no refill within the test window.
+            manage: createRateLimiter({ capacity: 2, refillPerSec: 0.0001 }),
+        },
+    });
+    await new Promise((r) => tightServer.listen(0, r));
+    const url = `http://127.0.0.1:${tightServer.address().port}`;
+
+    // Seed two confirmed pins owned by the same handle, plus the cookie.
+    const email = 'manage.limit@example.com';
+    const handle = tightAuth.handleFor(email);
+    const nowSec = Math.floor(Date.now() / 1000);
+    for (const code of ['MGLIM1', 'MGLIM2']) {
+        const { ciphertext, iv } = cryptoMod.encryptCoords(1, 2);
+        tightDb.insertPin({ shortcode: code, ciphertext, iv, ownerHandle: handle,
+            status: 'confirmed', createdAt: nowSec, expiresAt: null });
+    }
+    const cookie = cookieFor(email);
+
+    async function patch(code) {
+        return fetch(url + `/api/pins/${code}`, {
+            method: 'PATCH',
+            headers: { 'content-type': 'application/json', cookie },
+            body: JSON.stringify({ lat: 3, lng: 4 }),
+        });
+    }
+    assert.equal((await patch('MGLIM1')).status, 200);
+    assert.equal((await patch('MGLIM2')).status, 200);
+    // Third write by the same handle is throttled — even though it's a
+    // valid, authenticated, owned request.
+    assert.equal((await patch('MGLIM1')).status, 429);
+
+    tightServer.close();
+    tightDb.close();
+});
+
+test('read limiter returns 429 per IP on owner-facing reads after capacity exhausted', async () => {
+    const tightDb = createDb({ path: ':memory:' });
+    const tightAuth = makeMockAuth();
+    const tightServer = createServer({
+        db: tightDb,
+        crypto: cryptoMod,
+        auth: tightAuth,
+        limiters: {
+            create: createRateLimiter({ capacity: 1000, refillPerSec: 1000 }),
+            lookup: createRateLimiter({ capacity: 1000, refillPerSec: 1000 }),
+            manage: createRateLimiter({ capacity: 1000, refillPerSec: 1000 }),
+            // capacity 2, effectively no refill within the test window.
+            read:   createRateLimiter({ capacity: 2, refillPerSec: 0.0001 }),
+        },
+    });
+    await new Promise((r) => tightServer.listen(0, r));
+    const url = `http://127.0.0.1:${tightServer.address().port}`;
+
+    const email = 'read.limit@example.com';
+    const handle = tightAuth.handleFor(email);
+    const nowSec = Math.floor(Date.now() / 1000);
+    const { ciphertext, iv } = cryptoMod.encryptCoords(1, 2);
+    tightDb.insertPin({ shortcode: 'RDLIM1', ciphertext, iv, ownerHandle: handle,
+        status: 'confirmed', createdAt: nowSec, expiresAt: null });
+    const cookie = `addypin_session=${handle}`;
+
+    const me = () => fetch(url + '/api/me/pins', { headers: { cookie } }).then((r) => r.status);
+    // First two authenticated reads succeed; the third from the same IP is
+    // throttled — the read limiter is per IP, not per session.
+    assert.equal(await me(), 200);
+    assert.equal(await me(), 200);
+    assert.equal(await me(), 429);
 
     tightServer.close();
     tightDb.close();
