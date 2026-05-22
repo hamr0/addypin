@@ -641,3 +641,81 @@ test('read limiter returns 429 per IP on owner-facing reads after capacity exhau
     tightServer.close();
     tightDb.close();
 });
+
+test('per-IP limit keys on X-Real-IP, not a spoofable leftmost X-Forwarded-For', async () => {
+    const tightDb = createDb({ path: ':memory:' });
+    const tightAuth = makeMockAuth();
+    const tightServer = createServer({
+        db: tightDb,
+        crypto: cryptoMod,
+        auth: tightAuth,
+        limiters: {
+            create: createRateLimiter({ capacity: 2, refillPerSec: 0.0001 }),
+            lookup: createRateLimiter({ capacity: 1000, refillPerSec: 1000 }),
+        },
+    });
+    await new Promise((r) => tightServer.listen(0, r));
+    const url = `http://127.0.0.1:${tightServer.address().port}`;
+
+    // Simulate nginx: X-Real-IP is the true peer (constant), and XFF is
+    // $proxy_add_x_forwarded_for — a client-supplied leftmost token that the
+    // attacker rotates each request, followed by nginx's real-peer hop.
+    let spoofCounter = 0;
+    async function post() {
+        const spoof = `9.9.9.${spoofCounter++}`;
+        return fetch(url + '/api/pins', {
+            method: 'POST',
+            headers: {
+                'content-type': 'application/json',
+                'x-real-ip': '203.0.113.7',
+                'x-forwarded-for': `${spoof}, 203.0.113.7`,
+            },
+            body: JSON.stringify({ lat: 1, lng: 2, email: 'a@b.com' }),
+        });
+    }
+    assert.equal((await post()).status, 201);
+    assert.equal((await post()).status, 201);
+    // Rotating the spoofed leftmost XFF token must NOT mint a fresh bucket:
+    // the limiter keys on the non-spoofable X-Real-IP. Pre-fix this was 201.
+    assert.equal((await post()).status, 429);
+
+    tightServer.close();
+    tightDb.close();
+});
+
+test('per-IP limit falls back to rightmost X-Forwarded-For when X-Real-IP absent', async () => {
+    const tightDb = createDb({ path: ':memory:' });
+    const tightAuth = makeMockAuth();
+    const tightServer = createServer({
+        db: tightDb,
+        crypto: cryptoMod,
+        auth: tightAuth,
+        limiters: {
+            create: createRateLimiter({ capacity: 2, refillPerSec: 0.0001 }),
+            lookup: createRateLimiter({ capacity: 1000, refillPerSec: 1000 }),
+        },
+    });
+    await new Promise((r) => tightServer.listen(0, r));
+    const url = `http://127.0.0.1:${tightServer.address().port}`;
+
+    let spoofCounter = 0;
+    async function post() {
+        const spoof = `9.9.9.${spoofCounter++}`;
+        return fetch(url + '/api/pins', {
+            method: 'POST',
+            headers: {
+                'content-type': 'application/json',
+                // No X-Real-IP; only an append-style XFF whose rightmost hop
+                // is the trustworthy proxy-added peer.
+                'x-forwarded-for': `${spoof}, 198.51.100.4`,
+            },
+            body: JSON.stringify({ lat: 1, lng: 2, email: 'a@b.com' }),
+        });
+    }
+    assert.equal((await post()).status, 201);
+    assert.equal((await post()).status, 201);
+    assert.equal((await post()).status, 429);
+
+    tightServer.close();
+    tightDb.close();
+});

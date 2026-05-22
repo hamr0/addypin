@@ -5,6 +5,27 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
 
 ## [Unreleased]
 
+## [2.0.15] — 2026-05-22
+
+### Security
+
+- **Key per-IP rate limits on a non-spoofable client IP.** `clientIp()`
+  previously read the *leftmost* `X-Forwarded-For` token. nginx forwards
+  XFF with `$proxy_add_x_forwarded_for` (append), so that token is
+  whatever the client sent — an attacker could rotate it to mint fresh
+  rate-limit buckets and evade the per-IP limits (`create`, `lookup`,
+  `read`) entirely. Loopback binding (2.0.14) did not prevent this, since
+  the attack flows *through* nginx, not around it. `clientIp()` now reads
+  `X-Real-IP` (nginx sets it to `$remote_addr` via `proxy_set_header`,
+  replacing any client value), falling back to the *rightmost* XFF token,
+  then the socket address. Verified against the live nginx config. Adds
+  two regression tests (spoofed-leftmost XFF, rightmost fallback).
+
+### Docs
+
+- PRD §8 corrected: documents `X-Real-IP` as the keying source and why
+  the leftmost XFF token must not be trusted under the append config.
+
 ## [2.0.14] — 2026-05-22
 
 ### Security

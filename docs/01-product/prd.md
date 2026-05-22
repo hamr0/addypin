@@ -192,7 +192,9 @@ In-process token bucket. No Redis. Limits applied per IP:
 - `login@addypin.com` (inbound email): 3 per hour per sender fingerprint.
 - `resend@addypin.com` (inbound email): 3 per hour per shortcode.
 
-The per-IP keys derive from `X-Forwarded-For`. This is only sound because the Node process binds to loopback (`HOST=127.0.0.1` by default) and is reachable solely through the local nginx proxy, so a remote client cannot spoof the header. Exposing the port directly (`HOST=0.0.0.0`) would let any client forge XFF and evade the per-IP limits.
+The per-IP keys derive from the **`X-Real-IP`** header, which nginx sets to `$remote_addr` via `proxy_set_header` — that *replaces* any client-supplied value, so it's the true TCP peer and cannot be forged. We deliberately do **not** key off the leftmost `X-Forwarded-For` token: nginx forwards XFF with `$proxy_add_x_forwarded_for` (append), so the leftmost token is whatever the client sent and is attacker-controlled — keying on it would let a client rotate the value to mint fresh buckets and evade every per-IP limit. If `X-Real-IP` is ever absent, `clientIp()` falls back to the *rightmost* XFF token (nginx's appended real-peer hop), then the socket address.
+
+This is sound only in combination with loopback binding (`HOST=127.0.0.1` by default): because the Node process is reachable solely through the local nginx proxy, the trusted headers can't be injected by a client connecting directly. Exposing the port (`HOST=0.0.0.0`) would let any client forge `X-Real-IP`/XFF and evade the per-IP limits.
 
 On restart, counters reset. Acceptable for v2 scale (~hundreds of requests/day). If the VPS is ever DDoS'd, nginx-level connection limits are the outer ring before any of these fire.
 

@@ -357,10 +357,28 @@ async function readJson(req) {
     }
 }
 
+// The client IP we key per-IP rate limits on. MUST be a value the remote
+// client cannot forge, or the limits are trivially evaded by rotating it.
+//
+// nginx sets `X-Real-IP $remote_addr` with proxy_set_header, which *replaces*
+// any client-supplied value — so it's the true TCP peer and is not spoofable.
+// Prefer it. (Sound only because the process binds to loopback and is reachable
+// solely through nginx; see PRD §8 / cfg.host.)
+//
+// XFF here is `$proxy_add_x_forwarded_for` (append): nginx tacks the real peer
+// onto whatever the client sent, so the *rightmost* token is nginx's and the
+// leftmost is attacker-controlled. Never key off the leftmost. We read the
+// rightmost only as a fallback for the (non-production) case where X-Real-IP
+// is absent.
 function clientIp(req) {
+    const real = req.headers['x-real-ip'];
+    if (typeof real === 'string' && real.trim().length > 0) {
+        return real.trim();
+    }
     const fwd = req.headers['x-forwarded-for'];
-    if (typeof fwd === 'string' && fwd.length > 0) {
-        return fwd.split(',')[0].trim();
+    if (typeof fwd === 'string' && fwd.trim().length > 0) {
+        const parts = fwd.split(',');
+        return parts[parts.length - 1].trim();
     }
     return req.socket.remoteAddress || 'unknown';
 }
