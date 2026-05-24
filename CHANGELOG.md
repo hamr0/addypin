@@ -5,6 +5,42 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
 
 ## [Unreleased]
 
+## [2.0.16] — 2026-05-24
+
+### Changed
+
+- **knowless 1.1.6 → 1.1.9.** One code change across the span; the rest
+  is documentation. No addypin change required — surface-equivalent for
+  how addypin embeds the library.
+  - **1.1.9 — `createMailer` validates `from` is a bare address at
+    boot.** It now rejects `<` / `>` and CR/LF in `from`, failing fast
+    at startup instead of emitting a malformed Message-ID / leaning on
+    nodemailer's lenient envelope parsing at first send. addypin already
+    passes a bare `MAIL_FROM_ADDRESS` (`auth@addypin.com`) with the
+    display name in the separate `MAIL_FROM_NAME` (`addypin`) — the
+    AF-27 shape it's used since 0.2.3 — so both factories
+    (`server/main.js`, `server/inbound-cli.js`) pass the new check
+    unchanged. The bug this fixes only bit adopters who stuffed a
+    display-format value (`Name <addr>`) into the bare-`from` slot via
+    the standalone server's `KNOWLESS_FROM`; addypin never uses that
+    env var or the standalone runner.
+  - **1.1.7, 1.1.8 — documentation-only** (threat-model wording;
+    forward-auth identity-header name; Node ≥22.5 floor correction).
+    1.1.7 was never published to npm — the registry goes 1.1.6 → 1.1.8
+    → 1.1.9.
+  Verified: `npm test` 176/176 green; boot smoke clean (knowless factory
+  constructs, `addypin listening`); direct probe confirms bare `from`
+  accepted and display-format rejected.
+
+### Fixed
+
+- **Pin page "more maps" toggle now reflects its state.** The
+  `<details>` summary on `web/pin.html` read `Show N more` in both the
+  collapsed and expanded states. It now flips to `Show N less` when
+  open (via a `toggle` listener), matching the chevron that already
+  rotates — so the control no longer invites a click that does the
+  opposite of what it says.
+
 ## [2.0.15] — 2026-05-22
 
 ### Security

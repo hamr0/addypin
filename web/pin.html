@@ -200,9 +200,16 @@ function showPin({ lat, lng, mapLinks }) {
         (i < 2 ? top : rest).appendChild(a);
     });
     const hidden = mapLinks.length - 2;
-    document.getElementById('moreLabel').textContent =
-        hidden > 0 ? `Show ${hidden} more` : '';
-    if (hidden <= 0) document.getElementById('more').style.display = 'none';
+    const more = document.getElementById('more');
+    const moreLabel = document.getElementById('moreLabel');
+    const syncMoreLabel = () =>
+        moreLabel.textContent = more.open ? `Show ${hidden} less` : `Show ${hidden} more`;
+    if (hidden <= 0) {
+        more.style.display = 'none';
+    } else {
+        syncMoreLabel();
+        more.addEventListener('toggle', syncMoreLabel);
+    }
 }
 
 // Always copy the canonical subdomain form (`CODE.addypin.com`) when on
