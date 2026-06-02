@@ -1,113 +1,113 @@
 # addypin home-server ops
 
-Three pieces of infrastructure live on the home server (fedora), outside
-the VPS, so backups and uptime alerts survive a total VPS loss.
+Two pieces of infrastructure live on the home server (fedora), outside the
+VPS, so backups and uptime alerts survive a total VPS loss. Both are driven
+by [`pulselog`](https://github.com/hamr0/pulselog) reading one config file,
+`ops/homeserver/pulselog.config.json` — the `--backup` flag runs the backup
+section, no flag runs the health `checks`. This replaces the old hand-rolled
+`addypin-backup.sh` **and** the two Uptime-Kuma monitors with one OSS CLI.
 
-## 1. Nightly backup — `addypin-backup.{sh,service,timer}`
+| Was | Now |
+|-----|-----|
+| `addypin-backup.sh` (rsync/tar + manual rotation) | `pulselog --backup` + `addypin-pull.sh` (command source) |
+| Kuma **pull** HTTP monitor (site uptime) | pulselog `http` + `ssl` checks against `addypin.com` |
+| Kuma **push** monitor (backup heartbeat) | pulselog `file-age` check on the backup dir |
 
-Pulls the SQLite DB (+WAL sidecars) and a tar of `/etc/letsencrypt/` from
-the VPS every night at 03:15 local. Rotates out anything older than 30
-days. On success, pings the Kuma "push" monitor so Kuma's watchdog
-resets. If the job fails or the machine was off, Kuma misses the ping
-and emails you within its grace window.
+## Prerequisites
 
-### Install
+- **Node ≥ 18** (the `command`-based backup doesn't use pulselog's bundled
+  sqlite engine, so 22.5 isn't required here) and `pulselog`:
+  ```bash
+  sudo npm i -g pulselog
+  command -v pulselog          # note the path; the units assume /usr/local/bin/pulselog
+  ```
+- **A mailer** for the alert/failure emails. pulselog sends via `mail` →
+  `sendmail`; on a box with no MTA, install the msmtp → Gmail shim from the
+  pulselog README (`msmtp` + `msmtp-mta`, a `0600` `~/.msmtprc`). Keep the
+  config's `from` equal to the authenticated Gmail address (it's already set
+  to `avoidaccess@gmail.com`) so Gmail DKIM-signs and alignment holds.
+- **An SSH key** authorized on the VPS for the backup pull (no passphrase, so
+  systemd can use it non-interactively):
+  ```bash
+  ssh-keygen -t ed25519 -f ~/.ssh/addypin_vps -N ""
+  ssh-copy-id -i ~/.ssh/addypin_vps.pub root@<vps-ip>
+  ```
+
+## Install
 
 ```bash
-# One-time SSH key for this job (no passphrase, so systemd can use it):
-ssh-keygen -t ed25519 -f ~/.ssh/addypin_vps -N ""
-ssh-copy-id -i ~/.ssh/addypin_vps.pub root@<vps-ip>
+# 1. Config + pull wrapper into place.
+sudo install -d /etc/addypin
+sudo install -m 644 pulselog.config.json /etc/addypin/pulselog.config.json
+sudo install -m 755 addypin-pull.sh      /usr/local/bin/addypin-pull.sh
 
-# Copy the three files into place:
-sudo install -m 755 addypin-backup.sh     /usr/local/bin/
-sudo install -m 644 addypin-backup.service /etc/systemd/system/
-sudo install -m 644 addypin-backup.timer   /etc/systemd/system/
+# 2. Point the config's paths at this user's home (the three REPLACE_ME's →
+#    the backup dir, history, health.jsonl, and file-age check path).
+sudo sed -i "s#/home/REPLACE_ME#$HOME#g" /etc/addypin/pulselog.config.json
+mkdir -p "$HOME/addypin-backups"
 
-# /etc/default/addypin-backup (the `EnvironmentFile=-` in the unit):
+# 3. Backup pull config (the EnvironmentFile=- in addypin-backup.service):
 sudo tee /etc/default/addypin-backup <<EOF
 VPS_HOST=155.94.144.191
 VPS_USER=root
 SSH_KEY=$HOME/.ssh/addypin_vps
-BACKUP_ROOT=$HOME/addypin-backups
-KEEP_DAYS=30
-KUMA_PUSH_URL=https://kuma.yourhost.lan/api/push/ABCDEFG?status=up&msg=OK&ping=
 EOF
 
-# Replace %i in the .service with your username before enabling:
-sudo sed -i "s/User=%i/User=$USER/" /etc/systemd/system/addypin-backup.service
+# 4. Units. Both use a User=%i template — instantiate with your username.
+sudo install -m 644 addypin-backup.service /etc/systemd/system/
+sudo install -m 644 addypin-backup.timer   /etc/systemd/system/
+sudo install -m 644 addypin-watch.service  /etc/systemd/system/
+sudo install -m 644 addypin-watch.timer    /etc/systemd/system/
+sudo sed -i "s/User=%i/User=$USER/" /etc/systemd/system/addypin-backup.service \
+                                    /etc/systemd/system/addypin-watch.service
 
 sudo systemctl daemon-reload
-sudo systemctl enable --now addypin-backup.timer
-systemctl list-timers addypin-backup.timer
+sudo systemctl enable --now addypin-backup.timer addypin-watch.timer
+systemctl list-timers 'addypin-*'
 ```
 
-### Manual run (smoke test before enabling)
+## Smoke test before trusting it
 
 ```bash
-sudo -u $USER /usr/local/bin/addypin-backup.sh
-ls -la ~/addypin-backups/daily/$(date -u +%F)/
+# Backup: produces one archive in ~/addypin-backups and a backup.jsonl line.
+sudo /usr/local/bin/pulselog --backup --config /etc/addypin/pulselog.config.json
+ls -la ~/addypin-backups/addypin-backup-*.tar.gz       # newest is non-empty
+tar -tzf ~/addypin-backups/addypin-backup-*.tar.gz | head   # addypin.db* + letsencrypt.tar.gz
+
+# Watch: silent + exit 0 when the site is up and a fresh backup exists.
+/usr/local/bin/pulselog --config /etc/addypin/pulselog.config.json; echo "exit=$?"
 ```
 
-Expected output — three `addypin.db*` files + `letsencrypt.tar.gz`,
-each non-empty. Total size ~500 KB today.
-
-### Restore drill (do this at least once)
+## Restore drill (do this at least once)
 
 ```bash
-# From a backup dir:
-cd ~/addypin-backups/daily/2026-04-19
-scp addypin.db* root@<vps-ip>:/var/lib/addypin/
+# Extract the newest archive, then push the DB back to the VPS.
+cd ~/addypin-backups
+tar -xzf "$(ls -t addypin-backup-*.tar.gz | head -1)" -C /tmp/restore
+scp /tmp/restore/addypin.db* root@<vps-ip>:/var/lib/addypin/
 ssh root@<vps-ip> 'chown addypin:addypin /var/lib/addypin/addypin.db* && systemctl restart addypin'
 # /etc/letsencrypt/ restore only needed on a fresh-VPS rebuild:
-#   scp letsencrypt.tar.gz root@<new-vps>:/tmp/
+#   scp /tmp/restore/letsencrypt.tar.gz root@<new-vps>:/tmp/
 #   ssh root@<new-vps> 'tar -xzf /tmp/letsencrypt.tar.gz -C /etc && certbot renew --dry-run'
 ```
 
 ⚠️ Restoring the DB without also having `ADDYPIN_DATA_KEY` from
-`pass addypin/prod/data_key` gets you a brick. The key is the one
-thing that isn't in this backup — by design.
-
-## 2. Uptime watchdog — Kuma HTTP monitor (pull)
-
-Completely configured in Kuma's UI. No files in this repo.
-
-1. Kuma → Add New Monitor → **Monitor Type: HTTP(s)**
-2. URL: `https://addypin.com/api/health`
-3. Interval: `60s` (or 300s — 5 min is plenty)
-4. Accepted Status Codes: `200`
-5. Max. Retries: `2` (avoid alerting on a single flaky probe)
-6. Notification: your email / Telegram / whatever you have wired in Kuma
-7. Save.
-
-Kuma now pings the VPS every minute from the home server. If addypin
-is down *or* the VPS is dead *or* DNS breaks *or* the cert expires
-(TLS error = non-200), Kuma alerts you.
-
-## 3. Backup heartbeat — Kuma Push monitor
-
-1. Kuma → Add New Monitor → **Monitor Type: Push**
-2. Name: `addypin-backup`
-3. Heartbeat Interval: `86400` (24 h) + Grace Period `3600` (1 h)
-4. Save — Kuma displays a push URL like
-   `https://kuma.yourhost.lan/api/push/ABCDEFG?status=up&msg=OK&ping=`
-5. Paste that URL into `/etc/default/addypin-backup` as `KUMA_PUSH_URL`.
-
-The backup script appends `&msg=backup_2026-04-19_124K` so the history
-in Kuma shows the date + size of each snapshot.
-
-If the backup fails, is skipped, or the home server was off past the
-grace window, Kuma alerts you.
+`pass addypin/prod/data_key` gets you a brick. The key is the one thing that
+isn't in this backup — by design.
 
 ## Why this split
 
-- **Site uptime** (Kuma pull): catches VPS-down, DNS-broken, cert-expired.
-  Survives the VPS being completely off.
-- **Backup heartbeat** (Kuma push): catches silent backup failures —
-  cron still runs but rsync errors, or ssh key expired, or disk full.
-  A pull-only check would miss this entirely.
-- **On-VPS health-check.sh** (`ops/health-check.sh`): catches
-  process-level issues that are invisible from the outside — systemd
-  unit inactive, mailq backed up, journal error spikes, disk >85%,
-  cert <14 days remaining. Emails via local Postfix to gmail.
+- **Site uptime** (pulselog `http` + `ssl` from the home server): catches
+  VPS-down, DNS-broken, cert-expired. Survives the VPS being completely off —
+  the on-VPS health check can't email when the VPS itself is down.
+- **Backup heartbeat** (pulselog `file-age` on the archive dir): catches a
+  silent backup failure — the timer fired but the pull errored, the SSH key
+  expired, or the disk filled. A pull-only uptime check would miss this. A
+  failed `--backup` publishes no new archive, so the next watch run sees a
+  stale dir and alerts. (`maxAgeHours: 30` gives the daily 03:15 job margin.)
+- **On-VPS health** (`ops/pulselog/health.config.json` via the VPS's
+  `addypin-health.timer`): catches process-level issues invisible from
+  outside — systemd unit inactive, mailq backed up, disk >85%, cert <14 days,
+  DB truncated. Emails via local Postfix → OpenDKIM to gmail.
 
 Three layers, each catches what the others miss.

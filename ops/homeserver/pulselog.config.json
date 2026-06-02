@@ -1,0 +1,30 @@
+{
+  "output": {
+    "file": "/home/REPLACE_ME/addypin-backups/health.jsonl",
+    "maxBytes": 5000000
+  },
+  "alert": {
+    "email": "avoidaccess@gmail.com",
+    "from": "avoidaccess@gmail.com",
+    "app": "addypin-home"
+  },
+  "retry": { "retries": 2, "retryDelayMs": 2000 },
+  "checks": [
+    { "type": "http", "name": "site", "enabled": true, "url": "https://addypin.com/api/health", "expectStatus": 200, "timeoutMs": 10000 },
+    { "type": "ssl", "name": "cert", "enabled": true, "host": "addypin.com", "port": 443, "warnDays": 14 },
+    { "type": "file-age", "name": "backup-fresh", "enabled": true, "path": "/home/REPLACE_ME/addypin-backups", "maxAgeHours": 30, "pattern": ".tar.gz" }
+  ],
+  "backup": {
+    "app": "addypin",
+    "dir": "/home/REPLACE_ME/addypin-backups",
+    "name": "addypin-backup",
+    "command": "/usr/local/bin/addypin-pull.sh",
+    "timeoutMs": 600000,
+    "keepLast": 7,
+    "keepDays": 30,
+    "minBytes": 1024,
+    "history": "/home/REPLACE_ME/addypin-backups/backup.jsonl",
+    "email": "avoidaccess@gmail.com",
+    "from": "avoidaccess@gmail.com"
+  }
+}

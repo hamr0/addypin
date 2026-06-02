@@ -1,0 +1,24 @@
+{
+  "output": {
+    "file": "/var/lib/addypin/health.jsonl",
+    "maxBytes": 5000000,
+    "heartbeat": false
+  },
+  "alert": {
+    "email": "avoidaccess@gmail.com",
+    "from": "alerts@addypin.com",
+    "app": "addypin"
+  },
+  "retry": { "retries": 2, "retryDelayMs": 2000 },
+  "checks": [
+    { "type": "service", "name": "addypin", "enabled": true, "unit": "addypin.service" },
+    { "type": "service", "name": "postfix", "enabled": true, "unit": "postfix.service" },
+    { "type": "service", "name": "nginx", "enabled": true, "unit": "nginx.service" },
+    { "type": "http", "name": "api", "enabled": true, "url": "http://127.0.0.1:3000/api/health", "expectStatus": 200, "timeoutMs": 5000 },
+    { "type": "disk", "name": "disk-root", "enabled": true, "path": "/", "maxPercent": 85 },
+    { "type": "disk", "name": "disk-data", "enabled": true, "path": "/var/lib/addypin", "maxPercent": 85 },
+    { "type": "ssl", "name": "cert", "enabled": true, "host": "addypin.com", "port": 443, "warnDays": 14 },
+    { "type": "command", "name": "mailq-depth", "enabled": true, "command": "sh", "args": ["-c", "test $(mailq | grep -c '^[A-F0-9]') -lt 50"] },
+    { "type": "command", "name": "db-size", "enabled": true, "command": "sh", "args": ["-c", "test $(stat -c%s /var/lib/addypin/addypin.db) -ge 1024"] }
+  ]
+}

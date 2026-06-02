@@ -1,11 +1,14 @@
 [Unit]
-Description=addypin health check (units, disk, API, certs, queue, journal)
+Description=addypin health check (pulselog: units, API, disk, cert, mail queue, DB)
 After=network-online.target
 
 [Service]
 Type=oneshot
 User=addypin
 Group=addypin
-ExecStart=/opt/addypin/ops/health-check.sh
-EnvironmentFile=-/etc/default/addypin-health
+# pulselog reads ops/pulselog/health.config.json, probes each check, stays
+# silent on green, and emails the alert recipient via sendmail (Postfix →
+# OpenDKIM) on any failure. The JSON config carries everything the bash
+# script used to read from /etc/default/addypin-health, so no EnvironmentFile.
+ExecStart=/usr/bin/node /opt/addypin/node_modules/pulselog/bin/pulselog.js --config /opt/addypin/ops/pulselog/health.config.json
 Nice=10

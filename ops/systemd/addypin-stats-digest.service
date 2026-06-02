@@ -1,5 +1,5 @@
 [Unit]
-Description=addypin weekly stats digest (last 4 weeks of stats.log → operator email)
+Description=addypin weekly stats digest (pulselog --digest → stats.jsonl + operator email)
 After=network-online.target
 
 [Service]
@@ -7,13 +7,16 @@ Type=oneshot
 User=addypin
 Group=addypin
 WorkingDirectory=/opt/addypin
+# DATA_DIR is read by the metricsCommand (server/stats.js --metrics-json) so
+# it locates addypin.db; pulselog inherits this env when it spawns the child.
 EnvironmentFile=/etc/addypin/env
-ExecStart=/usr/bin/node /opt/addypin/server/digest.js
+ExecStart=/usr/bin/node /opt/addypin/node_modules/pulselog/bin/pulselog.js --digest --config /opt/addypin/ops/pulselog/digest.config.json
 
-# Match addypin.service hardening posture. msmtp + OpenDKIM run as
-# their own users on the system path, no writes needed from this unit.
+# ProtectSystem=true (not strict): /usr+/boot read-only, but /var stays
+# writable — pulselog appends the weekly snapshot to /var/lib/addypin/stats.jsonl
+# and the sendmail path drops into the Postfix spool under /var.
 NoNewPrivileges=true
-ProtectSystem=strict
+ProtectSystem=true
 ProtectHome=true
 PrivateTmp=true
 Nice=10

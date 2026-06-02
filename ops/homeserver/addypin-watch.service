@@ -1,0 +1,17 @@
+[Unit]
+Description=addypin external watch (pulselog: site uptime + cert + backup freshness)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+# Same user as the backup job — the backup-fresh file-age check reads the
+# archive dir it owns. The http/ssl checks need only outbound network.
+User=%i
+# Replaces the two Kuma monitors: the http+ssl checks are the pull-uptime
+# monitor (catches VPS-down / DNS-broken / cert-expired from off-box), and
+# the file-age check is the backup heartbeat (catches a silent backup
+# failure). Silent on green; one email via the local msmtp/sendmail shim
+# when anything trips. Adjust the binary path if your npm prefix differs.
+ExecStart=/usr/local/bin/pulselog --config /etc/addypin/pulselog.config.json
+Nice=10

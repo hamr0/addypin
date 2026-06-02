@@ -20,6 +20,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { install } from 'flightlog';
 import { knowless } from 'knowless';
 import { createDb } from './db.js';
 import { createCrypto } from './crypto.js';
@@ -28,6 +29,28 @@ import { handleInbound } from './inbound.js';
 import { execSync } from 'node:child_process';
 
 loadDotenv();
+
+// flightlog for the inbound pipe — tuned for a short-lived, per-message
+// process whose contract is "always exit 0, never requeue":
+//   - own file (errors-inbound.jsonl) so concurrent deliveries don't race
+//     the long-running server's errors.jsonl rotation;
+//   - bootCheck:false so an unwritable error sink can't take down mail
+//     delivery (a non-zero exit would defer every queued message);
+//   - exitOnUncaught:false because we own the exit code (always 0);
+//   - captureSync at the catch boundary, since process.exit() below would
+//     drop an async capture()'s line before it flushes.
+let release = 'unknown';
+try {
+    release = JSON.parse(
+        fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
+    ).version;
+} catch { /* version is best-effort; never block mail on it */ }
+const { captureSync } = install({
+    file: path.join(process.env.DATA_DIR || './data', 'errors-inbound.jsonl'),
+    context: { app: 'addypin', proc: 'inbound', release },
+    bootCheck: false,
+    exitOnUncaught: false,
+});
 
 const cfg = {
     dataDir: process.env.DATA_DIR || './data',
@@ -82,6 +105,7 @@ try {
     log('inbound', result);
 } catch (e) {
     log('inbound_error', { message: e.message, stack: e.stack?.split('\n').slice(0, 3).join(' | ') });
+    captureSync(e, { where: 'inbound' });
 } finally {
     auth.close();
     db.close();

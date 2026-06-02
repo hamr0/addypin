@@ -17,16 +17,18 @@ const DEFAULT_WEB_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)
 const STATIC_FILES = new Map([
     ['/',            { file: 'index.html', type: 'text/html; charset=utf-8' }],
     ['/logo.png',    { file: 'logo.png',   type: 'image/png' }],
+    ['/og.png',      { file: 'og.png',     type: 'image/png' }],
     ['/favicon.svg', { file: 'favicon.svg', type: 'image/svg+xml' }],
     ['/favicon.ico', { file: 'favicon.svg', type: 'image/svg+xml' }],
     ['/robots.txt',  { file: 'robots.txt',  type: 'text/plain; charset=utf-8' }],
+    ['/llms.txt',    { file: 'llms.txt',    type: 'text/plain; charset=utf-8' }],
     ['/sitemap.xml', { file: 'sitemap.xml', type: 'application/xml; charset=utf-8' }],
 ]);
 
 // Build an http.Server given the wired modules. Pure construction —
 // the caller decides when to listen() and on which port. This shape
 // lets integration tests spin up an ephemeral server per test.
-export function createServer({ db, crypto, limiters, mailer, auth, baseUrl = '', webDir = DEFAULT_WEB_DIR, now = () => Date.now() }) {
+export function createServer({ db, crypto, limiters, mailer, auth, baseUrl = '', webDir = DEFAULT_WEB_DIR, now = () => Date.now(), capture = () => {} }) {
     const router = createRouter();
 
     // Resolve the requesting session's handle and, as a side effect,
@@ -144,6 +146,7 @@ export function createServer({ db, crypto, limiters, mailer, auth, baseUrl = '',
                 `ignore this email - the pin will auto-delete in 72 hours.\n`,
         }).catch((err) => {
             console.error(`[auth] startLogin failed for ${shortcode}: ${err.message}`);
+            capture(err, { where: 'auth-startlogin-confirm', shortcode });
         });
 
         return json(201, { shortcode });
@@ -187,7 +190,10 @@ export function createServer({ db, crypto, limiters, mailer, auth, baseUrl = '',
             email,
             nextUrl: `${effectiveBaseUrl(_req, baseUrl)}/manage`,
             sourceIp: clientIp(_req),
-        }).catch((err) => console.error(`[auth] startLogin failed: ${err.message}`));
+        }).catch((err) => {
+            console.error(`[auth] startLogin failed: ${err.message}`);
+            capture(err, { where: 'auth-startlogin' });
+        });
         return json(202, {});
     });
 
@@ -318,6 +324,10 @@ export function createServer({ db, crypto, limiters, mailer, auth, baseUrl = '',
             send(res, out, isHead);
         } catch (err) {
             console.error('[http]', err.stack || err.message);
+            // Redact the query string before logging: magic-link tokens ride
+            // in /auth/callback?token=… — flightlog records exactly what we
+            // pass and ships no redactor, so stripping it is on us.
+            capture(err, { where: 'http', method: req.method, path: (req.url || '').split('?')[0] });
             send(res, json(500, { error: 'internal_error' }));
         }
     });
@@ -328,7 +338,18 @@ export function createServer({ db, crypto, limiters, mailer, auth, baseUrl = '',
 // ─── helpers ───────────────────────────────────────────────────────────────────
 
 function json(status, obj) {
-    return { status, headers: { 'content-type': 'application/json' }, body: JSON.stringify(obj) };
+    // X-Robots-Tag: noindex on every JSON response. The API is intentionally
+    // NOT Disallow-ed in robots.txt (a Disallow-ed page is never fetched, so a
+    // noindex on it is never seen — the two cancel). Left crawlable, this header
+    // keeps the public coords lookup (/api/pins/:code) out of search the way
+    // pin-page HTML uses <meta name="robots">. Owner data (/api/me/pins, PATCH/
+    // DELETE) is protected by its auth gate (401/403), not by this header.
+    // See docs/04-process/privacy-seo.md, Tier 2.5.
+    return {
+        status,
+        headers: { 'content-type': 'application/json', 'x-robots-tag': 'noindex' },
+        body: JSON.stringify(obj),
+    };
 }
 
 function text(status, str) {

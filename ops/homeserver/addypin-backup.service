@@ -1,5 +1,5 @@
 [Unit]
-Description=addypin VPS → home server backup (DB + letsencrypt)
+Description=addypin VPS → home server backup (pulselog --backup: DB + letsencrypt)
 Wants=network-online.target
 After=network-online.target
 
@@ -9,6 +9,10 @@ Type=oneshot
 # Override here or set via `systemctl edit` after install.
 User=%i
 EnvironmentFile=-/etc/default/addypin-backup
-ExecStart=/usr/local/bin/addypin-backup.sh
+# pulselog --backup invokes addypin-pull.sh (the command source) to fetch the
+# DB + letsencrypt into its staging dir, then tars/floors/publishes/rotates
+# and emails on failure. A failed backup exits 1, surfaced by systemd.
+# Adjust the binary path if your npm global prefix differs ($(command -v pulselog)).
+ExecStart=/usr/local/bin/pulselog --backup --config /etc/addypin/pulselog.config.json
 Nice=19
 IOSchedulingClass=idle

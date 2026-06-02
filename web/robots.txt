@@ -1,7 +1,43 @@
+# Crawl freely. Privacy is enforced by the app, not by robots.txt:
+#   - Owner data (/api/me/pins, PATCH/DELETE /api/pins) is AUTH-GATED (401/403
+#     to anonymous requests) — that gate is the control, not a Disallow.
+#   - App/UI pages (pin, manage, edit) and the public coords lookup carry
+#     noindex (HTML <meta robots> / JSON X-Robots-Tag) so they stay out of
+#     search while remaining crawlable. We deliberately do NOT Disallow them:
+#     a Disallow-ed page is never fetched, so its noindex is never seen — the
+#     two cancel (see docs/04-process/privacy-seo.md, Tier 2.5).
+#   - Only the marketing apex (/) is indexable, and it carries no PII.
 User-agent: *
-Allow: /$
-Disallow: /api/
-Disallow: /auth/
-Disallow: /manage
-Disallow: /edit/
+Allow: /
+
+# AI crawlers, named explicitly (on the record, not the implicit * default).
+# The only indexable surface is PII-free marketing copy, so both classes are
+# allowed — free, unprompted mentions. NB: ClaudeBot/GPTBot are the TRAINING
+# crawlers; the cite-live bots that link back are Claude-User/Claude-SearchBot/
+# OAI-SearchBot/ChatGPT-User/PerplexityBot. Verify names against each vendor's
+# page before changing — they shift.
+
+# Retrieval / cite-live — these put a link back to you (the LLM-mention surface).
+User-agent: Claude-User
+Allow: /
+
+User-agent: Claude-SearchBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+# Training corpus — allowed here because marketing copy is meant to spread.
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: GPTBot
+Allow: /
+
 Sitemap: https://addypin.com/sitemap.xml

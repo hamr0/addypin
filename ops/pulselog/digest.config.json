@@ -1,0 +1,24 @@
+{
+  "digest": {
+    "app": "addypin",
+    "history": "/var/lib/addypin/stats.jsonl",
+    "email": "avoidaccess@gmail.com",
+    "from": "noreply@addypin.com",
+    "weeks": 4,
+    "skipIfFlat": false,
+    "metricsCommand": {
+      "command": "/usr/bin/node",
+      "args": ["--experimental-sqlite", "/opt/addypin/server/stats.js", "--metrics-json"],
+      "timeoutMs": 10000
+    },
+    "metrics": [
+      { "name": "pins" },
+      { "name": "customers" }
+    ],
+    "flightlog": {
+      "file": "/var/lib/addypin/errors.jsonl",
+      "groupBy": "where",
+      "flagAtLeast": 20
+    }
+  }
+}

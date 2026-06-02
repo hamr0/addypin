@@ -347,12 +347,36 @@ test('GET /robots.txt serves with text/plain and references the sitemap', async 
     assert.match(body, /Sitemap: https:\/\/addypin\.com\/sitemap\.xml/);
 });
 
-test('GET /sitemap.xml serves XML listing the apex URL', async () => {
+test('GET /sitemap.xml serves XML listing the apex URL with lastmod', async () => {
     const res = await fetch(baseUrl + '/sitemap.xml');
     assert.equal(res.status, 200);
     assert.match(res.headers.get('content-type'), /xml/);
     const body = await res.text();
     assert.match(body, /<loc>https:\/\/addypin\.com\/<\/loc>/);
+    assert.match(body, /<lastmod>/);
+});
+
+test('GET /og.png serves the 1200x630 link-preview banner', async () => {
+    const res = await fetch(baseUrl + '/og.png');
+    assert.equal(res.status, 200);
+    assert.equal(res.headers.get('content-type'), 'image/png');
+    const buf = await res.arrayBuffer();
+    assert.ok(buf.byteLength > 1000);
+});
+
+test('GET /llms.txt serves a text/plain agent index with the privacy invariant', async () => {
+    const res = await fetch(baseUrl + '/llms.txt');
+    assert.equal(res.status, 200);
+    assert.match(res.headers.get('content-type'), /^text\/plain/);
+    const body = await res.text();
+    assert.match(body, /addypin/);
+    assert.match(body, /no analytics/i);
+});
+
+test('JSON API responses carry X-Robots-Tag: noindex (Disallow alone does not de-index)', async () => {
+    const res = await fetch(baseUrl + '/api/pins/ZZZZZZ'); // 404, but still JSON
+    assert.equal(res.headers.get('x-robots-tag'), 'noindex');
+    assert.equal(res.headers.get('content-type'), 'application/json');
 });
 
 test('GET /maplogos/<file> serves a real logo with correct content-type', async () => {

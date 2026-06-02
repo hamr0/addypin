@@ -93,6 +93,46 @@ Total time: ~5 seconds on a warm SSH connection.
 - [ ] **If you touched mail:** send yourself a magic link from
       production, confirm headers, confirm reply-to behavior.
 
+## Updating systemd units (manual — `deploy.sh` does NOT sync them)
+
+`ops/deploy.sh` only does `git pull` + `npm ci --omit=dev` + `systemctl
+restart addypin`. The unit files under `ops/systemd/` are **not** copied to
+`/etc/systemd/system/` automatically — when you change a unit, install it by
+hand and reload:
+
+```bash
+ssh root@vps
+install -m 644 /opt/addypin/ops/systemd/addypin-*.{service,timer} /etc/systemd/system/
+systemctl daemon-reload
+```
+
+### One-time observability cutover (flightlog + pulselog)
+
+The first deploy carrying the pulselog migration needs this once on the VPS,
+after `npm ci` has populated `/opt/addypin/node_modules/pulselog`:
+
+```bash
+# Retire the old daily-snapshot timer (folded into the weekly digest).
+systemctl disable --now addypin-stats.timer
+rm -f /etc/systemd/system/addypin-stats.{service,timer}
+
+# Preserve week-over-week history (optional — else the first digest is a baseline).
+sudo -u addypin DATA_DIR=/var/lib/addypin node /opt/addypin/ops/pulselog/migrate-stats-log.mjs
+
+# Install the rewritten health + digest units (health-check.sh is gone).
+install -m 644 /opt/addypin/ops/systemd/addypin-health.service \
+               /opt/addypin/ops/systemd/addypin-stats-digest.service /etc/systemd/system/
+systemctl daemon-reload
+systemctl restart addypin           # picks up flightlog → errors.jsonl
+
+# Verify pulselog runs clean (silent + exit 0 when green).
+sudo -u addypin node /opt/addypin/node_modules/pulselog/bin/pulselog.js --config /opt/addypin/ops/pulselog/health.config.json; echo "exit=$?"
+sudo -u addypin DATA_DIR=/var/lib/addypin node /opt/addypin/node_modules/pulselog/bin/pulselog.js --digest --dry-run --config /opt/addypin/ops/pulselog/digest.config.json
+```
+
+The home-server side (backup + watch) is a separate cutover — see
+[`ops/homeserver/README.md`](../../ops/homeserver/README.md).
+
 ## Hotfix flow (rare)
 
 When `git push → ./ops/deploy.sh` is too slow — say a one-line
@@ -146,9 +186,10 @@ deploy or once a week.
 
 - `ssh root@vps 'systemctl status addypin postfix nginx'` — all
   three should be `active (running)`.
-- `ssh root@vps '/opt/addypin/ops/health-check.sh'` — exits 0 always,
-  but emails `avoidaccess@gmail.com` if anything is degraded
-  (units, disk, mail queue, log errors, TLS expiry, DB sanity).
+- `ssh root@vps '/usr/bin/node /opt/addypin/node_modules/pulselog/bin/pulselog.js --config /opt/addypin/ops/pulselog/health.config.json'`
+  — exits 0 always, silent on green, but emails `avoidaccess@gmail.com`
+  if anything is degraded (units, API, disk, mail queue, TLS expiry, DB
+  sanity). Same checks `addypin-health.timer` runs every 15 min.
 - `ssh root@vps 'mailq | tail -1'` — deferred queue should be small.
 - `curl -sS https://addypin.com/api/health` — local health endpoint
   via the public hostname.

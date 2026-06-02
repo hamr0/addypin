@@ -1,0 +1,20 @@
+# addypin
+
+> Turn GPS coordinates into a short, memorable link or email address —
+> `SHORTCODE.addypin.com` (web) and `SHORTCODE@addypin.com` (email). No
+> accounts, no tracking, open source. Coordinates are encrypted at rest and
+> owner identities are HMAC-derived, so the server can't read your pins
+> without its keys.
+
+## Pages
+- [addypin](https://addypin.com/): drop a pin on a map, get a short link or email address.
+
+## How it works
+- Drop a pin on the map → get `SHORTCODE.addypin.com` to share and `SHORTCODE@addypin.com` to look up by email.
+- A public lookup returns only `{ lat, lng, map links }` — no owner, no timestamps, no labels.
+- All management is via magic link — no passwords, no OAuth.
+- Unconfirmed pins auto-delete after 72 hours; a shortcode is never reused once deleted or expired.
+
+## Privacy invariant
+- Only encrypted latitude/longitude is stored per pin. No labels, no analytics, no session table.
+- Pin pages are `noindex` and the coordinates API is disallowed to crawlers, so no location data is ever indexed.

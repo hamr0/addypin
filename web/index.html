@@ -13,7 +13,36 @@
 <meta property="og:title" content="addypin — drop a pin, get a link">
 <meta property="og:description" content="Drop a pin on a map, get a short link or email address. No accounts, no tracking, open source.">
 <meta property="og:url" content="https://addypin.com/">
-<meta name="twitter:card" content="summary">
+<meta property="og:image" content="https://addypin.com/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="addypin — drop a pin, get a link. No accounts, no tracking, open source.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://addypin.com/og.png">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": "https://addypin.com/#website",
+      "url": "https://addypin.com/",
+      "name": "addypin",
+      "description": "Drop a pin on a map, get a short link or email address. No accounts, no tracking, open source.",
+      "inLanguage": "en"
+    },
+    {
+      "@type": "SoftwareApplication",
+      "name": "addypin",
+      "url": "https://addypin.com/",
+      "applicationCategory": "UtilitiesApplication",
+      "operatingSystem": "Web",
+      "description": "Turn GPS coordinates into a short, memorable link or email address. Coordinates are encrypted at rest; no accounts, no tracking, open source.",
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+    }
+  ]
+}
+</script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
     :root {

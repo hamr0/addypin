@@ -5,6 +5,75 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
 
 ## [Unreleased]
 
+## [2.0.17] — 2026-06-02
+
+### Added
+
+- **Discoverability (declarative open-web only).** Completed Tier-1 head tags
+  and AI-crawler policy per the privacy-respecting discoverability playbook —
+  no analytics, no scripts, nothing that calls home.
+  - `web/og.png` (1200×630, the addypin mark + tagline on the `--ink` brand
+    bg) served at `/og.png`; `index.html` now emits `og:image` (+ width/height/
+    alt, absolute URL) and `twitter:card` upgraded `summary` → `summary_large_image`
+    so chat/Slack/Discord unfurls render a banner, not the compact chain-icon card.
+  - `<html lang="en">`, JSON-LD (`SoftwareApplication` + `WebSite`,
+    `application/ld+json` — parsed, not executed), `sitemap.xml` switched to
+    `<lastmod>` (dropping `<changefreq>`/`<priority>`, which Google ignores),
+    and a curated `/llms.txt` agent index with the privacy invariant up top.
+  - `robots.txt` now **names the AI crawlers explicitly and classifies them**
+    — cite-live/retrieval (`Claude-User`, `Claude-SearchBot`, `OAI-SearchBot`,
+    `ChatGPT-User`, `PerplexityBot`) and training (`ClaudeBot`, `GPTBot`), all
+    allow-all on the PII-free marketing surface. (Note: `ClaudeBot` is
+    Anthropic's *training* crawler, not retrieval — the cite-live Anthropic bots
+    are `Claude-User`/`Claude-SearchBot`.) On the record, not the implicit `*`.
+  - **Corrected the PII model** (per the playbook's refined Tier 2.5): the
+    control is **auth-gating**, not `robots.txt`. Owner endpoints already
+    return 401/403 to anonymous requests. The old `Disallow: /api/ /auth/
+    /manage /edit/` lines were dropped — they were a no-op trap, since those
+    pages are `noindex` and a `Disallow`-ed page is never fetched, so its
+    `noindex` is never seen. Out-of-search is now enforced by `noindex` while
+    leaving pages crawlable: `<meta name="robots">` on pin/manage/edit HTML and
+    a new `X-Robots-Tag: noindex` header on every JSON response (covers the
+    public, by-design coords lookup `/api/pins/:code`).
+
+- **flightlog (`^0.4.0`) — in-app crash recorder.** `install()` at the top
+  of `server/main.js` (sink `${DATA_DIR}/errors.jsonl`, `exitOnUncaught`
+  default so systemd restarts clean) and `server/inbound-cli.js` (own
+  `errors-inbound.jsonl`, `bootCheck:false` + `exitOnUncaught:false` +
+  `captureSync` so a broken error sink never defers mail and the pipe keeps
+  its "always exit 0" contract). Catch-boundary `console.error`s now also
+  `capture(err, { where })`. The HTTP 500 path strips the query string
+  (`req.url.split('?')[0]`) before logging — magic-link tokens ride in
+  `/auth/callback?token=…` and flightlog ships no redactor by design.
+- **pulselog (`^0.4.1`) — external watcher**, replacing three hand-rolled
+  pieces:
+  - **Health** — `ops/pulselog/health.config.json` + the existing
+    `addypin-health.timer` (15 min) now run `pulselog`, replacing
+    `ops/health-check.sh`. Same coverage (units, API, disk ×2, cert, mailq,
+    DB size) via native check types plus two `command` escape hatches; the
+    journal-error check is dropped in favour of the flightlog rollup.
+  - **Weekly digest** — `pulselog --digest` reads the two numbers from
+    `server/stats.js --metrics-json`, appends one snapshot/week to
+    `${DATA_DIR}/stats.jsonl`, and mails the WoW table (Sun 09:00 UTC), with
+    a flightlog error rollup (counts + names only). Replaces `server/digest.js`.
+  - **Home-server backup + watch** — `ops/homeserver/pulselog.config.json`
+    drives `pulselog --backup` (via the `addypin-pull.sh` command source) and
+    an `addypin-watch.timer` (site `http`/`ssl` + backup `file-age`), replacing
+    `addypin-backup.sh` and both Uptime-Kuma monitors.
+
+### Removed
+
+- `ops/health-check.sh`, `server/digest.js`, `ops/homeserver/addypin-backup.sh`,
+  the `addypin-stats.{service,timer}` daily-snapshot pair (the digest run now
+  *is* the weekly snapshot), and the `stats:log` npm script.
+
+### Changed
+
+- `server/stats.js` slimmed to two modes: a human line and `--metrics-json`
+  (the digest's metricsCommand). The `--watch`/`stats.log` path is gone.
+- One-shot `ops/pulselog/migrate-stats-log.mjs` converts a legacy `stats.log`
+  into `stats.jsonl` so the first digest keeps its WoW history.
+
 ## [2.0.16] — 2026-05-24
 
 ### Changed

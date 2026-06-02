@@ -4,6 +4,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { execSync } from 'node:child_process';
+import { install } from 'flightlog';
 import { knowless } from 'knowless';
 import { createDb } from './db.js';
 import { createCrypto } from './crypto.js';
@@ -12,6 +13,21 @@ import { createServer } from './http.js';
 import { createMailer, msmtpTransport, consoleTransport } from './mail.js';
 
 loadDotenv();
+
+// flightlog: structured crash recorder. Installed as early as the env
+// permits (we need DATA_DIR to place the sink). Every uncaught exception,
+// unhandled rejection, and value we hand to capture() lands as one JSON
+// line in errors.jsonl — pulselog's weekly digest rolls up counts+names
+// from the same file (ops/pulselog/digest.config.json). On an uncaught
+// exception flightlog logs synchronously then exits 1, so systemd
+// restarts a clean process.
+const release = JSON.parse(
+    fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
+).version;
+const { capture } = install({
+    file: path.join(process.env.DATA_DIR || './data', 'errors.jsonl'),
+    context: { app: 'addypin', proc: 'server', release },
+});
 
 const cfg = {
     port: parseInt(process.env.PORT || '3000', 10),
@@ -146,10 +162,12 @@ async function sweep() {
                 console.log(`[reminder] sent for ${p.shortcode} (${hoursLeft}h left)`);
             } catch (e) {
                 console.error(`[reminder] ${p.shortcode}: ${e.message}`);
+                capture(e, { where: 'sweep-reminder', shortcode: p.shortcode });
             }
         }
     } catch (e) {
         console.error(`[reminder] pass: ${e.message}`);
+        capture(e, { where: 'sweep-reminder-pass' });
     }
 
     // 2. cleanup
@@ -158,6 +176,7 @@ async function sweep() {
         if (n > 0) console.log(`[cleanup] retired ${n} expired unconfirmed pin(s)`);
     } catch (e) {
         console.error(`[cleanup] ${e.message}`);
+        capture(e, { where: 'sweep-cleanup' });
     }
 }
 setImmediate(() => { sweep(); });
@@ -172,7 +191,7 @@ const mailer = createMailer({
     transport,
 });
 
-const server = createServer({ db, crypto, limiters, mailer, auth, baseUrl: cfg.baseUrl });
+const server = createServer({ db, crypto, limiters, mailer, auth, baseUrl: cfg.baseUrl, capture });
 server.listen(cfg.port, cfg.host, () => {
     console.log(`addypin listening on ${cfg.host}:${cfg.port}`);
 });

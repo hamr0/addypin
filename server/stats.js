@@ -1,12 +1,14 @@
-// Counts rows in addypin.db. No decryption — no secrets needed.
+// Reads confirmed-pin counts from addypin.db. No decryption — no secrets needed.
 //
-// Usage:
-//   node --experimental-sqlite server/stats.js              # print once
-//   node --experimental-sqlite server/stats.js --watch 600  # print every 600s
+// Two modes:
+//   node --experimental-sqlite server/stats.js                 # human-readable line
+//   node --experimental-sqlite server/stats.js --metrics-json  # {"pins":N,"customers":N}
 //
-// To background-log:
-//   nohup node --experimental-sqlite server/stats.js --watch 600 \
-//     >> data/stats.log 2>&1 &
+// --metrics-json is the metricsCommand for pulselog's weekly digest
+// (ops/pulselog/digest.config.json): one process spawn, one flat JSON
+// object of named integers, which pulselog snapshots into stats.jsonl
+// and renders as the week-over-week table. pulselog owns the history,
+// rendering, and email — this file only answers "what are the numbers?".
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -14,35 +16,23 @@ import { DatabaseSync } from 'node:sqlite';
 
 const dataDir = process.env.DATA_DIR || './data';
 const dbPath  = path.join(dataDir, 'addypin.db');
-
-const args = process.argv.slice(2);
-const watchIdx = args.indexOf('--watch');
-const intervalSec = watchIdx >= 0 ? parseInt(args[watchIdx + 1] ?? '600', 10) : 0;
+const asJson  = process.argv.includes('--metrics-json');
 
 if (!fs.existsSync(dbPath)) {
+    // pulselog records null for a metric whose command fails; exit non-zero
+    // so a missing DB is noted, never silently counted as zero.
     console.error(`stats: ${dbPath} not found — start the server first to create the database`);
-    process.exit(0);
+    process.exit(1);
 }
+
 const db = new DatabaseSync(dbPath, { readOnly: true });
-const stmts = {
-    pins:      db.prepare(`SELECT COUNT(*) AS n FROM pins WHERE status = 'confirmed'`),
-    customers: db.prepare(`SELECT COUNT(DISTINCT owner_handle) AS n FROM pins WHERE status = 'confirmed'`),
-};
+const pins      = db.prepare(`SELECT COUNT(*) AS n FROM pins WHERE status = 'confirmed'`).get().n;
+const customers = db.prepare(`SELECT COUNT(DISTINCT owner_handle) AS n FROM pins WHERE status = 'confirmed'`).get().n;
+db.close();
 
-function snapshot() {
-    const ts = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
-    const pins      = stmts.pins.get().n;
-    const customers = stmts.customers.get().n;
-    process.stdout.write(`${ts} pins=${pins} customers=${customers}\n`);
-}
-
-snapshot();
-
-if (intervalSec > 0) {
-    const timer = setInterval(snapshot, intervalSec * 1000);
-    for (const sig of ['SIGINT', 'SIGTERM']) {
-        process.on(sig, () => { clearInterval(timer); db.close(); process.exit(0); });
-    }
+if (asJson) {
+    process.stdout.write(JSON.stringify({ pins, customers }) + '\n');
 } else {
-    db.close();
+    const ts = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
+    process.stdout.write(`${ts} pins=${pins} customers=${customers}\n`);
 }

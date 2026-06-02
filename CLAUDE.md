@@ -31,6 +31,7 @@ For full development and testing standards, see `.claude/memory/AGENT_RULES.md`.
 - **Email out (non-auth):** `msmtp` system binary via `child_process` for the `SHORTCODE@` auto-reply.
 - **Email in:** Postfix `virtual_alias_maps` → pipe transport to a Node script (instantiates its own knowless instance per message).
 - **Process:** systemd unit on the VPS. No Docker, no Compose.
+- **Observability:** [`flightlog`](https://github.com/hamr0/flightlog) (in-app crash recorder → `${DATA_DIR}/errors.jsonl`, the server's own + `errors-inbound.jsonl` for the mail pipe) and [`pulselog`](https://github.com/hamr0/pulselog) (external watcher — health checks, weekly stats digest, and the home-server backup). Both zero-prod-dep, OSS, invoked as CLI from systemd timers; configs in `ops/pulselog/` (VPS) and `ops/homeserver/pulselog.config.json` (backup host). They replaced the bash `health-check.sh`, `server/digest.js`, and the home server's `addypin-backup.sh` + Uptime-Kuma monitors.
 - **Reverse proxy:** nginx + Let's Encrypt wildcard cert (`certbot --dns-route53`, auto-renewed). Two HTTPS server blocks: apex (`addypin.com`) and `*.addypin.com` (rewrites `/` → `/SHORTCODE` so subdomain and path forms both serve `pin.html`).
 
 ## Commands
@@ -53,7 +54,7 @@ Production / VPS uses environment variables loaded from a systemd `EnvironmentFi
 | `docs/` | Documentation, 5-tier hierarchy ([docs/README.md](docs/README.md)) |
 | `server/` | Node backend (crypto, db, http, email) |
 | `web/` | Static HTML + JS + CSS + Leaflet |
-| `ops/` | Deploy artifacts: inbound wrapper, health-check, systemd units |
+| `ops/` | Deploy artifacts: deploy script, inbound wrapper, systemd units, `pulselog/` configs, `homeserver/` backup + watch |
 | `data/` | Runtime SQLite file (gitignored) |
 
 ## Key constraints
@@ -85,6 +86,6 @@ Production / VPS uses environment variables loaded from a systemd `EnvironmentFi
 - **Shortcodes are 6 uppercase alphanumeric characters.** Case-insensitive at input, stored uppercase. User-chosen or server-generated.
 - Nginx handles SSL termination via the wildcard cert at `/etc/letsencrypt/live/addypin.com-0001/`. Wildcard renewal uses the `certbot-dns-route53` plugin — AWS creds at `/root/.aws/credentials` (chmod 600), IAM creds in `pass` at `addypin/prod/aws_r53_ssl_key` and `addypin/prod/aws_r53_ssl`. VPS infra: [`docs/00-context/system-state.md`](docs/00-context/system-state.md).
 
-## Current state (2026-04-29)
+## Current state (2026-06-02)
 
-M1–M11 shipped. Live `https://addypin.com` and `https://SHORTCODE.addypin.com` both resolve, `knowless@1.1.9` backs the auth flow (upstream walk-away release, feature-frozen at 1.0.0), wildcard cert renewed (auto-renewal via `certbot-renew.timer`). Path-based URLs (`addypin.com/SHORTCODE`) still resolve so old links don't break. Pending tail: tighten the IAM policy from `AmazonRoute53FullAccess` to a scoped inline policy on hosted zone `Z1CHOY92OEU194`; off-VPS backup/watchdog.
+M1–M11 shipped. Live `https://addypin.com` and `https://SHORTCODE.addypin.com` both resolve, `knowless@1.1.9` backs the auth flow (upstream walk-away release, feature-frozen at 1.0.0), wildcard cert renewed (auto-renewal via `certbot-renew.timer`). Path-based URLs (`addypin.com/SHORTCODE`) still resolve so old links don't break. Observability migrated to flightlog + pulselog: the VPS runs `pulselog` for health (`addypin-health.timer`) and the weekly stats digest (`addypin-stats-digest.timer`), `flightlog` captures app errors to `errors.jsonl`, and the home server runs `pulselog --backup` + an external watch (uptime + backup-freshness) in place of the old bash scripts and Kuma. Pending tail: tighten the IAM policy from `AmazonRoute53FullAccess` to a scoped inline policy on hosted zone `Z1CHOY92OEU194`. **Deploy note:** the new VPS units call `/opt/addypin/node_modules/pulselog/bin/pulselog.js`, so they need `npm ci` to have run *post-deploy* and the unit files re-installed (`systemctl daemon-reload`) — see `ops/homeserver/README.md` for the home-server side.

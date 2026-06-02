@@ -1,6 +1,6 @@
 {
   "name": "addypin",
-  "version": "2.0.16",
+  "version": "2.0.17",
   "private": true,
   "type": "module",
   "description": "Location sharing via short links. v2 rewrite.",
@@ -11,10 +11,11 @@
     "start": "node --experimental-sqlite server/main.js",
     "dev": "node --experimental-sqlite --watch server/main.js",
     "test": "node --experimental-sqlite --test --test-reporter=spec \"server/**/*.test.js\"",
-    "stats": "node --experimental-sqlite server/stats.js",
-    "stats:log": "node --experimental-sqlite server/stats.js --watch 600"
+    "stats": "node --experimental-sqlite server/stats.js"
   },
   "dependencies": {
-    "knowless": "^1.1.9"
+    "flightlog": "^0.4.0",
+    "knowless": "^1.1.9",
+    "pulselog": "^0.4.1"
   }
 }
