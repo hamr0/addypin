@@ -14,7 +14,7 @@ addypin is a location sharing service that turns GPS coordinates into short, mem
 
 **Lightweight over complex.** Fewer moving parts, fewer deps, less config. Express over NestJS, plain HTML over React unless the UI genuinely needs a framework. Simple > clever. Readable > elegant.
 
-**Open-source only.** No SaaS in the critical path. Every runtime dependency must be OSS or self-hosted. No Resend, no Postmark, no Umami, no Docker.
+**Open-source only.** No SaaS in the critical path — with **one accepted exception: Cloudflare** fronts production as the edge proxy/DNS (see Tech stack + Threat model). Every *runtime dependency* must still be OSS or self-hosted. No Resend, no Postmark, no Umami, no Docker.
 
 **Every line must have a purpose.** No speculative code, no premature abstractions.
 
@@ -32,7 +32,8 @@ For full development and testing standards, see `.claude/memory/AGENT_RULES.md`.
 - **Email in:** Postfix `virtual_alias_maps` → pipe transport to a Node script (instantiates its own knowless instance per message).
 - **Process:** systemd unit on the VPS. No Docker, no Compose.
 - **Observability:** [`flightlog`](https://github.com/hamr0/flightlog) (in-app crash recorder → `${DATA_DIR}/errors.jsonl`, the server's own + `errors-inbound.jsonl` for the mail pipe) and [`pulselog`](https://github.com/hamr0/pulselog) (external watcher — health checks, weekly stats digest, and the home-server backup). Both zero-prod-dep, OSS, invoked as CLI from systemd timers; configs in `ops/pulselog/` (VPS) and `ops/homeserver/pulselog.config.json` (backup host). They replaced the bash `health-check.sh`, `server/digest.js`, and the home server's `addypin-backup.sh` + Uptime-Kuma monitors.
-- **Reverse proxy:** nginx + Let's Encrypt wildcard cert (`certbot --dns-route53`, auto-renewed). Two HTTPS server blocks: apex (`addypin.com`) and `*.addypin.com` (rewrites `/` → `/SHORTCODE` so subdomain and path forms both serve `pin.html`).
+- **Edge:** **Cloudflare** fronts production (DNS-proxied / "orange cloud"). It terminates TLS at its edge and re-originates to the VPS — confirmed by the `server: cloudflare` response header and its ability to inject a managed `robots.txt`. It can also serve AI-bot rules at the edge (its "Block AI training bots" + managed-robots.txt features can override the repo `robots.txt` — settle crawler policy empirically with `curl https://addypin.com/robots.txt`, and change policy in the CF dashboard, not the repo file). Accepted SaaS exception per the dev rules.
+- **Reverse proxy:** nginx behind Cloudflare, with a Let's Encrypt wildcard cert (`certbot --dns-route53`, auto-renewed). Two HTTPS server blocks: apex (`addypin.com`) and `*.addypin.com` (rewrites `/` → `/SHORTCODE` so subdomain and path forms both serve `pin.html`).
 
 ## Commands
 
@@ -74,6 +75,7 @@ Production / VPS uses environment variables loaded from a systemd `EnvironmentFi
 | Casual DB inspection | Yes. |
 | Email enumeration via public endpoints | Yes. Shortcode lookup never reveals owner; `POST /api/login` always returns 202. |
 | Full server compromise (root on VPS) | Accepted risk. Attacker with env vars can decrypt everything. This is why we're not doing E2E encryption — PRD §2 non-goals. |
+| **Cloudflare sees plaintext traffic** | **Accepted risk (new).** Because CF terminates TLS at its edge, it can observe every request/response in the clear — shortcode lookups, the `{lat,lng}` coords API responses, magic-link tokens in `/auth/callback` URLs, and login emails in `POST` bodies. CF is therefore a *trusted party in the path*, not just transport. This was not in the original threat model; coords being encrypted *at rest* does not protect them *in transit through CF*. Revisit if the no-SaaS posture tightens. |
 
 ## Deployment (v2 target)
 
@@ -82,10 +84,10 @@ Production / VPS uses environment variables loaded from a systemd `EnvironmentFi
 ## Important notes
 
 - **v1 code is on the `v1` branch** — check it out if you need to reference the old implementation. Do not merge from it.
-- **Never reintroduce** Postgres, Docker, Resend, Umami, React, or any paid SaaS without a PRD amendment.
+- **Never reintroduce** Postgres, Docker, Resend, Umami, React, or any paid SaaS without a PRD amendment. (Cloudflare is the one SaaS already in the path — an accepted edge exception, not a precedent for more.)
 - **Shortcodes are 6 uppercase alphanumeric characters.** Case-insensitive at input, stored uppercase. User-chosen or server-generated.
-- Nginx handles SSL termination via the wildcard cert at `/etc/letsencrypt/live/addypin.com-0001/`. Wildcard renewal uses the `certbot-dns-route53` plugin — AWS creds at `/root/.aws/credentials` (chmod 600), IAM creds in `pass` at `addypin/prod/aws_r53_ssl_key` and `addypin/prod/aws_r53_ssl`. VPS infra: [`docs/00-context/system-state.md`](docs/00-context/system-state.md).
+- Cloudflare terminates TLS at the edge; nginx (behind CF) also terminates TLS via the wildcard cert at `/etc/letsencrypt/live/addypin.com-0001/` for the CF→origin hop and direct hits. Wildcard renewal uses the `certbot-dns-route53` plugin — AWS creds at `/root/.aws/credentials` (chmod 600), IAM creds in `pass` at `addypin/prod/aws_r53_ssl_key` and `addypin/prod/aws_r53_ssl`. VPS infra: [`docs/00-context/system-state.md`](docs/00-context/system-state.md).
 
 ## Current state (2026-06-02)
 
-M1–M11 shipped. Live `https://addypin.com` and `https://SHORTCODE.addypin.com` both resolve, `knowless@1.1.9` backs the auth flow (upstream walk-away release, feature-frozen at 1.0.0), wildcard cert renewed (auto-renewal via `certbot-renew.timer`). Path-based URLs (`addypin.com/SHORTCODE`) still resolve so old links don't break. Observability migrated to flightlog + pulselog: the VPS runs `pulselog` for health (`addypin-health.timer`) and the weekly stats digest (`addypin-stats-digest.timer`), `flightlog` captures app errors to `errors.jsonl`, and the home server runs `pulselog --backup` + an external watch (uptime + backup-freshness) in place of the old bash scripts and Kuma. Pending tail: tighten the IAM policy from `AmazonRoute53FullAccess` to a scoped inline policy on hosted zone `Z1CHOY92OEU194`. **Deploy note:** the new VPS units call `/opt/addypin/node_modules/pulselog/bin/pulselog.js`, so they need `npm ci` to have run *post-deploy* and the unit files re-installed (`systemctl daemon-reload`) — see `ops/homeserver/README.md` for the home-server side.
+M1–M11 shipped. Live `https://addypin.com` and `https://SHORTCODE.addypin.com` both resolve, `knowless@1.1.9` backs the auth flow (upstream walk-away release, feature-frozen at 1.0.0), wildcard cert renewed (auto-renewal via `certbot-renew.timer`). Path-based URLs (`addypin.com/SHORTCODE`) still resolve so old links don't break. Observability migrated to flightlog + pulselog: the VPS runs `pulselog` for health (`addypin-health.timer`) and the weekly stats digest (`addypin-stats-digest.timer`), `flightlog` captures app errors to `errors.jsonl`, and the home server runs `pulselog --backup` + an external watch (uptime + backup-freshness) in place of the old bash scripts and Kuma. Discoverability shipped too (og.png, JSON-LD, llms.txt, sitemap `<lastmod>`, AI-crawler-aware `robots.txt`). **Cloudflare fronts production** (discovered during this deploy; accepted "for good") — note its edge AI-bot block currently *overrides* the repo `robots.txt` (training crawlers blocked), so the intended allow-all isn't live until the CF dashboard toggle (Control AI crawlers → "Do not block" + Manage robots.txt → off) is flipped; verify with `curl https://addypin.com/robots.txt`. Pending tail: tighten the IAM policy from `AmazonRoute53FullAccess` to a scoped inline policy on hosted zone `Z1CHOY92OEU194`. **Deploy note:** the new VPS units call `/opt/addypin/node_modules/pulselog/bin/pulselog.js`, so they need `npm ci` to have run *post-deploy* and the unit files re-installed (`systemctl daemon-reload`) — see `ops/homeserver/README.md` for the home-server side.
