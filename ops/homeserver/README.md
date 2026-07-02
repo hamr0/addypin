@@ -12,6 +12,7 @@ section, no flag runs the health `checks`. This replaces the old hand-rolled
 | `addypin-backup.sh` (rsync/tar + manual rotation) | `pulselog --backup` + `addypin-pull.sh` (command source) |
 | Kuma **pull** HTTP monitor (site uptime) | pulselog `http` + `ssl` checks against `addypin.com` |
 | Kuma **push** monitor (backup heartbeat) | pulselog `file-age` check on the backup dir |
+| _(nothing — mail bounces were silent)_ | pulselog `command` check (`addypin-mail-check.sh`) — VPS→Gmail delivery |
 
 ## Prerequisites
 
@@ -38,8 +39,9 @@ section, no flag runs the health `checks`. This replaces the old hand-rolled
 ```bash
 # 1. Config + pull wrapper into place.
 sudo install -d /etc/addypin
-sudo install -m 644 pulselog.config.json /etc/addypin/pulselog.config.json
-sudo install -m 755 addypin-pull.sh      /usr/local/bin/addypin-pull.sh
+sudo install -m 644 pulselog.config.json  /etc/addypin/pulselog.config.json
+sudo install -m 755 addypin-pull.sh       /usr/local/bin/addypin-pull.sh
+sudo install -m 755 addypin-mail-check.sh /usr/local/bin/addypin-mail-check.sh
 
 # 2. Point the config's paths at this user's home (the three REPLACE_ME's →
 #    the backup dir, history, health.jsonl, and file-age check path).
@@ -74,8 +76,15 @@ sudo /usr/local/bin/pulselog --backup --config /etc/addypin/pulselog.config.json
 ls -la ~/addypin-backups/addypin-backup-*.tar.gz       # newest is non-empty
 tar -tzf ~/addypin-backups/addypin-backup-*.tar.gz | head   # addypin.db* + letsencrypt.tar.gz
 
-# Watch: silent + exit 0 when the site is up and a fresh backup exists.
+# Watch: silent + exit 0 when the site is up, a fresh backup exists, and the
+# VPS's last mail to Gmail was accepted.
 /usr/local/bin/pulselog --config /etc/addypin/pulselog.config.json; echo "exit=$?"
+
+# Mail-delivery check in isolation: prints nothing, exit 0 when the VPS's most
+# recent send to the alert recipient was accepted (reads /var/log/maillog over
+# the backup SSH key). Exit 1 => a delivery regression pulselog would alert on.
+set -a; . /etc/default/addypin-backup; set +a
+/usr/local/bin/addypin-mail-check.sh; echo "mail-delivery exit=$?"
 ```
 
 ## Restore drill (do this at least once)
@@ -109,5 +118,16 @@ isn't in this backup — by design.
   `addypin-health.timer`): catches process-level issues invisible from
   outside — systemd unit inactive, mailq backed up, disk >85%, cert <14 days,
   DB truncated. Emails via local Postfix → OpenDKIM to gmail.
+- **Mail deliverability** (pulselog `command` → `addypin-mail-check.sh` from
+  the home server): catches "the VPS can't get mail to Gmail" — SPF/DKIM/PTR
+  breakage, e.g. `mail.addypin.com` getting re-proxied through Cloudflare.
+  This *must* live off-box: the on-VPS health check runs as the unprivileged
+  `addypin` user (can't read `/var/log/maillog`), and even if it could, its
+  alert would ride the same broken mail path and bounce. The home server's
+  msmtp→Gmail path is independent, so its alert actually lands. It reads the
+  VPS maillog over the existing (root, unrestricted) backup SSH key and keys
+  on the *latest* send outcome, so it never sticks red on a stale bounce.
+  (This gap is why the weekly digest silently vanished for a month once the
+  mail host got Cloudflare-proxied — nothing was watching delivery.)
 
-Three layers, each catches what the others miss.
+Four layers, each catches what the others miss.

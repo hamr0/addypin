@@ -8,6 +8,10 @@ Type=oneshot
 # Same user as the backup job — the backup-fresh file-age check reads the
 # archive dir it owns. The http/ssl checks need only outbound network.
 User=%i
+# The vps-mail-delivery command check reads VPS_HOST/VPS_USER/SSH_KEY from the
+# same env file the backup job uses, so the VPS address + key path live in one
+# place. Optional (leading -): the check falls back to its built-in defaults.
+EnvironmentFile=-/etc/default/addypin-backup
 # Replaces the two Kuma monitors: the http+ssl checks are the pull-uptime
 # monitor (catches VPS-down / DNS-broken / cert-expired from off-box), and
 # the file-age check is the backup heartbeat (catches a silent backup

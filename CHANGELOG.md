@@ -5,6 +5,42 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
 
 ## [Unreleased]
 
+## [2.0.18] — 2026-07-02
+
+### Fixed
+
+- **All VPS→Gmail mail was silently bouncing** — the weekly stats digest and
+  every health/alert email. pulselog and flightlog were working the whole time
+  (the digest ran every Sunday and snapshotted `stats.jsonl`); the mail just
+  never left the building (41 bounced / 2 sent). Root cause was three
+  Cloudflare-DNS faults, now corrected (DNS records only — nothing in the repo,
+  and `deploy.sh` does not touch DNS):
+  - `mail.addypin.com` was **proxied** (orange cloud) → resolved to Cloudflare
+    IPs, not the VPS `155.94.144.191`. Broke SPF's `a:` mechanism **and**
+    forward-confirmed reverse DNS. Fixed by setting it **DNS-only** (grey
+    cloud) → `155.94.144.191`. A mail host must never be CF-proxied (CF doesn't
+    proxy SMTP/25 anyway).
+  - SPF changed from `v=spf1 a:mail.addypin.com -all` to
+    `v=spf1 ip4:155.94.144.191 -all` so auth no longer depends on any
+    hostname's proxy state (matches the working sibling `late.fyi`).
+  - The DKIM public key was **never published** — OpenDKIM was signing
+    (`s=addypin2026`) but `addypin2026._domainkey.addypin.com` had no TXT
+    record. Now published. Verified end-to-end: a live send returns Gmail
+    `250 2.0.0 OK`.
+
+### Added
+
+- **Off-VPS mail-delivery monitor** (`ops/homeserver/addypin-mail-check.sh` +
+  a `command` check in `ops/homeserver/pulselog.config.json`). Catches a future
+  recurrence of the above. It lives on the home server *by necessity*: the
+  on-VPS health check runs as the unprivileged `addypin` user (can't read
+  `/var/log/maillog`), and its alert would ride the same broken mail path. The
+  home server has an independent msmtp→Gmail path and reads the VPS maillog over
+  the existing backup SSH key, keying on the latest send outcome (stateless — no
+  stale-bounce stickiness). `addypin-watch.service` now reads
+  `/etc/default/addypin-backup` so VPS host/user/key live in one place. Adds a
+  fourth monitoring layer; install per `ops/homeserver/README.md`.
+
 ## [2.0.17] — 2026-06-02
 
 ### Added

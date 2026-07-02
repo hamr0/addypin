@@ -12,7 +12,8 @@
   "checks": [
     { "type": "http", "name": "site", "enabled": true, "url": "https://addypin.com/api/health", "expectStatus": 200, "timeoutMs": 10000 },
     { "type": "ssl", "name": "cert", "enabled": true, "host": "addypin.com", "port": 443, "warnDays": 14 },
-    { "type": "file-age", "name": "backup-fresh", "enabled": true, "path": "/home/REPLACE_ME/addypin-backups", "maxAgeHours": 30, "pattern": ".tar.gz" }
+    { "type": "file-age", "name": "backup-fresh", "enabled": true, "path": "/home/REPLACE_ME/addypin-backups", "maxAgeHours": 30, "pattern": ".tar.gz" },
+    { "type": "command", "name": "vps-mail-delivery", "enabled": true, "command": "/usr/local/bin/addypin-mail-check.sh", "timeoutMs": 20000 }
   ],
   "backup": {
     "app": "addypin",
