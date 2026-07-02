@@ -28,5 +28,8 @@ attached_assets/
 # barebrowse snapshots (browser MCP tool artifacts)
 .barebrowse/
 
+# litectx local semantic-index cache (MCP tool artifact)
+.litectx/
+
 # Dev server local pidfile
 tunnel.pid
