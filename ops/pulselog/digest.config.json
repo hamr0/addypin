@@ -6,6 +6,11 @@
     "from": "noreply@addypin.com",
     "weeks": 4,
     "skipIfFlat": false,
+    "fallback": {
+      "when": "on-primary-failure",
+      "command": "/opt/addypin/ops/fallback-notify.sh",
+      "timeoutMs": 15000
+    },
     "metricsCommand": {
       "command": "/usr/bin/node",
       "args": ["--experimental-sqlite", "/opt/addypin/server/stats.js", "--metrics-json"],

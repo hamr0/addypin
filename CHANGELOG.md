@@ -5,6 +5,43 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
 
 ## [Unreleased]
 
+## [2.0.19] — 2026-07-02
+
+### Changed
+
+- **Bumped `pulselog` `^0.4.1` → `^0.7.0`** (0.7.0 adds the opt-in fallback
+  alert sink proposed in `docs/03-logs/pulselog-fallback-alert-proposal.md`;
+  0.6.0 relabels a `command`-check timeout; 0.5.0 is docs-only). No breaking
+  change to the health/digest config we use — verified with `--digest --dry-run`
+  and the full test suite.
+
+### Added
+
+- **Fallback alert sink over an independent mail path** — closes the circular
+  gap the 2026-07 incident exposed (a broken primary mail path also swallows the
+  alert about it). `ops/fallback-notify.sh` wraps pulselog's alert body +
+  `PULSELOG_SUBJECT` into a text/plain message and sends it via `msmtp`'s `gmail`
+  account (authenticated `smtp.gmail.com:587`, Gmail-signed) — deliberately
+  distinct from the default `localhost`/Postfix account that broke.
+  - Health alerts: `alert.fallback.when = "always"` (health is silent on green,
+    so this fires only on real failures — no duplicate mail; and it's the only
+    mode that survives an *async* bounce after a clean local handoff, which is
+    what the incident actually was).
+  - Digest: `digest.fallback.when = "on-primary-failure"` (no duplicate weekly
+    digest; digest-delivery breakage is caught by the health fallback + the
+    off-box mail-delivery watchdog from 2.0.18).
+
+  **Operator setup (done 2026-07-02):** a `gmail` account was added to
+  `/home/addypin/.msmtprc` (`0600`, owned `addypin`) beside the existing
+  `localhost` account, authenticating as `avoidaccess@gmail.com` with the Gmail
+  **app password** stored in `pass` at `addypin/server/email_pass`. Verified:
+  `msmtp --account=gmail` returns `250 2.0.0 OK` from Gmail. Also fixed
+  `/var/log/addypin/msmtp.log` ownership (was `root:root`, silently unwritable
+  by `addypin` for *both* accounts). `ops/fallback-notify.sh` ships with the
+  deploy (`/opt/addypin/ops/...`) — no unit reinstall, just a `git pull`/deploy
+  to land the wrapper + config. Falls back to built-in defaults if env is unset;
+  override via `FALLBACK_TO`/`FALLBACK_FROM`/`FALLBACK_MSMTP_ACCOUNT`/`FALLBACK_MSMTPRC`.
+
 ## [2.0.18] — 2026-07-02
 
 ### Fixed

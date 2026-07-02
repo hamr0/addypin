@@ -29,6 +29,12 @@ cutover).
 3. **Deploying/operating?** → [`00-context/system-state.md`](00-context/system-state.md)
    — what's running right now. [`04-process/dev-workflow.md`](04-process/dev-workflow.md)
    — how to ship a change.
+   [`04-process/observability-playbook.md`](04-process/observability-playbook.md)
+   — generic, portable pulselog + flightlog ops setup (health, weekly digest,
+   error flagging, backups, off-box watchdogs, mail-auth).
 4. **Why did we do X?** → [`03-logs/decisions-log.md`](03-logs/decisions-log.md).
+   Design artifacts too, e.g.
+   [`03-logs/pulselog-fallback-alert-proposal.md`](03-logs/pulselog-fallback-alert-proposal.md)
+   — the upstream fix identified after the 2026-07 mail-delivery incident.
 5. **What happened during cutover?** →
    [`03-logs/m10-deploy-log.md`](03-logs/m10-deploy-log.md).

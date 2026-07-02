@@ -7,7 +7,12 @@
   "alert": {
     "email": "avoidaccess@gmail.com",
     "from": "alerts@addypin.com",
-    "app": "addypin"
+    "app": "addypin",
+    "fallback": {
+      "when": "always",
+      "command": "/opt/addypin/ops/fallback-notify.sh",
+      "timeoutMs": 15000
+    }
   },
   "retry": { "retries": 2, "retryDelayMs": 2000 },
   "checks": [
