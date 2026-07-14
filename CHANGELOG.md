@@ -5,6 +5,47 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
 
 ## [Unreleased]
 
+## [2.0.20] — 2026-07-14
+
+### Security
+
+- **Bumped `knowless` `^1.1.9` → `^1.3.4`**, picking up the 1.3.4 hardening batch
+  and the 1.3.3 `nodemailer` `^8.0.7` → `^9.0.3` bump. `npm audit` goes from four
+  High advisories (transitive, via nodemailer 8.x) to **0 vulnerabilities**.
+  No API change — 1.2.0 added `.d.ts`, 1.3.0 added a `determineSourceIp` export;
+  both additive. Full suite green (179/179).
+
+  addypin embeds the knowless *library* (`import { knowless }`) and mounts its
+  handlers inside addypin's own router — it never runs `bin/knowless-server`. So
+  the two headline 1.3.4 fixes in that binary (the one-request `//` DoS, the
+  fail-open `KNOWLESS_COOKIE_SECURE` parsing) were never reachable here, and
+  addypin's own `new URL(req.url, …)` already parses inside the request
+  try/catch (`server/http.js:302`). What *was* reachable, and is now fixed:
+
+  - **The per-IP login cap did not bind under concurrency** (`src/handlers.js`).
+    The cap was checked before the awaited `mailer.submit()` but incremented only
+    after it, so concurrent requests from one IP all read a stale count and every
+    one was allowed. Measured against a 3/hr cap with 10 concurrent logins from a
+    single IP: **1.1.9 sent 10 mails (cap fully bypassed), 1.3.4 sends 3.** All
+    three of addypin's `startLogin` call sites pass a `sourceIp`
+    (`server/http.js:137`, `server/http.js:192`, `server/inbound.js`), so this
+    was live in production — the only cap actually binding was addypin's own
+    per-handle 3/hr limit.
+  - **FR-6 timing-equivalence gap.** The real-handle path did an extra
+    `store.getLastLogin()` that the sham path skipped — a faint timing signal
+    separating registered from unknown addresses. "Email enumeration via public
+    endpoints" is a *protected* row in the threat model (PRD §7), so this was a
+    small regression against a stated guarantee. Hit and miss now do equal DB work.
+  - **A failed `COMMIT` could wedge the process** (`src/store.js`). `COMMIT` ran
+    outside the try, so a throwing commit (SQLITE_BUSY on a WAL checkpoint,
+    disk-full) left the connection inside an open transaction and every later
+    write failed until restart.
+
+  The honeypot-bypass and `createHandlers` secret-validation fixes are also
+  library-side but inert here: addypin wraps `startLogin` in its own JSON
+  endpoint (no honeypot field) and already hex-validates the secret at
+  `server/main.js:53`.
+
 ### Changed
 
 - **Agent/IDE scratch gitignored and de-tracked.** `.gitignore` now default-denies every dot-directory (`.*/`), re-admitting only what ships (`.github/`). Per-machine agent/IDE state (`.claude/`, `.litectx/`, `.idea/`, …) regenerates locally and only added noise and churn; any already-committed copies are removed from tracking (local files kept on disk). Repo hygiene only.
