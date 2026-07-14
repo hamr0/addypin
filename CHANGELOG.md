@@ -5,6 +5,35 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Rate limits now key on the real visitor, not on Cloudflare.** Added
+  [`ops/nginx/00-cloudflare-realip.conf`](ops/nginx/00-cloudflare-realip.conf)
+  (installed to `/etc/nginx/conf.d/`): `set_real_ip_from` for each of
+  Cloudflare's 20 published IP ranges + `real_ip_header CF-Connecting-IP;`.
+
+  Since CF started fronting production it terminates TLS at its edge and
+  re-originates to the VPS, so nginx's TCP peer was a **CF edge IP, not the
+  visitor** — collapsing every per-IP rate-limit bucket (addypin's *and*
+  knowless's) onto a handful of addresses shared by everyone routed through the
+  same CF colo. Not a bypass (the keys stayed un-forgeable) but a *collision*
+  that fails toward over-throttling: unrelated users behind one colo shared the
+  30-logins/hr and 3-new-handles/hr budgets, so a busy colo could exhaust them
+  and lock out legitimate signups. It was harmless only by accident — the
+  knowless race (see 2.0.20) meant the caps never bound under load. Fixing that
+  race is what made this key load-bearing.
+
+  nginx now restores `$remote_addr` to the true client before setting
+  `X-Real-IP`, so **no application change was needed**. Scoping
+  `set_real_ip_from` to CF's ranges is the safety catch: a client hitting the
+  origin directly, around CF, isn't in those ranges, so a forged
+  `CF-Connecting-IP` is ignored. **Verified end-to-end** — the same probe logged
+  `141.101.76.184` (CF edge) before and the true client after (`83.83.96.5` v4,
+  `2001:1c02:…` v6); `nginx -t` clean, reload (not restart), site 200 throughout.
+
+  The nginx config is now tracked in `ops/` — it previously existed only on the
+  box. Re-check the CF ranges if origin logs ever show CF IPs again.
+
 ### Documented
 
 - **PRD §8 — corrected the per-IP rate-limit story, and recorded a known defect.**
@@ -27,8 +56,8 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
     exhaust the shared 30/hr and 3-new-handles/hr budgets and lock out
     legitimate users. It was masked while the knowless race meant the caps never
     bound under load; 2.0.20 makes them bind, which makes the coarse key
-    load-bearing. Fix is an nginx change (`set_real_ip_from` for Cloudflare's
-    published ranges + `real_ip_header CF-Connecting-IP`) — **not yet applied.**
+    load-bearing. **Fixed the same day** — see the nginx `real_ip` entry under
+    *Fixed* above.
 
 ## [2.0.20] — 2026-07-14
 
