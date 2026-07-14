@@ -5,6 +5,31 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Documented
+
+- **PRD §8 — corrected the per-IP rate-limit story, and recorded a known defect.**
+  Three fixes, all docs-only (no code change):
+  - The `knowless` pin in §2 still read `^1.1.6`; it is `^1.3.4`.
+  - §8 never mentioned that **knowless applies its own per-IP caps underneath
+    addypin's** (30 login requests/hr, 3 new handles/hr — defaults, live in
+    production since all three `startLogin` call sites pass a `sourceIp`). Now
+    documented, along with the fact that they did not bind under concurrency
+    before `knowless@1.3.4`.
+  - **⚠️ Known defect, newly confirmed:** §8 claimed the per-IP key is "the true
+    TCP peer". Behind Cloudflare it is not. CF terminates TLS at its edge and
+    re-originates to the VPS, and nginx has **no `set_real_ip_from` /
+    `real_ip_header` directives** (verified against `/etc/nginx/conf.d/addypin.conf`
+    on 2026-07-14), so it never restores the client from `CF-Connecting-IP`.
+    Every per-IP bucket — addypin's and knowless's — is therefore keyed on a
+    **Cloudflare edge IP and shared by every visitor through the same CF colo**.
+    The keys stay un-forgeable, so this is a *collision* problem, not a bypass,
+    and it fails toward over-throttling: a busy or hostile colo neighbour can
+    exhaust the shared 30/hr and 3-new-handles/hr budgets and lock out
+    legitimate users. It was masked while the knowless race meant the caps never
+    bound under load; 2.0.20 makes them bind, which makes the coarse key
+    load-bearing. Fix is an nginx change (`set_real_ip_from` for Cloudflare's
+    published ranges + `real_ip_header CF-Connecting-IP`) — **not yet applied.**
+
 ## [2.0.20] — 2026-07-14
 
 ### Security
