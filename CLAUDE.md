@@ -26,7 +26,7 @@ For full development and testing standards, see `.claude/memory/AGENT_RULES.md`.
 - **Web framework:** Native `node:http` + ~80-line custom router
 - **DB:** `node:sqlite` (`--experimental-sqlite`) — `data/addypin.db` for pins, `data/knowless.db` for handles/tokens/sessions. Both via the same driver as of `knowless@0.2.0`; files stay separate so the two domains have independent backup/wipe/migration lifecycles.
 - **Crypto:** `node:crypto` stdlib (AES-256-GCM for coords + the encrypted-email blob in the unconfirmed window)
-- **Auth + auth-mail:** [`knowless`](https://github.com/hamr0/knowless) (since M11, currently pinned at `^1.1.9` — upstream is feature-frozen since `1.0.0` per its walk-away PRD; post-1.0 releases are security/bugfix/docs only). Owns magic-link round-trip, sham-work timing equivalence, single-use SHA-256-hashed token store, session cookies, and SMTP submission for auth mail. One transitive runtime dep (`nodemailer`) — zero native compiles in the tree.
+- **Auth + auth-mail:** [`knowless`](https://github.com/hamr0/knowless) (since M11, currently pinned at `^1.3.4` — upstream is feature-frozen since `1.0.0` per its walk-away PRD; post-1.0 releases are security/bugfix/docs only). Owns magic-link round-trip, sham-work timing equivalence, single-use SHA-256-hashed token store, session cookies, and SMTP submission for auth mail. One transitive runtime dep (`nodemailer`) — zero native compiles in the tree.
 - **Frontend:** Plain HTML + vanilla JS + Leaflet (CDN). No React, no Vite, no Tailwind build step.
 - **Email out (non-auth):** `msmtp` system binary via `child_process` for the `SHORTCODE@` auto-reply.
 - **Email in:** Postfix `virtual_alias_maps` → pipe transport to a Node script (instantiates its own knowless instance per message).
@@ -90,7 +90,7 @@ Production / VPS uses environment variables loaded from a systemd `EnvironmentFi
 
 ## Current state (2026-07-02)
 
-M1–M11 shipped; live at `https://addypin.com` and `https://SHORTCODE.addypin.com` (path form `addypin.com/SHORTCODE` still resolves). `knowless@1.1.9` backs auth; wildcard cert auto-renews (`certbot-renew.timer`). Observability is flightlog + pulselog (VPS: health + weekly digest timers; home server: `--backup` + off-box watch). **Cloudflare fronts production** (accepted edge exception); AI-bot controls are off so the repo `robots.txt` is authoritative.
+M1–M11 shipped; live at `https://addypin.com` and `https://SHORTCODE.addypin.com` (path form `addypin.com/SHORTCODE` still resolves). `knowless@1.3.4` backs auth; wildcard cert auto-renews (`certbot-renew.timer`). Observability is flightlog + pulselog (VPS: health + weekly digest timers; home server: `--backup` + off-box watch). **Cloudflare fronts production** (accepted edge exception); AI-bot controls are off so the repo `robots.txt` is authoritative.
 
 Release history lives in [`CHANGELOG.md`](CHANGELOG.md); ops detail in [`docs/04-process/observability-playbook.md`](docs/04-process/observability-playbook.md) and [`ops/homeserver/README.md`](ops/homeserver/README.md). Two standing invariants worth stating here because breaking them is silent:
 - **`mail.addypin.com` must stay DNS-only in Cloudflare** (→ `155.94.144.191`, never proxied) — proxying it breaks SPF/DKIM/PTR and bounces all outbound mail. pulselog alerts have an independent `msmtp`→Gmail fallback (`ops/fallback-notify.sh`) so a mail-path break still pages.
