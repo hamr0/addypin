@@ -5,6 +5,34 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
 
 ## [Unreleased]
 
+### Security
+
+- **The origin no longer answers requests that bypass Cloudflare.** addypin's four
+  nginx server blocks now `return 403` unless the request actually arrived from a
+  Cloudflare edge (`geo $realip_remote_addr $addypin_cf_peer`, in
+  [`ops/nginx/00-cloudflare-realip.conf`](ops/nginx/00-cloudflare-realip.conf)).
+
+  Found while testing the `real_ip` fix below: `curl --resolve` straight to
+  `155.94.144.191` served the site. Anyone who learned the origin IP could skip
+  Cloudflare entirely — and with it the WAF and DDoS protection the edge exists to
+  provide. Not a rate-limit hole (real IPs were still attributed correctly), but it
+  made the edge optional for an attacker while remaining mandatory for everyone else.
+
+  The guard keys on `$realip_remote_addr` (the *original* TCP peer) rather than
+  `$remote_addr`, which — thanks to the `real_ip` fix — is now the restored visitor
+  and can no longer say how the request arrived. Fails closed: no CF substitution
+  means "not from CF" means 403.
+
+  **Deliberately enforced per-vhost in nginx, not at the firewall.** This box also
+  serves `ingest.late.fyi`, which is intentionally *not* behind Cloudflare
+  (resolves direct to the origin) — a firewall rule restricting :443 to Cloudflare's
+  ranges would have taken it offline. `latefyi-ingest.conf` is untouched (0 guard
+  lines; addypin.conf has 4).
+
+  Verified: through-CF 200 (site + `/api/health`); direct-to-origin 403 on :443 apex,
+  :443 shortcode subdomain, and :80; `ingest.late.fyi` still reachable. Applied with
+  a config backup and automatic rollback gated on the CF path still returning 200.
+
 ### Fixed
 
 - **Rate limits now key on the real visitor, not on Cloudflare.** Added
