@@ -44,12 +44,23 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
   re-originates to the VPS, so nginx's TCP peer was a **CF edge IP, not the
   visitor** — collapsing every per-IP rate-limit bucket (addypin's *and*
   knowless's) onto a handful of addresses shared by everyone routed through the
-  same CF colo. Not a bypass (the keys stayed un-forgeable) but a *collision*
-  that fails toward over-throttling: unrelated users behind one colo shared the
-  30-logins/hr and 3-new-handles/hr budgets, so a busy colo could exhaust them
-  and lock out legitimate signups. It was harmless only by accident — the
-  knowless race (see 2.0.20) meant the caps never bound under load. Fixing that
-  race is what made this key load-bearing.
+  same CF colo. Here it fails as a *collision* rather than a bypass — because
+  nginx **sets** `X-Real-IP` to `$remote_addr` instead of appending, the key stays
+  un-forgeable and merely names the wrong party — and it fails toward
+  over-throttling: unrelated users behind one colo shared the 30-logins/hr and
+  3-new-handles/hr budgets, so a busy colo could exhaust them and lock out
+  legitimate signups. (Had we appended or omitted that directive, the CDN would
+  have made it *worse*: Cloudflare appends the connecting IP to any client-supplied
+  `X-Forwarded-For`, leaving a forged element as the leftmost, trusted one — a full
+  bypass. A CDN layers the collision on top of the spoofing exposure, it doesn't
+  replace it.)
+
+  On what 2.0.20 changes here — the knowless race let **concurrent** requests in one
+  bucket slip the cap, but sequential ones still incremented and still bound, so the
+  miskeyed bucket was *already* biting, merely leakily under burst. The upgrade makes
+  enforcement reliable, so a wrong key bites more consistently: it **sharpens** this
+  exposure rather than creating it. (An earlier draft of this entry said the caps
+  "never bound under load" — that overstated it.)
 
   nginx now restores `$remote_addr` to the true client before setting
   `X-Real-IP`, so **no application change was needed**. Scoping
