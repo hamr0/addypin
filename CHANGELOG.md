@@ -7,6 +7,26 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
 
 ### Security
 
+- **Origin `:443` is now dropped at the firewall for any source outside Cloudflare's
+  ranges** — the L3/L4 complement to the per-vhost 403 below. Once `ingest.late.fyi`
+  moved behind Cloudflare (2026-07-15), the shared box no longer had any grey-cloud
+  vhost on `:443`, so a firewalld rule could finally lock the port to CF's ranges
+  without collateral. In the `public` zone the blanket `https` service is removed and
+  replaced with rich-rule accepts for the 15 IPv4 + 7 IPv6 CF ranges (plus the
+  origin's own IP, for on-box health checks); everything else on `:443` is silently
+  dropped. `:22` (SSH), `:25` (mail) and `:80` are untouched.
+
+  Why it matters: the nginx `geo` 403 only fires *after* the TCP + TLS handshake
+  completes, so a volumetric flood at the raw IP still burned origin CPU/bandwidth and
+  sailed past Cloudflare's DDoS protection — the 403 protected content, not load. The
+  firewall drops those packets before nginx sees them. Combined with the origin IP
+  leaving public DNS when ingest went orange, this is the first network-level DDoS
+  protection the shared origin has had. Applied runtime-first with a 10-minute deadman
+  auto-rollback, self-smoke-tested before persisting: addypin + ingest still 200 via
+  CF, direct `https://155.94.144.191/` went from 403 to connection-timeout, SSH intact
+  throughout. Ruleset + a safe re-apply/update tool tracked in
+  [`ops/firewall/`](ops/firewall/).
+
 - **The origin no longer answers requests that bypass Cloudflare.** addypin's four
   nginx server blocks now `return 403` unless the request actually arrived from a
   Cloudflare edge (`geo $realip_remote_addr $addypin_cf_peer`, in
@@ -23,11 +43,14 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
   and can no longer say how the request arrived. Fails closed: no CF substitution
   means "not from CF" means 403.
 
-  **Deliberately enforced per-vhost in nginx, not at the firewall.** This box also
-  serves `ingest.late.fyi`, which is intentionally *not* behind Cloudflare
-  (resolves direct to the origin) — a firewall rule restricting :443 to Cloudflare's
-  ranges would have taken it offline. `latefyi-ingest.conf` is untouched (0 guard
-  lines; addypin.conf has 4).
+  **Originally enforced per-vhost in nginx, not at the firewall** — at the time this
+  box also served `ingest.late.fyi` grey-cloud (direct to the origin), so a firewall
+  rule restricting :443 to Cloudflare's ranges would have taken it offline, and the
+  403 guard had to live in nginx (`latefyi-ingest.conf` untouched, 0 guard lines;
+  addypin.conf has 4). **Superseded 2026-07-15** once ingest moved behind Cloudflare —
+  see the firewall entry above; this 403 now stands as the L7 layer over the L3/L4
+  firewall drop. The constraint has *inverted*: ingest must now **stay** orange, or
+  the `:443` firewall lock cuts it off.
 
   Verified: through-CF 200 (site + `/api/health`); direct-to-origin 403 on :443 apex,
   :443 shortcode subdomain, and :80; `ingest.late.fyi` still reachable. Applied with
@@ -35,10 +58,23 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
 
 ### Fixed
 
+- **Restored two Cloudflare ranges dropped from the trust list.**
+  `00-cloudflare-realip.conf` shipped 2026-07-14 with 14 IPv4 + 6 IPv6 ranges — two
+  short of Cloudflare's published 15 + 7 (`131.0.72.0/22` and `2c0f:f248::/32` were
+  lost in transcription). Both the `set_real_ip_from` trust list and the `geo`
+  origin-lock guard were affected, so visitors routed through those two colos had
+  their IP unrestored *and* were false-403'd by the origin lock — a live, if
+  low-frequency, block since 2026-07-14 (the original verification only exercised the
+  tester's own colo, which was in-list, so it could not surface a missing range).
+  Re-verified the full list against Cloudflare's published ranges on 2026-07-15 and
+  added both. The same 22-range list now feeds three places — the firewall allow-list,
+  `real_ip`, and the `geo` guard — which must stay in sync.
+
 - **Rate limits now key on the real visitor, not on Cloudflare.** Added
   [`ops/nginx/00-cloudflare-realip.conf`](ops/nginx/00-cloudflare-realip.conf)
   (installed to `/etc/nginx/conf.d/`): `set_real_ip_from` for each of
-  Cloudflare's 20 published IP ranges + `real_ip_header CF-Connecting-IP;`.
+  Cloudflare's published IP ranges + `real_ip_header CF-Connecting-IP;` (the list was
+  two ranges short as first shipped — see the range-drift fix above).
 
   Since CF started fronting production it terminates TLS at its edge and
   re-originates to the VPS, so nginx's TCP peer was a **CF edge IP, not the

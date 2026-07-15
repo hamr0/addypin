@@ -1,11 +1,17 @@
 # nginx (production)
 
-The VPS also serves **`ingest.late.fyi`** from `/etc/nginx/conf.d/latefyi-ingest.conf`,
-which is deliberately **not** behind Cloudflare — it resolves straight to
-`155.94.144.191`. Anything you do at the *firewall* level (e.g. restricting :443 to
-Cloudflare's ranges) will therefore kill late.fyi's ingest endpoint. That is why the
-origin lock below is enforced **per-vhost in nginx**, not with a firewall rule.
-Check before you touch port 443 on this box.
+**Port 443 on this box is firewall-locked to Cloudflare's ranges** — see
+[`../firewall/`](../firewall/). Both vhosts served here, addypin and
+**`ingest.late.fyi`** (`/etc/nginx/conf.d/latefyi-ingest.conf`), now sit behind
+Cloudflare, so nothing legitimate reaches `:443` except from a CF edge.
+
+This *inverted* an earlier constraint. `ingest.late.fyi` used to be grey-cloud
+(direct to `155.94.144.191`), which is why the origin lock below was built
+**per-vhost in nginx** rather than at the firewall — a `:443` firewall rule would have
+killed it. Since **2026-07-15** ingest is orange too and the firewall drop is in
+place, so ingest must now **stay** orange or the `:443` lock cuts it off. The nginx
+403 below remains as the **L7 layer over the L3/L4 firewall drop**; check both if you
+touch origin reachability on this box.
 
 ## `00-cloudflare-realip.conf` (tracked here, installed to `/etc/nginx/conf.d/`)
 
@@ -25,6 +31,13 @@ Two things, both added 2026-07-14:
 Scoping `set_real_ip_from` to Cloudflare's published ranges is load-bearing, not
 hygiene: without it, a client reaching the origin directly could forge
 `CF-Connecting-IP` and mint any rate-limit bucket it liked.
+
+The trust list and `geo` block both carry all **22** of Cloudflare's published ranges
+(15 IPv4 + 7 IPv6). Two were missing in the initial 2026-07-14 transcription
+(`131.0.72.0/22`, `2c0f:f248::/32`) and restored 2026-07-15 — a missing range
+false-403s every visitor routed through that colo, and the original one-colo
+verification could not catch it. Keep the `set_real_ip_from` block, the `geo` block,
+and the firewall allow-list in [`../firewall/`](../firewall/) in sync.
 
 ## The origin lock lives in `addypin.conf` (NOT tracked)
 
