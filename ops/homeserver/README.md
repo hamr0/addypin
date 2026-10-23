@@ -79,7 +79,8 @@ ls -la ~/addypin-backups/addypin-backup-*.tar.gz       # newest is non-empty
 tar -tzf ~/addypin-backups/addypin-backup-*.tar.gz | head   # addypin.db* + letsencrypt.tar.gz
 
 # Backup alert path: one test message via primary AND fallback, no JSONL
-# written, exit 1 if any configured path fails (pulselog 0.8.0+).
+# written, exit 1 if any configured path fails (pulselog 0.8.0+). Expect 1 email
+# here: the backup block has no fallback configured ("fallback: not configured").
 sudo /usr/local/bin/pulselog --test-alert --backup --config /etc/addypin/pulselog.config.json; echo "exit=$?"
 
 # Watch: silent + exit 0 when the site is up, a fresh backup exists, and the

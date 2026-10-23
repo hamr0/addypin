@@ -54,13 +54,16 @@ Notes on the digest steps:
 sudo cp /etc/systemd/system/<APP>-health.service /etc/systemd/system/<APP>-testalert.service
 sudo sed -i '/^ExecStart=/ s|$| --test-alert|' /etc/systemd/system/<APP>-testalert.service
 #   digest: copy <APP>-stats-digest.service and append ' --test-alert --digest'
+#   (the digest unit is the meaningful sandbox test: it carries NoNewPrivileges,
+#   SupplementaryGroups=postdrop and ProtectHome=read-only; the health unit has no
+#   sandbox, so a green health run proves the mail paths but not the sandbox)
 sudo systemctl daemon-reload
 sudo systemctl start <APP>-testalert.service; echo "exit=$?"   # want 0
 sudo journalctl -u <APP>-testalert.service --no-pager | tail   # per-path results
 sudo rm /etc/systemd/system/<APP>-testalert.service && sudo systemctl daemon-reload
 ```
 
-This supersedes hand-rolled `systemd-run` mail tests for confirming the primary and fallback paths. On the backup host, run `pulselog --test-alert --backup --config /etc/<APP>/pulselog.config.json` (see [`ops/homeserver/README.md`](../../ops/homeserver/README.md)).
+This supersedes hand-rolled `systemd-run` mail tests for confirming the primary and fallback paths. On the backup host, run `pulselog --test-alert --backup --config /etc/<APP>/pulselog.config.json` (see [`ops/homeserver/README.md`](../../ops/homeserver/README.md)); expect 1 email there, since the backup block has no fallback.
 
 ## Troubleshooting: the failure modes (learned the hard way)
 
