@@ -46,14 +46,24 @@ references still resolve.
 | `mail.addypin.com` A | 155.94.144.191 |
 | `www.addypin.com` A | 155.94.144.191 |
 
-**Home server (federver):**
+**Home server (federver):** runs the LEGACY setup; the pulselog cutover
+(`ops/homeserver/README.md`) is pending. node, pulselog, msmtp, `/etc/addypin/`
+and the watch units/mail-check are not installed.
 
-- `addypin-backup.timer` — daily 03:15 local, pulls
-  `/var/lib/addypin/addypin.db*` + tar of `/etc/letsencrypt/` via
-  `ssh | tar`, rotates 30 days.
-- Kuma HTTP monitor pulls `https://addypin.com/api/health` every 60 s.
-- Kuma Push monitor tracks the backup heartbeat (24 h interval + 1 h
-  grace).
+- `/usr/local/bin/addypin-backup.sh` (script no longer in the repo, see
+  `ops/homeserver/FEDERVER_INSTALL.md`) via `addypin-backup.timer` /
+  `addypin-backup.service` (User=ahassan), daily 03:15 local. Pulls
+  `/var/lib/addypin/addypin.db*` + tar of `/etc/letsencrypt/` via `ssh | tar`,
+  rotates 30 days.
+- Config in `/etc/default/addypin-backup` (`VPS_HOST`, `VPS_USER`, `SSH_KEY`,
+  `BACKUP_ROOT`, `KEEP_DAYS`, `KUMA_PUSH_URL`). Backups live on the data HDD
+  (ext4, label `federver`, mounted at `/mnt/federver`):
+  `BACKUP_ROOT=/mnt/federver/data/addypin-backups`.
+- Uptime Kuma (docker, :3001): HTTP monitor on `https://addypin.com/api/health`
+  every 60 s, plus the `addypin-backup` Push monitor as the backup heartbeat
+  (24 h interval + 1 h grace).
+- Known gap: no off-box VPS mail-delivery watchdog is running (it is part of
+  the pending pulselog cutover).
 
 **Pass tree (hamr0/pwd on GitHub, GPG-encrypted):**
 
