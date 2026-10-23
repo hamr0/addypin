@@ -3,6 +3,27 @@
 All notable changes to addypin. Format loosely follows [Keep a
 Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
 
+## [Unreleased]
+
+### Fixed
+
+- **federver backups had silently failed for 6 months (ops-only, no code change).**
+  The data HDD is mounted at `/mnt/federver` but `BACKUP_ROOT` pointed at
+  `/mnt/data/...`, so every nightly run died at `mkdir` (145 failed runs,
+  2026-04-19 to 2026-10-23) and the Kuma push heartbeat alerted nobody. Fixed on
+  the box by setting `BACKUP_ROOT=/mnt/federver/data/addypin-backups` in
+  `/etc/default/addypin-backup`; a run under the real unit then succeeded.
+
+### Documented
+
+- federver runs the legacy `addypin-backup.sh` + Uptime Kuma; the pulselog
+  home-server backup/watch and the off-box mail-delivery watchdog were never
+  installed (cutover pending). Corrected `CLAUDE.md`, `ops/homeserver/README.md`
+  (status note, smoke-test commands now run via the unit / as the unit's user),
+  `ops/homeserver/FEDERVER_INSTALL.md` (`/mnt/federver` paths, incident,
+  umask hardening, how to recover the removed script),
+  `docs/product/system-state.md` and `docs/product/prd.md`.
+
 ## [2.0.22] — 2026-10-23
 
 ### Changed

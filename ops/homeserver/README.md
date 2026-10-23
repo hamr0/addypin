@@ -1,5 +1,11 @@
 # addypin home-server ops
 
+> **Status (2026-10-23): planned, NOT installed.** federver currently runs the
+> legacy `addypin-backup.sh` + Uptime Kuma setup (see
+> [FEDERVER_INSTALL.md](FEDERVER_INSTALL.md)). The pulselog backup + watch
+> described below is the replacement; the cutover is pending. node, pulselog,
+> msmtp, `/etc/addypin/` and the watch units are not on federver yet.
+
 Two pieces of infrastructure live on the home server (fedora), outside the
 VPS, so backups and uptime alerts survive a total VPS loss. Both are driven
 by [`pulselog`](https://github.com/hamr0/pulselog) reading one config file,
@@ -49,6 +55,8 @@ sudo install -m 755 addypin-mail-check.sh /usr/local/bin/addypin-mail-check.sh
 #    the backup dir, history, health.jsonl, and file-age check path).
 sudo sed -i "s#/home/REPLACE_ME#$HOME#g" /etc/addypin/pulselog.config.json
 mkdir -p "$HOME/addypin-backups"
+# federver keeps backups on the data HDD instead (mounted at /mnt/federver):
+# use /mnt/federver/data/addypin-backups in the config in place of $HOME/addypin-backups.
 
 # 3. Backup pull config (the EnvironmentFile=- in addypin-backup.service):
 sudo tee /etc/default/addypin-backup <<EOF
@@ -74,14 +82,17 @@ systemctl list-timers 'addypin-*'
 
 ```bash
 # Backup: produces one archive in ~/addypin-backups and a backup.jsonl line.
-sudo /usr/local/bin/pulselog --backup --config /etc/addypin/pulselog.config.json
+# Run it via the unit (it runs as the user, which owns the ssh key and ~/.msmtprc).
+sudo systemctl start addypin-backup.service
+journalctl -u addypin-backup -n 20 --no-pager
 ls -la ~/addypin-backups/addypin-backup-*.tar.gz       # newest is non-empty
 tar -tzf ~/addypin-backups/addypin-backup-*.tar.gz | head   # addypin.db* + letsencrypt.tar.gz
 
 # Backup alert path: one test message via primary AND fallback, no JSONL
 # written, exit 1 if any configured path fails (pulselog 0.8.0+). Expect 1 email
 # here: the backup block has no fallback configured ("fallback: not configured").
-sudo /usr/local/bin/pulselog --test-alert --backup --config /etc/addypin/pulselog.config.json; echo "exit=$?"
+# Run as the unit's user (no sudo; root has no ~/.msmtprc).
+/usr/local/bin/pulselog --test-alert --backup --config /etc/addypin/pulselog.config.json; echo "exit=$?"
 
 # Watch: silent + exit 0 when the site is up, a fresh backup exists, and the
 # VPS's last mail to Gmail was accepted.
