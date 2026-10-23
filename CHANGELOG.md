@@ -3,7 +3,7 @@
 All notable changes to addypin. Format loosely follows [Keep a
 Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
 
-## [Unreleased]
+## [2.0.21] — 2026-10-23
 
 ### Security
 
@@ -139,6 +139,16 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
   and the previous config is backed up at `/root/logrotate-addypin.bak-20261023-030503`.
 
 ### Documented
+
+- **Docs reorganized into `docs/product/`, `docs/wiki/`, `docs/logs/` and
+  `docs/archive/`**, replacing the old five-tier `docs/0x-*` hierarchy. Stale
+  `docs/0x-*` paths in code comments, `web/robots.txt`, `CLAUDE.md`,
+  `docs/README.md`, the moved docs and older CHANGELOG entries now point at the
+  current locations (text only, no behavior change). The observability overview
+  regained its intro, how-to-use note and placeholder table, and its sibling
+  links are fixed. `docs/index.md` was regenerated. Digest-unit and
+  `fallback-notify.sh` comments now note the sandbox requirement
+  (`ProtectHome=read-only`).
 
 - **PRD §8 — corrected the per-IP rate-limit story, and recorded a known defect.**
   Three fixes, all docs-only (no code change):
