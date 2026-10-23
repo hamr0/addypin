@@ -58,6 +58,21 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
 
 ### Fixed
 
+- **The weekly stats digest is delivered again — it had never arrived since July.**
+  `addypin-stats-digest.service` ran with `NoNewPrivileges=true`, which disables
+  postdrop's setgid-`postdrop` bit, so `mail`/`sendmail` could never write
+  `/var/spool/postfix/maildrop` and postdrop looped on `Permission denied` until it
+  gave up. The Gmail fallback couldn't rescue it either: `ProtectHome=true` hid
+  `~/.msmtprc` from `ops/fallback-notify.sh`. The unit now adds
+  `SupplementaryGroups=postdrop` and relaxes to `ProtectHome=read-only`, keeping
+  `NoNewPrivileges`. Proven on the box under the exact sandbox: `sendmail` with the old
+  settings looped on postdrop, while both the primary and fallback test mails reached
+  Gmail with the new ones. `addypin-health.service` carries no sandboxing and was never
+  affected. It stayed silent because pulselog 0.7.0 writes the `stats.jsonl` snapshot
+  before sending and puts no timeout on the primary handoff, so a hung postdrop never
+  triggers the fallback (reported upstream, not patched here). Unit files aren't
+  synced by `deploy.sh`; installed by hand + `daemon-reload` on 2026-10-23.
+
 - **Restored two Cloudflare ranges dropped from the trust list.**
   `00-cloudflare-realip.conf` shipped 2026-07-14 with 14 IPv4 + 6 IPv6 ranges — two
   short of Cloudflare's published 15 + 7 (`131.0.72.0/22` and `2c0f:f248::/32` were
