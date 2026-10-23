@@ -18,6 +18,10 @@
 # One-time setup (per host running pulselog as this user): add a `gmail` account
 # to the runtime user's ~/.msmtprc (0600). See docs/04-process/observability-playbook.md
 # and ops/homeserver/README.md.
+#
+# Sandbox note: any systemd unit that invokes this script must leave the runtime
+# user's ~/.msmtprc readable — ProtectHome=read-only (or off), NOT true. With
+# ProtectHome=true the file is hidden and the fallback silently fails.
 set -euo pipefail
 
 TO="${FALLBACK_TO:-avoidaccess@gmail.com}"

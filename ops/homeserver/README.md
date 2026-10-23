@@ -128,6 +128,8 @@ isn't in this backup — by design.
   VPS maillog over the existing (root, unrestricted) backup SSH key and keys
   on the *latest* send outcome, so it never sticks red on a stale bounce.
   (This gap is why the weekly digest silently vanished for a month once the
-  mail host got Cloudflare-proxied — nothing was watching delivery.)
+  mail host got Cloudflare-proxied — nothing was watching delivery. From July
+  the digest was also blocked by its unit sandbox, where postdrop could not
+  write the maildrop; fixed 2026-10-23, see `CHANGELOG.md`.)
 
 Four layers, each catches what the others miss.

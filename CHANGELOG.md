@@ -61,17 +61,20 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
 - **The weekly stats digest is delivered again — it had never arrived since July.**
   `addypin-stats-digest.service` ran with `NoNewPrivileges=true`, which disables
   postdrop's setgid-`postdrop` bit, so `mail`/`sendmail` could never write
-  `/var/spool/postfix/maildrop` and postdrop looped on `Permission denied` until it
-  gave up. The Gmail fallback couldn't rescue it either: `ProtectHome=true` hid
-  `~/.msmtprc` from `ops/fallback-notify.sh`. The unit now adds
-  `SupplementaryGroups=postdrop` and relaxes to `ProtectHome=read-only`, keeping
-  `NoNewPrivileges`. Proven on the box under the exact sandbox: `sendmail` with the old
-  settings looped on postdrop, while both the primary and fallback test mails reached
-  Gmail with the new ones. `addypin-health.service` carries no sandboxing and was never
-  affected. It stayed silent because pulselog 0.7.0 writes the `stats.jsonl` snapshot
-  before sending and puts no timeout on the primary handoff, so a hung postdrop never
-  triggers the fallback (reported upstream, not patched here). Unit files aren't
-  synced by `deploy.sh`; installed by hand + `daemon-reload` on 2026-10-23.
+  `/var/spool/postfix/maildrop` and postdrop looped on `Permission denied`. The Gmail
+  fallback couldn't rescue it either: `ProtectHome=true` hid `~/.msmtprc` from
+  `ops/fallback-notify.sh`. The unit now adds `SupplementaryGroups=postdrop` and
+  relaxes to `ProtectHome=read-only`, keeping `NoNewPrivileges`. Reproduced on the box
+  as the `addypin` user via `systemd-run` with the unit's sandbox properties (not via
+  the unit itself): under `NoNewPrivileges`, `sendmail` looped on postdrop `Permission
+  denied` until killed by the test's own timeout. Under the new property set, test
+  mails through the primary `mail` path and the msmtp fallback both reached Gmail. The
+  first real run under the installed unit is Sun 2026-10-25 09:00 UTC.
+  `addypin-health.service` carries no sandboxing and was never affected. It stayed
+  silent because pulselog 0.7.0 writes the `stats.jsonl` snapshot before sending and
+  puts no timeout on the primary handoff, so a hung postdrop never triggers the
+  fallback (reported upstream, not patched here). Unit files aren't synced by
+  `deploy.sh`; installed by hand + `daemon-reload` on 2026-10-23.
 
 - **Restored two Cloudflare ranges dropped from the trust list.**
   `00-cloudflare-realip.conf` shipped 2026-07-14 with 14 IPv4 + 6 IPv6 ranges — two
