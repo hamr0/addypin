@@ -11,6 +11,10 @@ Use this the next time you rebuild federver.
 > The HDD (ext4, label `federver`) is mounted at **`/mnt/federver`** per
 > `/etc/fstab` (`UUID=2934ce99-… /mnt/federver ext4 nofail,x-systemd.device-timeout=10s`).
 > `BACKUP_ROOT` must follow the real mountpoint; check `findmnt` before setting it.
+> The HDD was previously mounted at `/mnt/data` (what the April install used);
+> the mountpoint later changed to `/mnt/federver` (exact date unknown), which
+> silently broke `BACKUP_ROOT`. Before trusting a backup run, `findmnt /mnt/federver`
+> must show `sda1` (fstab uses `nofail`, so boot continues if the HDD is missing).
 >
 > `addypin-backup.sh` is no longer in the repo (removed in 2.0.17 with the
 > pulselog rewrite). Recover it with
@@ -85,14 +89,15 @@ sudo journalctl -u addypin-backup -n 10 --no-pager
 ls -la /mnt/federver/data/addypin-backups/daily/$(date -u +%F)/
 ```
 
-Expected: ~650 KB total, four files (`addypin.db`, `addypin.db-shm`,
+Expected: roughly 0.6–1 MB total (992K on 2026-10-23), four files (`addypin.db`, `addypin.db-shm`,
 `addypin.db-wal`, `letsencrypt.tar.gz`). Kuma push monitor flips green
 with `msg=backup_<date>_<size>`.
 
-## Recommended hardening (not yet applied)
+## Recommended hardening
 
-The script runs under the default umask (022), so backups are world-readable
-(`-rw-r--r--`). They contain the DB (encrypted blobs) and the Let's Encrypt
+The legacy script runs under the default umask (022), so backups are
+world-readable (`-rw-r--r--`) unless `UMask=0077` is set on the unit; check with
+`systemctl show -p UMask addypin-backup`. They contain the DB (encrypted blobs) and the Let's Encrypt
 keys, so lock them down:
 
 ```bash
@@ -105,8 +110,9 @@ sudo systemctl edit addypin-backup     # add:  [Service]  UMask=0077
 - **Cause:** the HDD is mounted at `/mnt/federver`, but `BACKUP_ROOT` was
   `/mnt/data/data/addypin-backups`. Every run died at
   `mkdir: cannot create directory '/mnt/data': Permission denied`.
-- **Impact:** 145 failed runs, 2026-04-19 to 2026-10-23. No backup was produced
-  in that window. The Kuma push heartbeat went unanswered and nobody was alerted
+- **Impact:** 145 logged failures, 2026-04-19 23:34 to 2026-10-23 03:23 (not
+  necessarily every night; the box may have been off some nights). The first
+  good run was 2026-04-19 (656 KB); no successful run in that window. The Kuma push heartbeat went unanswered and nobody was alerted
   (Kuma notification wiring was broken; fixed by the operator the same day).
 - **Fix:** `BACKUP_ROOT=/mnt/federver/data/addypin-backups` in
   `/etc/default/addypin-backup` (old file kept as `.bak`).

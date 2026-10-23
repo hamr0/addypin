@@ -9,8 +9,9 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
 
 - **federver backups had silently failed for 6 months (ops-only, no code change).**
   The data HDD is mounted at `/mnt/federver` but `BACKUP_ROOT` pointed at
-  `/mnt/data/...`, so every nightly run died at `mkdir` (145 failed runs,
-  2026-04-19 to 2026-10-23) and the Kuma push heartbeat alerted nobody. Fixed on
+  `/mnt/data/...`, so nightly runs died at `mkdir` (145 logged failures,
+  2026-04-19 23:34 to 2026-10-23 03:23, not necessarily every night; first good
+  run was 2026-04-19, no success in that window) and the Kuma push heartbeat alerted nobody. Fixed on
   the box by setting `BACKUP_ROOT=/mnt/federver/data/addypin-backups` in
   `/etc/default/addypin-backup`; a run under the real unit then succeeded.
 
