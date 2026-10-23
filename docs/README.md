@@ -22,19 +22,19 @@ cutover).
 
 ## Start here
 
-1. **New to the project?** → [`00-context/vision.md`](00-context/vision.md)
+1. **New to the project?** → [`00-context/vision.md`](product/vision.md)
    — what addypin is, who it's for, what it deliberately isn't.
-2. **Need the technical spec?** → [`01-product/prd.md`](01-product/prd.md)
+2. **Need the technical spec?** → [`01-product/prd.md`](product/prd.md)
    — source of truth for scope, data model, endpoints, threat model.
-3. **Deploying/operating?** → [`00-context/system-state.md`](00-context/system-state.md)
-   — what's running right now. [`04-process/dev-workflow.md`](04-process/dev-workflow.md)
+3. **Deploying/operating?** → [`00-context/system-state.md`](product/system-state.md)
+   — what's running right now. [`04-process/dev-workflow.md`](wiki/dev-workflow.md)
    — how to ship a change.
-   [`04-process/observability-playbook.md`](04-process/observability-playbook.md)
+   [`04-process/observability-playbook.md`](wiki/observability-playbook.md)
    — generic, portable pulselog + flightlog ops setup (health, weekly digest,
    error flagging, backups, off-box watchdogs, mail-auth).
-4. **Why did we do X?** → [`03-logs/decisions-log.md`](03-logs/decisions-log.md).
+4. **Why did we do X?** → [`03-logs/decisions-log.md`](product/decisions-log.md).
    Design artifacts too, e.g.
-   [`03-logs/pulselog-fallback-alert-proposal.md`](03-logs/pulselog-fallback-alert-proposal.md)
+   [`03-logs/pulselog-fallback-alert-proposal.md`](logs/03-logs/pulselog-fallback-alert-proposal.md)
    — the upstream fix identified after the 2026-07 mail-delivery incident.
 5. **What happened during cutover?** →
-   [`03-logs/m10-deploy-log.md`](03-logs/m10-deploy-log.md).
+   [`03-logs/m10-deploy-log.md`](logs/03-logs/m10-deploy-log.md).

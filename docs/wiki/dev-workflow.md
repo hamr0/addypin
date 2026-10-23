@@ -45,7 +45,7 @@ the *what* is in the diff.
 
 ## Deploy
 
-See [`deploy.md`](./deploy.md) for the full runbook. TL;DR:
+See [`deploy.md`](deploy.md) for the full runbook. TL;DR:
 
 ```bash
 ./ops/deploy.sh
@@ -102,8 +102,8 @@ duplicate-column" guard so restarts are idempotent.
 
 ## Related
 
-- [`04-process/`](./) — this directory (more process docs can live here)
-- [`03-logs/m10-deploy-log.md`](../03-logs/m10-deploy-log.md) — full
+- [`04-process/`](../04-process) — this directory (more process docs can live here)
+- [`03-logs/m10-deploy-log.md`](../logs/03-logs/m10-deploy-log.md) — full
   cutover runbook
 - [`ops/homeserver/README.md`](../../ops/homeserver/README.md) —
   federver backup/monitoring install

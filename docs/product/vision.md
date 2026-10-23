@@ -54,7 +54,7 @@ translation layer across 12 map apps. That's the whole product.
 - No CI/CD pipeline (manual deploy — automate when it hurts)
 - No Docker, no Kubernetes, no Terraform
 - No E2E encryption (server must decrypt to serve lookups; see
-  [`01-product/prd.md`](../01-product/prd.md) §7)
+  [`01-product/prd.md`](prd.md) §7)
 - No activity-specialist map apps (Komoot, AllTrails, Strava). They
   share routes, not points — different product.
 
@@ -72,7 +72,7 @@ app, any country — the product is doing its job.
 
 ## Related docs
 
-- [`01-product/prd.md`](../01-product/prd.md) — the technical spec
+- [`01-product/prd.md`](prd.md) — the technical spec
   and threat model (source of truth for scope)
 - [`00-context/system-state.md`](system-state.md) — what's running on
   the VPS right now

@@ -198,11 +198,11 @@ deploy or once a week.
 
 ## Related
 
-- [`dev-workflow.md`](./dev-workflow.md) — local dev, branch model,
+- [`dev-workflow.md`](dev-workflow.md) — local dev, branch model,
   testing philosophy.
-- [`00-context/system-state.md`](../00-context/system-state.md) —
+- [`00-context/system-state.md`](../product/system-state.md) —
   what's actually running on the VPS.
-- [`03-logs/m10-deploy-log.md`](../03-logs/m10-deploy-log.md) —
+- [`03-logs/m10-deploy-log.md`](../logs/03-logs/m10-deploy-log.md) —
   the original cutover runbook (still useful for any infra-level
   change, not for code-only deploys).
 - [`ops/deploy.sh`](../../ops/deploy.sh) — the script itself.

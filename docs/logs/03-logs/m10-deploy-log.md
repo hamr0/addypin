@@ -287,7 +287,7 @@ curl -I https://addypin.com/api/health    # should be 200 without --insecure
 
 **Phase 3d — Postfix + inbound pipe** (pending):
 - Configure `/etc/postfix/main.cf`: `myhostname=mail.addypin.com`, `mydomain=addypin.com`, `transport_maps=hash:/etc/postfix/transport`, `mydestination=localhost`, milters for opendkim.
-- `/etc/postfix/master.cf`: add the `addypin` pipe transport (config in `docs/00-context/system-state.md`).
+- `/etc/postfix/master.cf`: add the `addypin` pipe transport (config in `docs/product/system-state.md`).
 - `/etc/postfix/transport`: `addypin.com addypin:`; `postmap` it.
 - `/opt/addypin/inbound-wrapper.sh`: shebang + env sourcing + exec node on `server/inbound-cli.js`. Owner addypin, mode 750.
 - Smoke tests (in `system-state.md`): pipe a test message into the wrapper, verify journal log line.
