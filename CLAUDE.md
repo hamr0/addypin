@@ -52,7 +52,7 @@ Production / VPS uses environment variables loaded from a systemd `EnvironmentFi
 
 | Path | Purpose |
 |------|---------|
-| `docs/` | Documentation, 5-tier hierarchy ([docs/README.md](docs/README.md)) |
+| `docs/` | Documentation, product / wiki / logs layout ([docs/README.md](docs/README.md)) |
 | `server/` | Node backend (crypto, db, http, email) |
 | `web/` | Static HTML + JS + CSS + Leaflet |
 | `ops/` | Deploy artifacts: deploy script, inbound wrapper, systemd units, `pulselog/` configs, `homeserver/` backup + watch |

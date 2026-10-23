@@ -87,11 +87,11 @@ Deploy gotcha: a deploy script that only does `git pull` + `npm ci` + `systemctl
 ## Security and privacy notes
 
 - **Config-ownership gate (pulselog 0.4.0 and later):** the CLI refuses a config that is group/world-writable or owned by a third party, because it drives command execution. A config that is root-owned and readable by a non-root service user is fine (0.4.1). Keep configs `0644 root` or owned by the running user. (docs/archive/observability-playbook.md:533-536)
-- **Alert and digest mail is plain `sendmail`, unsigned by pulselog itself.** Deliverability rides entirely on your MTA (§2). Keep a secondary signal: the JSONL lines, the off-box `file-age` dead-man's-switch (§8), and a fallback sink. (docs/archive/observability-playbook.md:537-540)
+- **Alert and digest mail is plain `sendmail`, unsigned by pulselog itself.** Deliverability rides entirely on your MTA ([mail-deliverability.md](mail-deliverability.md)). Keep a secondary signal: the JSONL lines, the off-box `file-age` dead-man's-switch ([offbox-backup-watch.md](offbox-backup-watch.md)), and a fallback sink. (docs/archive/observability-playbook.md:537-540)
 - **Fallback alert sink (pulselog 0.7.0 and later):** add `fallback` to `alert`/`digest`/`backup`. It is a `command` (no shell) that gets the alert body on stdin and the subject as `PULSELOG_SUBJECT`, over a path independent of the primary MTA. (docs/archive/observability-playbook.md:541-545)
   - `when: "always"` (default) also survives an async bounce after a clean local handoff, which is what broken SPF/DKIM/PTR looks like: `sendmail` returns 0 and Gmail bounces later. `when: "on-primary-failure"` fires only when the local handoff fails. (docs/archive/observability-playbook.md:545-548)
   - Use `always` for health alerts (silent on green, so no duplicate mail) and `on-primary-failure` for the digest (avoids a duplicate weekly email). A broken sink is recorded in the JSONL, never fatal. (docs/archive/observability-playbook.md:563-567)
-  - Caveat: with pulselog <= 0.7.x the primary send has no timeout, so a hung sendmail never reports failure and `on-primary-failure` never fires. Verify the digest through the real unit (§9) until the pulselog 0.8.0 `mailTimeoutMs` bump. (docs/archive/observability-playbook.md:568-570)
+  - Caveat: with pulselog <= 0.7.x the primary send has no timeout, so a hung sendmail never reports failure and `on-primary-failure` never fires. Verify the digest through the real unit ([verify and troubleshoot](verify-and-troubleshoot.md)) until the pulselog 0.8.0 `mailTimeoutMs` bump. (docs/archive/observability-playbook.md:568-570)
 ```jsonc
 "alert": {
   "email": "you@example.com",
@@ -108,7 +108,7 @@ Deploy gotcha: a deploy script that only does `git pull` + `npm ci` + `systemctl
 ```
 (config example: docs/archive/observability-playbook.md:549-562)
 - **Error messages and stacks never leave the box** via the digest, only counts and group names. Don't defeat this by putting PII in the flightlog `where`/`name`. (docs/archive/observability-playbook.md:571-572)
-- **flightlog `context` is not clobber-protected:** pass allow-listed fields, never a raw request/payload object (§3). (docs/archive/observability-playbook.md:573-574)
+- **flightlog `context` is not clobber-protected:** pass allow-listed fields, never a raw request/payload object ([app-capture-and-metrics.md](app-capture-and-metrics.md)). (docs/archive/observability-playbook.md:573-574)
 - Both tools write JSONL `0600`. Back up `errors.jsonl`/`stats.jsonl` if you want history to survive a rebuild; neither is in the DB backup by default. (docs/archive/observability-playbook.md:575-576)
 
 ## Minimal file inventory (docs/archive/observability-playbook.md:580-599)
@@ -132,6 +132,6 @@ Deploy gotcha: a deploy script that only does `git pull` + `npm ci` + `systemctl
 /etc/systemd/system/<APP>-{watch,backup}.{service,timer}
 ```
 
-Mental model: flightlog records errors, pulselog watches health, trends and backups, and mail carries the alerts. The mail path (§2) is the part that will bite you, so verify it first and watch it from off-box. (docs/archive/observability-playbook.md:601-603)
+Mental model: flightlog records errors, pulselog watches health, trends and backups, and mail carries the alerts. The mail path ([mail-deliverability.md](mail-deliverability.md)) is the part that will bite you, so verify it first and watch it from off-box. (docs/archive/observability-playbook.md:601-603)
 
 Back to the overview: [observability playbook](observability-playbook.md)

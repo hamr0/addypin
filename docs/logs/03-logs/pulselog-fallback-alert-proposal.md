@@ -5,7 +5,7 @@
 **Date:** 2026-07-02
 **Origin:** the 2026-07 addypin mail-delivery incident (see [decisions-log](../../product/decisions-log.md) and [`ops/homeserver/README.md`](../../../ops/homeserver/README.md))
 
-> This lives in addypin's `03-logs/` because it's the design artifact that came
+> This lives in addypin's `logs/03-logs/` because it's the design artifact that came
 > out of an addypin incident. It's written to be lifted into pulselog's own repo
 > (as a PRD section + issue) more or less verbatim — swap "we/addypin" framing
 > for pulselog's voice. Nothing here changes addypin code.

@@ -7,7 +7,24 @@ sources:
 
 # Observability playbook: monitoring stack blueprint
 
-A copy-into-any-project monitoring stack. This core page covers the architecture and the prerequisites; the sibling pages (see "Related pages") cover each layer in detail.
+A generic, copy-into-any-project setup for **error capture, health checks, a weekly growth digest, local backups, and off-box watchdogs** — using [`flightlog`](https://github.com/hamr0/flightlog) and [`pulselog`](https://github.com/hamr0/pulselog). Zero paid SaaS, zero production dependencies, no Docker. Everything is a systemd timer + one JSONL line per event. (docs/archive/observability-playbook.md:3-8)
+
+> **How to use this doc.** Replace every `<PLACEHOLDER>` with your project's value. The running example is an app called `<APP>` on host `<VPS_IP>`, served at `<DOMAIN>`, running as the unprivileged user `<APP_USER>`, with code at `<APP_DIR>` (e.g. `/opt/<APP>`) and runtime state at `<DATA_DIR>` (e.g. `/var/lib/<APP>`). Alerts go to `<OPERATOR_EMAIL>`. (docs/archive/observability-playbook.md:10-14)
+
+| Placeholder | Meaning | Example |
+|---|---|---|
+| `<APP>` | app / project name | `myapp` |
+| `<APP_USER>` | unprivileged service user | `myapp` |
+| `<APP_DIR>` | deployed code dir | `/opt/myapp` |
+| `<DATA_DIR>` | runtime state (DB, `*.jsonl`) | `/var/lib/myapp` |
+| `<DOMAIN>` | public domain | `myapp.com` |
+| `<VPS_IP>` | VPS public IP | `203.0.113.10` |
+| `<MAIL_HOST>` | HELO / rDNS name for mail | `mail.myapp.com` |
+| `<DKIM_SELECTOR>` | OpenDKIM selector | `myapp2026` |
+| `<OPERATOR_EMAIL>` | where alerts land | `you@gmail.com` |
+(docs/archive/observability-playbook.md:16-26)
+
+This core page covers the architecture and the prerequisites; the sibling pages (see "Related pages") cover each layer in detail.
 
 ## Architecture: four independent layers
 
@@ -56,8 +73,8 @@ Everything writes the **same JSONL dialect** (`{"ts","kind","app",…}`), so one
   sudo npm i -g pulselog            # on the backup host (invoked as a CLI)
   ```
   (docs/archive/observability-playbook.md:71-74)
-- **A mailer.** pulselog and your app send via `sendmail`. Have a working MTA (Postfix + OpenDKIM) **or** a `sendmail` shim (`msmtp` + `msmtp-mta`). This is the step everyone skips and then silently loses every alert. (docs/archive/observability-playbook.md:75-77)
-- **A dedicated service user** (`<APP_USER>`) the app + timers run as. Keep it unprivileged: it will NOT be able to read `/var/log/maillog`. (docs/archive/observability-playbook.md:78-80)
+- **A mailer.** pulselog and your app send via `sendmail`. Have a working MTA (Postfix + OpenDKIM) **or** a `sendmail` shim (`msmtp` + `msmtp-mta`). This is the step everyone skips and then silently loses every alert. See [mail-deliverability.md](mail-deliverability.md) (SPF, DKIM, PTR). (docs/archive/observability-playbook.md:75-77)
+- **A dedicated service user** (`<APP_USER>`) the app + timers run as. Keep it unprivileged: it will NOT be able to read `/var/log/maillog`; that matters for the off-box watchdog in [offbox-backup-watch.md](offbox-backup-watch.md) and the checks in [verify-and-troubleshoot.md](verify-and-troubleshoot.md). (docs/archive/observability-playbook.md:78-80)
 
 ## Related pages
 

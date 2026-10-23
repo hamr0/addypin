@@ -202,7 +202,7 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
 ### Changed
 
 - **Bumped `pulselog` `^0.4.1` → `^0.7.0`** (0.7.0 adds the opt-in fallback
-  alert sink proposed in `docs/03-logs/pulselog-fallback-alert-proposal.md`;
+  alert sink proposed in `docs/logs/03-logs/pulselog-fallback-alert-proposal.md`;
   0.6.0 relabels a `command`-check timeout; 0.5.0 is docs-only). No breaking
   change to the health/digest config we use — verified with `--digest --dry-run`
   and the full test suite.
@@ -402,7 +402,7 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
 
 - **Bind to loopback by default.** `server/main.js` now listens on
   `127.0.0.1` (override via the new `HOST` env var) instead of `0.0.0.0`.
-  nginx proxies to `127.0.0.1:3000` and `docs/00-context/system-state.md`
+  nginx proxies to `127.0.0.1:3000` and `docs/product/system-state.md`
   already described the service as loopback-only — the code now matches
   that documented posture. Closes incidental LAN/external reachability of
   the Node port, which is what makes trusting `X-Forwarded-For` for
@@ -501,7 +501,7 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
 ### Added
 
 - **Privacy-respecting discoverability — tier 1 head tags + robots/sitemap.**
-  Per the playbook in `docs/04-process/privacy-seo.md`. Landing
+  Per the playbook in `docs/wiki/privacy-seo.md`. Landing
   page (`web/index.html`) now ships a descriptive `<title>`,
   privacy-stance `<meta description>` ("…no accounts, no tracking,
   open source"), `<link rel="canonical">` to the apex, OpenGraph
@@ -759,7 +759,7 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
   facing mails the HMAC fingerprint is the only stored artifact;
   for the looker-upper auto-reply nothing is stored at all (which
   the "only a fingerprint" wording bounds correctly).
-- **`ops/deploy.sh` + `docs/04-process/deploy.md`.** Manual deploy
+- **`ops/deploy.sh` + `docs/wiki/deploy.md`.** Manual deploy
   is no longer a tribal-knowledge incantation — one script enforces
   the gate (on `main`, clean tree, in sync with origin, tests
   green) before SSHing the VPS and refusing to deploy onto a dirty
@@ -1012,7 +1012,7 @@ preserved on the `v1` branch for reference only.
   expiry, DB sanity. Alerts via local Postfix to gmail on failure.
 - **Added**: `ops/inbound-wrapper.sh` — Postfix pipe entry, sources
   env and execs the Node CLI on stdin.
-- **Added**: `docs/03-logs/m10-deploy-log.md` — phase-by-phase
+- **Added**: `docs/logs/03-logs/m10-deploy-log.md` — phase-by-phase
   deployment journal (backup → nuke → foundation → code →
   cert → Postfix → OpenDKIM → DNS → monitor).
 - **Changed**: VPS was nuked and rebuilt from a clean AlmaLinux
@@ -1032,7 +1032,7 @@ preserved on the `v1` branch for reference only.
   table with reasoning, data model, lifecycle, local dev, philosophy.
 - **Added**: five-tier `docs/` hierarchy
   (00-context, 01-product, 02-features, 03-logs, 04-process).
-- **Changed**: `docs/01-product/prd.md` refreshed end-to-end.
+- **Changed**: `docs/product/prd.md` refreshed end-to-end.
 - **Changed**: dropped all `AddyPin` / `ADDYPIN` brand casings in
   user-visible strings. The wordmark is always lowercase `addypin`.
 

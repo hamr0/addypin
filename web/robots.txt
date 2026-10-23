@@ -5,7 +5,7 @@
 #     noindex (HTML <meta robots> / JSON X-Robots-Tag) so they stay out of
 #     search while remaining crawlable. We deliberately do NOT Disallow them:
 #     a Disallow-ed page is never fetched, so its noindex is never seen — the
-#     two cancel (see docs/04-process/privacy-seo.md, Tier 2.5).
+#     two cancel (see docs/wiki/privacy-seo.md, Tier 2.5).
 #   - Only the marketing apex (/) is indexable, and it carries no PII.
 User-agent: *
 Allow: /

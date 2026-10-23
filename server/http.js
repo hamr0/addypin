@@ -344,7 +344,7 @@ function json(status, obj) {
     // keeps the public coords lookup (/api/pins/:code) out of search the way
     // pin-page HTML uses <meta name="robots">. Owner data (/api/me/pins, PATCH/
     // DELETE) is protected by its auth gate (401/403), not by this header.
-    // See docs/04-process/privacy-seo.md, Tier 2.5.
+    // See docs/wiki/privacy-seo.md, Tier 2.5.
     return {
         status,
         headers: { 'content-type': 'application/json', 'x-robots-tag': 'noindex' },

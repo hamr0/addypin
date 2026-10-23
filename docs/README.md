@@ -6,13 +6,15 @@ tracking.
 
 ## Structure
 
-| Tier | Path | What lives here |
-|------|------|-----------------|
-| **Context** | [`00-context/`](00-context/) | Why we built it, current running state, constraints we committed to |
-| **Product** | [`01-product/`](01-product/) | The spec — PRD, data model, threat model |
-| **Features** | [`02-features/`](02-features/) | Per-feature specs (empty — PRD covers v2.0) |
-| **Logs** | [`03-logs/`](03-logs/) | Decisions, deploy journals, incident notes |
-| **Process** | [`04-process/`](04-process/) | How to work with the code (dev + deploy) |
+| Section | Path | What lives here |
+|---------|------|-----------------|
+| **Product** | [`product/`](product/) | Vision, assumptions, the PRD (scope, data model, threat model), current running state, decisions log |
+| **Wiki** | [`wiki/`](wiki/) | How to work with the code: dev workflow, deploy, privacy/SEO, and the observability playbook (core page + 6 split pages) |
+| **Logs** | [`logs/03-logs/`](logs/03-logs/) | Deploy journals and design artifacts (m10 deploy log, pulselog fallback-alert proposal) |
+| **Archive** | [`archive/`](archive/) | Superseded originals (the unsplit observability playbook) |
+
+Also here: [`index.md`](index.md) (generated page index, do not hand-edit) and
+[`log.md`](log.md) (docs change log).
 
 ## v1 archive
 
@@ -22,19 +24,19 @@ cutover).
 
 ## Start here
 
-1. **New to the project?** → [`00-context/vision.md`](product/vision.md)
+1. **New to the project?** → [`product/vision.md`](product/vision.md)
    — what addypin is, who it's for, what it deliberately isn't.
-2. **Need the technical spec?** → [`01-product/prd.md`](product/prd.md)
+2. **Need the technical spec?** → [`product/prd.md`](product/prd.md)
    — source of truth for scope, data model, endpoints, threat model.
-3. **Deploying/operating?** → [`00-context/system-state.md`](product/system-state.md)
-   — what's running right now. [`04-process/dev-workflow.md`](wiki/dev-workflow.md)
+3. **Deploying/operating?** → [`product/system-state.md`](product/system-state.md)
+   — what's running right now. [`wiki/dev-workflow.md`](wiki/dev-workflow.md)
    — how to ship a change.
-   [`04-process/observability-playbook.md`](wiki/observability-playbook.md)
+   [`wiki/observability-playbook.md`](wiki/observability-playbook.md)
    — generic, portable pulselog + flightlog ops setup (health, weekly digest,
    error flagging, backups, off-box watchdogs, mail-auth).
-4. **Why did we do X?** → [`03-logs/decisions-log.md`](product/decisions-log.md).
+4. **Why did we do X?** → [`product/decisions-log.md`](product/decisions-log.md).
    Design artifacts too, e.g.
-   [`03-logs/pulselog-fallback-alert-proposal.md`](logs/03-logs/pulselog-fallback-alert-proposal.md)
+   [`logs/03-logs/pulselog-fallback-alert-proposal.md`](logs/03-logs/pulselog-fallback-alert-proposal.md)
    — the upstream fix identified after the 2026-07 mail-delivery incident.
 5. **What happened during cutover?** →
-   [`03-logs/m10-deploy-log.md`](logs/03-logs/m10-deploy-log.md).
+   [`logs/03-logs/m10-deploy-log.md`](logs/03-logs/m10-deploy-log.md).

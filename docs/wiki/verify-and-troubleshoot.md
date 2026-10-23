@@ -28,7 +28,7 @@ sudo systemctl start <APP>-stats-digest.service
 systemctl status <APP>-stats-digest.service --no-pager   # want: finished, not stuck "activating"
 sudo grep -E 'status=(sent|deferred|bounced)' /var/log/maillog | tail -3   # want status=sent
 
-# mail: real send (§2e) → want status=sent
+# mail: real send ([mail-deliverability.md](mail-deliverability.md), end-to-end proof) → want status=sent
 # timers: are they actually scheduled?
 systemctl list-timers '<APP>-*'
 
@@ -50,15 +50,15 @@ The table below lists each symptom with its likely cause and the check or fix. (
 
 | Symptom | Likely cause | Check / fix |
 |---|---|---|
-| Digest/alerts never arrive, but timers ran | **Mail bounces at recipient** | `grep '<OPERATOR_EMAIL>' /var/log/maillog \| grep bounced` → fix §2 |
-| Bounce `5.7.25` | PTR missing or forward≠reverse (often a **proxied mail host**) | §2a; `dig A <MAIL_HOST>` must be `<VPS_IP>`, not a CDN IP |
-| Bounce `5.7.26` | SPF and DKIM both fail | §2b/2c; `dig TXT <DKIM_SELECTOR>._domainkey.<DOMAIN>` must be non-empty |
+| Digest/alerts never arrive, but timers ran | **Mail bounces at recipient** | `grep '<OPERATOR_EMAIL>' /var/log/maillog \| grep bounced` → fix, see [mail-deliverability.md](mail-deliverability.md) |
+| Bounce `5.7.25` | PTR missing or forward≠reverse (often a **proxied mail host**) | [mail-deliverability.md](mail-deliverability.md) (PTR / reverse DNS); `dig A <MAIL_HOST>` must be `<VPS_IP>`, not a CDN IP |
+| Bounce `5.7.26` | SPF and DKIM both fail | [mail-deliverability.md](mail-deliverability.md) (SPF / DKIM); `dig TXT <DKIM_SELECTOR>._domainkey.<DOMAIN>` must be non-empty |
 | Timer never fired | unit not installed / not enabled | `systemctl list-timers '<APP>-*'`; install units + `daemon-reload` + `enable --now` |
 | `pulselog.js: not found` on the VPS | `npm ci --omit=dev` skipped it | pulselog must be in **`dependencies`**, not `devDependencies` |
 | pulselog refuses the config | 0.4.x **config-ownership gate** | config must be owned by the running user **or root**, and not group/world-writable |
 | Digest metric shows `null` | metric command failed / DB missing | run the `metricsCommand` by hand; it must print flat JSON and exit 0 |
 | Can't find last week's run in `journalctl` | journal rotated | the durable record is the JSONL (`stats.jsonl` / `health.jsonl`), not the journal |
-| On-VPS mail-bounce check false-alarms | runs as `<APP_USER>` (can't read maillog) + circular | move it **off-box** (§8a) — don't grant the service user log access |
+| On-VPS mail-bounce check false-alarms | runs as `<APP_USER>` (can't read maillog) + circular | move it **off-box** ([offbox-backup-watch.md](offbox-backup-watch.md), mail-delivery watchdog) — don't grant the service user log access |
 
 Table source: (docs/archive/observability-playbook.md:517-527)
 

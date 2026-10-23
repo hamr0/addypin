@@ -16,7 +16,7 @@
 # fatal — but we still want a clean handoff, so this exits with msmtp's status.
 #
 # One-time setup (per host running pulselog as this user): add a `gmail` account
-# to the runtime user's ~/.msmtprc (0600). See docs/04-process/observability-playbook.md
+# to the runtime user's ~/.msmtprc (0600). See docs/wiki/units-security-layout.md
 # and ops/homeserver/README.md.
 #
 # Sandbox note: any systemd unit that invokes this script must leave the runtime

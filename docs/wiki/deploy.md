@@ -3,7 +3,7 @@
 How to ship a change to production (the live VPS at `addypin.com`).
 
 There is no CI/CD pipeline. Deploys are manual on purpose — see
-`00-context/vision.md`. The single command path is `./ops/deploy.sh`,
+`product/vision.md`. The single command path is `./ops/deploy.sh`,
 which enforces the pre-flight below and refuses to proceed if any
 gate fails. That's the whole point — the script is the runbook in
 executable form.
@@ -194,15 +194,15 @@ deploy or once a week.
 - `curl -sS https://addypin.com/api/health` — local health endpoint
   via the public hostname.
 - `dig +short MX addypin.com` and `dig +short TXT addypin.com` —
-  records still match `00-context/system-state.md`.
+  records still match `product/system-state.md`.
 
 ## Related
 
 - [`dev-workflow.md`](dev-workflow.md) — local dev, branch model,
   testing philosophy.
-- [`00-context/system-state.md`](../product/system-state.md) —
+- [`product/system-state.md`](../product/system-state.md) —
   what's actually running on the VPS.
-- [`03-logs/m10-deploy-log.md`](../logs/03-logs/m10-deploy-log.md) —
+- [`logs/03-logs/m10-deploy-log.md`](../logs/03-logs/m10-deploy-log.md) —
   the original cutover runbook (still useful for any infra-level
   change, not for code-only deploys).
 - [`ops/deploy.sh`](../../ops/deploy.sh) — the script itself.

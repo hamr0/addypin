@@ -69,7 +69,7 @@ The `digest` section lives in the same config file. One weekly run collects metr
 This is the `flightlog` block (docs/archive/observability-playbook.md:285):
 
 - `flagAtLeast: 20` flags, in the digest, any group whose **7-day count reaches 20**. The default is 20; set whatever threshold you want (docs/archive/observability-playbook.md:286-287).
-- `groupBy: "where"` groups by your flightlog `where` field (§3). Use `"name"` (the default) to group by error class/name instead (docs/archive/observability-playbook.md:288-289).
+- `groupBy: "where"` groups by your flightlog `where` field ([app-capture-and-metrics.md](app-capture-and-metrics.md)). Use `"name"` (the default) to group by error class/name instead (docs/archive/observability-playbook.md:288-289).
 - **Counts and names only** ever reach the email, never messages or stacks, since those can carry PII. That privacy invariant is mutation-tested in pulselog (docs/archive/observability-playbook.md:290-291).
 
 ### Metrics

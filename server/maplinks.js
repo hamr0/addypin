@@ -3,7 +3,7 @@
 // Curated 12-app portfolio. Each URL was researched + validated.
 // The translation across Western, Chinese, Russian, Indian, Korean,
 // Iranian, and African stacks is the product's geographic moat —
-// see docs/01-product/prd.md §13.
+// see docs/product/prd.md §13.
 //
 // Chinese maps (Baidu, Amap) require WGS84 → GCJ-02 conversion;
 // see ./coords.js. The conversion is a no-op outside China.
