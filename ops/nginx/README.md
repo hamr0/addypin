@@ -21,7 +21,7 @@ Two things, both added 2026-07-14:
    visitor IP. Cloudflare terminates TLS at its edge and re-originates, so without
    this nginx's peer is a CF edge address and *every* per-IP rate-limit bucket
    (addypin's and knowless's) is shared by everyone through the same CF colo. See
-   [PRD §8](../../docs/01-product/prd.md).
+   [PRD §8](../../docs/product/prd.md).
 
 2. **`geo $realip_remote_addr $addypin_cf_peer`** — answers "did this request
    actually come from Cloudflare?". It must key on `$realip_remote_addr` (the

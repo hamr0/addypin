@@ -3,9 +3,9 @@
 **Status:** ✅ **delivered in pulselog `0.7.0` (2026-07-02)** — shipped essentially as proposed (`fallback` on `alert`/`digest`/`backup`; no-shell `command`, body on stdin + `PULSELOG_SUBJECT`; `when: always|on-primary-failure`; sole-sink mode; best-effort/never-fatal; redacted digest render; `kind:"alert"` record). addypin adoption tracked in CHANGELOG (2.0.19).
 **Author:** addypin ops
 **Date:** 2026-07-02
-**Origin:** the 2026-07 addypin mail-delivery incident (see [decisions-log](decisions-log.md) and [`ops/homeserver/README.md`](../../ops/homeserver/README.md))
+**Origin:** the 2026-07 addypin mail-delivery incident (see [decisions-log](../../product/decisions-log.md) and [`ops/homeserver/README.md`](../../../ops/homeserver/README.md))
 
-> This lives in addypin's `03-logs/` because it's the design artifact that came
+> This lives in addypin's `logs/03-logs/` because it's the design artifact that came
 > out of an addypin incident. It's written to be lifted into pulselog's own repo
 > (as a PRD section + issue) more or less verbatim — swap "we/addypin" framing
 > for pulselog's voice. Nothing here changes addypin code.
@@ -215,9 +215,9 @@ lands, and documents *why* such a check must live off the sending host
 
 > **This recipe does not exist yet** — it's the proposal. Port it from the two
 > concrete sources already in the addypin repo, don't rewrite from memory:
-> - **Faithful reference implementation:** [`ops/homeserver/addypin-mail-check.sh`](../../ops/homeserver/addypin-mail-check.sh)
+> - **Faithful reference implementation:** [`ops/homeserver/addypin-mail-check.sh`](../../../ops/homeserver/addypin-mail-check.sh)
 >   — the real, running script (grep-latest-status-over-SSH, stateless).
-> - **Generic/placeholder form:** [`observability-playbook.md`](../04-process/observability-playbook.md)
+> - **Generic/placeholder form:** [`observability-playbook.md`](../../wiki/observability-playbook.md)
 >   §8a, already written with `<APP>` placeholders — closest to what the
 >   `examples/` file should be.
 >

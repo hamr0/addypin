@@ -345,12 +345,17 @@ Group=<APP_USER>
 WorkingDirectory=<APP_DIR>
 EnvironmentFile=/etc/<APP>/env       # so stats.js sees DB_PATH/DATA_DIR
 ExecStart=/usr/bin/node <APP_DIR>/node_modules/pulselog/bin/pulselog.js --digest --config <APP_DIR>/pulselog.config.json
+# NoNewPrivileges disables postdrop's setgid bit, so sendmail needs the group;
+# ProtectHome=read-only (not true) so the fallback sink can read ~/.msmtprc.
 NoNewPrivileges=true
+SupplementaryGroups=postdrop
 ProtectSystem=true
-ProtectHome=true
+ProtectHome=read-only
 PrivateTmp=true
 Nice=10
 ```
+If you use `ProtectSystem=strict` instead, also add
+`ReadWritePaths=/var/spool/postfix/maildrop`.
 ```ini
 # /etc/systemd/system/<APP>-stats-digest.timer
 [Unit]
@@ -484,8 +489,13 @@ node -e "import('flightlog').then(f=>{const {captureSync}=f.install({file:'/tmp/
 # health: exit 0 + silent when green
 node <APP_DIR>/node_modules/pulselog/bin/pulselog.js --config <APP_DIR>/pulselog.config.json; echo "exit=$?"
 
-# digest: render without sending
+# digest: render without sending (does NOT exercise the unit's sandbox or mail path)
 node <APP_DIR>/node_modules/pulselog/bin/pulselog.js --digest --dry-run --config <APP_DIR>/pulselog.config.json
+
+# digest: real send through the installed unit (sandbox + mail path)
+sudo systemctl start <APP>-stats-digest.service
+systemctl status <APP>-stats-digest.service --no-pager   # want: finished, not stuck "activating"
+sudo grep -E 'status=(sent|deferred|bounced)' /var/log/maillog | tail -3   # want status=sent
 
 # mail: real send (§2e) → want status=sent
 # timers: are they actually scheduled?
@@ -495,6 +505,10 @@ systemctl list-timers '<APP>-*'
 sudo /usr/local/bin/pulselog --backup --config /etc/<APP>/pulselog.config.json
 ls -la ~/<APP>-backups/*.tar.gz
 ```
+
+A `--dry-run` passes in exactly the `NoNewPrivileges`/postdrop hang case, so it
+can't validate the unit. The real run appends an extra row to `stats.jsonl` (the
+snapshot is written before the send) — run it knowingly.
 
 ---
 
@@ -551,6 +565,9 @@ ls -la ~/<APP>-backups/*.tar.gz
   **digest** (avoid a duplicate weekly email; delivery breakage is caught by the
   health fallback + the off-box mail watchdog). Best-effort: a broken sink is
   recorded in the JSONL, never fatal.
+  Caveat: with pulselog <= 0.7.x the primary send has no timeout, so a hung
+  sendmail never reports failure and `on-primary-failure` never fires; verify the
+  digest through the real unit (§9) until the pulselog 0.8.0 `mailTimeoutMs` bump.
 - **Error messages/stacks never leave the box** via the digest — only counts +
   group names. Don't defeat this by putting PII in the flightlog `where`/`name`.
 - **flightlog `context` is not clobber-protected** — pass allow-listed fields,

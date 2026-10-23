@@ -2,7 +2,7 @@
 
 addypin is a location sharing service that turns GPS coordinates into short, memorable links. Users drop pins on a map and share them as web links (`ABC123.addypin.com`) or email addresses (`ABC123@addypin.com`).
 
-**You are working on v2 — a clean rewrite on the `main` branch.** v1 is preserved on the `v1` branch for reference only. Do not build on it. The v2 design lives in [`docs/01-product/prd.md`](docs/01-product/prd.md) and is the source of truth for scope, data model, endpoints, and threat model.
+**You are working on v2 — a clean rewrite on the `main` branch.** v1 is preserved on the `v1` branch for reference only. Do not build on it. The v2 design lives in [`docs/product/prd.md`](docs/product/prd.md) and is the source of truth for scope, data model, endpoints, and threat model.
 
 ## Dev Rules
 
@@ -52,7 +52,7 @@ Production / VPS uses environment variables loaded from a systemd `EnvironmentFi
 
 | Path | Purpose |
 |------|---------|
-| `docs/` | Documentation, 5-tier hierarchy ([docs/README.md](docs/README.md)) |
+| `docs/` | Documentation, product / wiki / logs layout ([docs/README.md](docs/README.md)) |
 | `server/` | Node backend (crypto, db, http, email) |
 | `web/` | Static HTML + JS + CSS + Leaflet |
 | `ops/` | Deploy artifacts: deploy script, inbound wrapper, systemd units, `pulselog/` configs, `homeserver/` backup + watch |
@@ -79,20 +79,20 @@ Production / VPS uses environment variables loaded from a systemd `EnvironmentFi
 
 ## Deployment (v2 target)
 
-**Always deploy via `./ops/deploy.sh`.** Don't ssh into the VPS to `git pull` by hand, and don't tell the user to do it themselves — the script reads SSH host/user/key from `pass` (`addypin/ssh/{host,user,private_key}`), runs pre-flight (on main, clean tree, in sync with origin, `npm test` green), pulls + restarts on the VPS, and smoke-tests `https://addypin.com/`. Full runbook: [`docs/04-process/deploy.md`](docs/04-process/deploy.md). No Docker, no CI/CD pipeline in v2.0.
+**Always deploy via `./ops/deploy.sh`.** Don't ssh into the VPS to `git pull` by hand, and don't tell the user to do it themselves — the script reads SSH host/user/key from `pass` (`addypin/ssh/{host,user,private_key}`), runs pre-flight (on main, clean tree, in sync with origin, `npm test` green), pulls + restarts on the VPS, and smoke-tests `https://addypin.com/`. Full runbook: [`docs/wiki/deploy.md`](docs/wiki/deploy.md). No Docker, no CI/CD pipeline in v2.0.
 
 ## Important notes
 
 - **v1 code is on the `v1` branch** — check it out if you need to reference the old implementation. Do not merge from it.
 - **Never reintroduce** Postgres, Docker, Resend, Umami, React, or any paid SaaS without a PRD amendment. (Cloudflare is the one SaaS already in the path — an accepted edge exception, not a precedent for more.)
 - **Shortcodes are 6 uppercase alphanumeric characters.** Case-insensitive at input, stored uppercase. User-chosen or server-generated.
-- Cloudflare terminates TLS at the edge; nginx (behind CF) also terminates TLS via the wildcard cert at `/etc/letsencrypt/live/addypin.com-0001/` for the CF→origin hop and direct hits. Wildcard renewal uses the `certbot-dns-route53` plugin — AWS creds at `/root/.aws/credentials` (chmod 600), IAM creds in `pass` at `addypin/prod/aws_r53_ssl_key` and `addypin/prod/aws_r53_ssl`. VPS infra: [`docs/00-context/system-state.md`](docs/00-context/system-state.md).
+- Cloudflare terminates TLS at the edge; nginx (behind CF) also terminates TLS via the wildcard cert at `/etc/letsencrypt/live/addypin.com-0001/` for the CF→origin hop and direct hits. Wildcard renewal uses the `certbot-dns-route53` plugin — AWS creds at `/root/.aws/credentials` (chmod 600), IAM creds in `pass` at `addypin/prod/aws_r53_ssl_key` and `addypin/prod/aws_r53_ssl`. VPS infra: [`docs/product/system-state.md`](docs/product/system-state.md).
 
 ## Current state (2026-07-02)
 
 M1–M11 shipped; live at `https://addypin.com` and `https://SHORTCODE.addypin.com` (path form `addypin.com/SHORTCODE` still resolves). `knowless@1.3.4` backs auth; wildcard cert auto-renews (`certbot-renew.timer`). Observability is flightlog + pulselog (VPS: health + weekly digest timers; home server: `--backup` + off-box watch). **Cloudflare fronts production** (accepted edge exception); AI-bot controls are off so the repo `robots.txt` is authoritative.
 
-Release history lives in [`CHANGELOG.md`](CHANGELOG.md); ops detail in [`docs/04-process/observability-playbook.md`](docs/04-process/observability-playbook.md) and [`ops/homeserver/README.md`](ops/homeserver/README.md). Two standing invariants worth stating here because breaking them is silent:
+Release history lives in [`CHANGELOG.md`](CHANGELOG.md); ops detail in [`docs/wiki/observability-playbook.md`](docs/wiki/observability-playbook.md) and [`ops/homeserver/README.md`](ops/homeserver/README.md). Two standing invariants worth stating here because breaking them is silent:
 - **`mail.addypin.com` must stay DNS-only in Cloudflare** (→ `155.94.144.191`, never proxied) — proxying it breaks SPF/DKIM/PTR and bounces all outbound mail. pulselog alerts have an independent `msmtp`→Gmail fallback (`ops/fallback-notify.sh`) so a mail-path break still pages.
 - **Deploy note:** VPS pulselog units call `node_modules/pulselog/bin/pulselog.js`, so `npm ci` must run post-deploy; re-install unit files (`daemon-reload`) only when they change.
 
@@ -105,5 +105,10 @@ Pending tail: scope the SSL IAM policy from `AmazonRoute53FullAccess` to hosted 
 <!-- AGENT_RULES:START -->
 Consult when building something new or adding a feature — a standards guide, not hot
 context like MEMORY.md above:
-@.claude/remember/AGENT_RULES.md
+.claude/remember/AGENT_RULES.md
 <!-- AGENT_RULES:END -->
+
+<!-- DOCS_INDEX:START -->
+Docs map: `docs/index.md` — every doc in this project, with line counts.
+Search this corpus instead of reading it whole: `/docs-builder search <query words>`
+<!-- DOCS_INDEX:END -->

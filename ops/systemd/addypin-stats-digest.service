@@ -15,8 +15,13 @@ ExecStart=/usr/bin/node /opt/addypin/node_modules/pulselog/bin/pulselog.js --dig
 # ProtectSystem=true (not strict): /usr+/boot read-only, but /var stays
 # writable — pulselog appends the weekly snapshot to /var/lib/addypin/stats.jsonl
 # and the sendmail path drops into the Postfix spool under /var.
+#
+# NoNewPrivileges=true disables postdrop's setgid-postdrop bit, so
+# SupplementaryGroups=postdrop is needed for sendmail to write maildrop/.
+# ProtectHome=read-only (not true): the fallback sink reads ~/.msmtprc.
 NoNewPrivileges=true
+SupplementaryGroups=postdrop
 ProtectSystem=true
-ProtectHome=true
+ProtectHome=read-only
 PrivateTmp=true
 Nice=10
