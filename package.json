@@ -1,6 +1,6 @@
 {
   "name": "addypin",
-  "version": "2.0.21",
+  "version": "2.0.22",
   "private": true,
   "type": "module",
   "description": "Location sharing via short links. v2 rewrite.",
@@ -16,6 +16,6 @@
   "dependencies": {
     "flightlog": "^0.4.0",
     "knowless": "^1.3.4",
-    "pulselog": "^0.7.0"
+    "pulselog": "^0.8.0"
   }
 }

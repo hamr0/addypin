@@ -3,6 +3,29 @@
 All notable changes to addypin. Format loosely follows [Keep a
 Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
 
+## [2.0.22] — 2026-10-23
+
+### Changed
+
+- **Adopted pulselog 0.8.0** (`^0.7.0` → `^0.8.0`). Primary mail sends are now bounded
+  by `mailTimeoutMs` (default 30000, left at default here): on timeout the process
+  group is killed and the fallback sink fires (worst case a digest run now takes ~55 s:
+  30 s mail timeout + 15 s fallback `timeoutMs` + 10 s `metricsCommand`, before failing;
+  the oneshot unit sets no `TimeoutStartSec`, which is fine). Health and digest now
+  exit 1 when a send was attempted and every delivery path failed, so the unit shows
+  failed. The digest appends a `kind:"delivery"` line (with a `reason` on failure) to
+  `stats.jsonl` after each snapshot; no addypin code reads that file. New
+  `pulselog --test-alert [--digest|--backup]` tests primary + fallback. Needs `npm ci` post-deploy and
+  `sudo npm i -g pulselog@^0.8.0` on the home server. After deploy, validate the paths
+  with `--test-alert` under the real units (recipe in
+  `docs/wiki/verify-and-troubleshoot.md`).
+
+### Documented
+
+- Retired the "no primary-send timeout" caveat, added the `--test-alert` unit-sandbox
+  verification recipe and the `kind:"delivery"` line, noted the exit-1 behaviour, and
+  added the home-server upgrade and `--test-alert --backup` steps.
+
 ## [2.0.21] — 2026-10-23
 
 ### Security

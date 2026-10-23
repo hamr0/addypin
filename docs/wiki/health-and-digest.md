@@ -36,7 +36,7 @@ Available check types: `service`, `http`, `tcp`, `ssl`, `disk`, `file-age`, `com
 
 ## Weekly digest
 
-The `digest` section lives in the same config file. One weekly run collects metrics, appends **one `kind:"stats"` line** to a history file, and emails a week-over-week table plus a flightlog error rollup (docs/archive/observability-playbook.md:256-258).
+The `digest` section lives in the same config file. One weekly run collects metrics, appends **one `kind:"stats"` line** to a history file, and emails a week-over-week table plus a flightlog error rollup (docs/archive/observability-playbook.md:256-258). Since pulselog 0.8.0 it also appends a `kind:"delivery"` line to the same history file after each snapshot, recording whether the email went out (with a `reason` on failure: timeout, `exit N`, errno, `no-mta`, signal). Health and digest now exit 1 when a send was attempted and all delivery paths failed (green runs exit 0), so the unit shows failed. The send is bounded by `mailTimeoutMs` (default 30000). Verify the alert path with `--test-alert` ([verify and troubleshoot](verify-and-troubleshoot.md)).
 
 ```json
 {

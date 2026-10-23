@@ -43,6 +43,27 @@ Notes on the digest steps:
 - The real-send step starts the installed unit; you want it finished, not stuck "activating", and `status=sent` in the maillog. (docs/archive/observability-playbook.md:495-498)
 - A `--dry-run` passes in exactly the `NoNewPrivileges`/postdrop hang case, so it can't validate the unit. (docs/archive/observability-playbook.md:509-510)
 - The real run appends an extra row to `stats.jsonl` (the snapshot is written before the send), so run it knowingly. (docs/archive/observability-playbook.md:510-511)
+- Since pulselog 0.8.0 the digest also appends a `kind:"delivery"` line to the history file after each stats snapshot. That line is where a digest's delivery outcome lives; on failure it carries a `reason` (`timeout`, `exit N`, an errno, `no-mta`, or `signal`). pulselog's own week table ignores it.
+
+### Test the alert path with `--test-alert` (pulselog 0.8.0+)
+
+`pulselog --test-alert [--digest|--backup] --config ...` sends one test message through the primary path AND the fallback, prints each path's result, writes no JSONL, and exits 1 if any configured path fails. It rejects `--dry-run`, and `--digest` with `--backup` together, as usage errors. Run it under the real unit sandbox, not by hand as root (a root shell passes in exactly the `NoNewPrivileges`/postdrop case the sandbox breaks). Copy the unit to a transient name, swap `ExecStart`, start it, read the journal, then delete the copy:
+
+```bash
+# health alert path (use the digest unit and add --digest for the digest path)
+sudo cp /etc/systemd/system/<APP>-health.service /etc/systemd/system/<APP>-testalert.service
+sudo sed -i '/^ExecStart=/ s|$| --test-alert|' /etc/systemd/system/<APP>-testalert.service
+#   digest: copy <APP>-stats-digest.service and append ' --test-alert --digest'
+#   (the digest unit is the meaningful sandbox test: it carries NoNewPrivileges,
+#   SupplementaryGroups=postdrop and ProtectHome=read-only; the health unit has no
+#   sandbox, so a green health run proves the mail paths but not the sandbox)
+sudo systemctl daemon-reload
+sudo systemctl start <APP>-testalert.service; echo "exit=$?"   # want 0
+sudo journalctl -u <APP>-testalert.service --no-pager | tail   # per-path results
+sudo rm /etc/systemd/system/<APP>-testalert.service && sudo systemctl daemon-reload
+```
+
+This supersedes hand-rolled `systemd-run` mail tests for confirming the primary and fallback paths. On the backup host, run `pulselog --test-alert --backup --config /etc/<APP>/pulselog.config.json` (see [`ops/homeserver/README.md`](../../ops/homeserver/README.md)); expect 1 email there, since the backup block has no fallback.
 
 ## Troubleshooting: the failure modes (learned the hard way)
 
