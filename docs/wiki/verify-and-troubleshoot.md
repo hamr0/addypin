@@ -62,4 +62,4 @@ The table below lists each symptom with its likely cause and the check or fix. (
 
 Table source: (docs/archive/observability-playbook.md:517-527)
 
-Back to the overview: [observability playbook](../observability-playbook.md)
+Back to the overview: [observability playbook](observability-playbook.md)

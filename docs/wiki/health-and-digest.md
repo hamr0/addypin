@@ -85,4 +85,4 @@ pulselog --digest --dry-run --config <APP_DIR>/pulselog.config.json
 ```
 (docs/archive/observability-playbook.md:300-303)
 
-Back to the overview: [observability playbook](../observability-playbook.md)
+Back to the overview: [observability playbook](observability-playbook.md)

@@ -105,4 +105,4 @@ ExecStart=/usr/local/bin/pulselog --backup --config /etc/<APP>/pulselog.config.j
 
 The backup host's own alerts need a working mailer too. The simplest is `msmtp` to Gmail, which makes Gmail sign the mail with clean reputation; set the config `from` to the authenticated Gmail address (docs/archive/observability-playbook.md:477-479).
 
-Back to the overview: [observability playbook](../observability-playbook.md)
+Back to the overview: [observability playbook](observability-playbook.md)

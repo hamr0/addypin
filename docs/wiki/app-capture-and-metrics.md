@@ -93,4 +93,4 @@ process.stdout.write(JSON.stringify(metrics) + '\n');
 - Exit non-zero if the source is missing (e.g. DB not found), so pulselog records `null` for that metric instead of a silent zero. (docs/archive/observability-playbook.md:218-219)
 - Not a database? Any command works (`wc -l`, a `curl … | jq`, etc.) as long as the final stdout is one flat JSON object of integers. (docs/archive/observability-playbook.md:220-221)
 
-Back to the overview: [observability playbook](../observability-playbook.md)
+Back to the overview: [observability playbook](observability-playbook.md)

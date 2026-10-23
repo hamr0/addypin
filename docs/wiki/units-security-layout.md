@@ -134,4 +134,4 @@ Deploy gotcha: a deploy script that only does `git pull` + `npm ci` + `systemctl
 
 Mental model: flightlog records errors, pulselog watches health, trends and backups, and mail carries the alerts. The mail path (§2) is the part that will bite you, so verify it first and watch it from off-box. (docs/archive/observability-playbook.md:601-603)
 
-Back to the overview: [observability playbook](../observability-playbook.md)
+Back to the overview: [observability playbook](observability-playbook.md)

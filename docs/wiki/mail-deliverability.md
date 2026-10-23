@@ -77,4 +77,4 @@ grep '<OPERATOR_EMAIL>' /var/log/maillog | tail -1     # want: status=sent (250 
 
 `status=bounced` with `5.7.25` means fix PTR (2a). `5.7.26` means fix SPF/DKIM (2b/2c) (docs/archive/observability-playbook.md:142).
 
-Back to the overview: [observability playbook](../observability-playbook.md)
+Back to the overview: [observability playbook](observability-playbook.md)
