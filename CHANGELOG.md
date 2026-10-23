@@ -3,7 +3,7 @@
 All notable changes to addypin. Format loosely follows [Keep a
 Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
 
-## [Unreleased]
+## [2.0.22] — 2026-10-23
 
 ### Changed
 
