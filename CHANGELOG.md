@@ -134,7 +134,9 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
   Permission denied"); delivery itself was unaffected. The config now uses
   `create 0640 addypin addypin` plus `su addypin addypin`, is tracked in
   `ops/logrotate/addypin`, and is installed by hand (`deploy.sh` doesn't install it),
-  with the current file chowned.
+  with the current file chowned. Verified on the box: `logrotate -d` dry run clean, an
+  addypin write test passed both plainly and under the digest unit's sandbox properties,
+  and the previous config is backed up at `/root/logrotate-addypin.bak-20261023-030503`.
 
 ### Documented
 
