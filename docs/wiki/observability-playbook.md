@@ -61,9 +61,9 @@ Everything writes the **same JSONL dialect** (`{"ts","kind","app",…}`), so one
 
 ## Related pages
 
-- [Mail deliverability](observability/observability/mail-deliverability.md)
-- [App capture and metrics](observability/observability/app-capture-and-metrics.md)
-- [Health and digest](observability/observability/health-and-digest.md)
-- [Units, security and layout](observability/observability/units-security-layout.md)
-- [Off-box backup and watch](observability/observability/offbox-backup-watch.md)
-- [Verify and troubleshoot](observability/observability/verify-and-troubleshoot.md)
+- [Mail deliverability](mail-deliverability.md)
+- [App capture and metrics](app-capture-and-metrics.md)
+- [Health and digest](health-and-digest.md)
+- [Units, security and layout](units-security-layout.md)
+- [Off-box backup and watch](offbox-backup-watch.md)
+- [Verify and troubleshoot](verify-and-troubleshoot.md)
