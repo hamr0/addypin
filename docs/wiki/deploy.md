@@ -106,6 +106,9 @@ install -m 644 /opt/addypin/ops/systemd/addypin-*.{service,timer} /etc/systemd/s
 systemctl daemon-reload
 ```
 
+`ops/logrotate/addypin` is not synced either: install it by hand to
+`/etc/logrotate.d/addypin` (root-owned, 0644) when it changes.
+
 ### One-time observability cutover (flightlog + pulselog)
 
 The first deploy carrying the pulselog migration needs this once on the VPS,

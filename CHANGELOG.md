@@ -127,6 +127,15 @@ Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
   The nginx config is now tracked in `ops/` — it previously existed only on the
   box. Re-check the CF ranges if origin logs ever show CF IPs again.
 
+- **`msmtp.log` is addypin-writable again — the 2026-07-02 ownership fix had regressed.**
+  The next logrotate run (2026-07-03) recreated the file as `root root 0644` from
+  `/etc/logrotate.d/addypin`, and with `notifempty` it never rotated again. Every
+  msmtp send since, including the Gmail fallback, logged nothing ("cannot log …
+  Permission denied"); delivery itself was unaffected. The config now uses
+  `create 0640 addypin addypin` plus `su addypin addypin`, is tracked in
+  `ops/logrotate/addypin`, and is installed by hand (`deploy.sh` doesn't install it),
+  with the current file chowned.
+
 ### Documented
 
 - **PRD §8 — corrected the per-IP rate-limit story, and recorded a known defect.**

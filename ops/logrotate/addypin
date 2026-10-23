@@ -1,0 +1,13 @@
+# Install to /etc/logrotate.d/addypin (by hand; deploy.sh does not sync it).
+# msmtp runs as the addypin user, so the recreated log must be addypin-owned. A
+# root-owned recreate silently disables its log; this regressed on 2026-07-03.
+/var/log/addypin/*.log {
+    daily
+    rotate 30
+    compress
+    delaycompress
+    missingok
+    notifempty
+    su addypin addypin
+    create 0640 addypin addypin
+}
