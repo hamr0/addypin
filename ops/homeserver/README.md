@@ -22,6 +22,8 @@ section, no flag runs the health `checks`. This replaces the old hand-rolled
   sudo npm i -g pulselog
   command -v pulselog          # note the path; the units assume /usr/local/bin/pulselog
   ```
+  Upgrade later with `sudo npm i -g pulselog@^0.8.0` (0.8.0 adds the
+  `mailTimeoutMs` send bound and `--test-alert`).
 - **A mailer** for the alert/failure emails. pulselog sends via `mail` →
   `sendmail`; on a box with no MTA, install the msmtp → Gmail shim from the
   pulselog README (`msmtp` + `msmtp-mta`, a `0600` `~/.msmtprc`). Keep the
@@ -75,6 +77,10 @@ systemctl list-timers 'addypin-*'
 sudo /usr/local/bin/pulselog --backup --config /etc/addypin/pulselog.config.json
 ls -la ~/addypin-backups/addypin-backup-*.tar.gz       # newest is non-empty
 tar -tzf ~/addypin-backups/addypin-backup-*.tar.gz | head   # addypin.db* + letsencrypt.tar.gz
+
+# Backup alert path: one test message via primary AND fallback, no JSONL
+# written, exit 1 if any configured path fails (pulselog 0.8.0+).
+sudo /usr/local/bin/pulselog --test-alert --backup --config /etc/addypin/pulselog.config.json; echo "exit=$?"
 
 # Watch: silent + exit 0 when the site is up, a fresh backup exists, and the
 # VPS's last mail to Gmail was accepted.
