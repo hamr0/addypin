@@ -113,7 +113,7 @@ sudo systemctl edit addypin-backup     # add:  [Service]  UMask=0077
 - **Impact:** 145 logged failures, 2026-04-19 23:34 to 2026-10-23 03:23 (not
   necessarily every night; the box may have been off some nights). The first
   good run was 2026-04-19 (656 KB); no successful run in that window. The Kuma push heartbeat went unanswered and nobody was alerted
-  (Kuma notification wiring was broken; fixed by the operator the same day).
+  (Kuma's alerting did not reach the operator; the operator fixed it the same day — exact cause not recorded).
 - **Fix:** `BACKUP_ROOT=/mnt/federver/data/addypin-backups` in
   `/etc/default/addypin-backup` (old file kept as `.bak`).
 - **Verify:** `sudo systemctl start addypin-backup`, then

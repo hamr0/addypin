@@ -3,6 +3,12 @@
 All notable changes to addypin. Format loosely follows [Keep a
 Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
 
+## [Unreleased]
+
+### Documented
+
+- `ops/homeserver/FEDERVER_INSTALL.md`: the Kuma-alerting note no longer asserts an unverified cause.
+
 ## [2.0.23] — 2026-10-23
 
 ### Fixed
