@@ -3,6 +3,17 @@
 All notable changes to addypin. Format loosely follows [Keep a
 Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
 
+## [2.0.25] — 2026-10-31
+
+### Fixed
+
+- **`POST /api/pins` could return 201 for a pin whose confirmation mail was
+  never sent.** addypin allowed 5 pins/hr per IP, but knowless only mails 3 new
+  addresses/hr per IP and silently sends nothing past that. The 4th and 5th pin
+  from one IP worked for 72 h but could never be kept. Both caps now come from
+  one constant (`NEW_PINS_PER_IP_PER_HOUR = 3`, `server/main.js`), so addypin
+  returns 429 first. Dev still disables both. PRD §8 updated.
+
 ## [2.0.24] — 2026-10-31
 
 ### Security

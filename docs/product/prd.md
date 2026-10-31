@@ -184,7 +184,7 @@ Pure function in `server/maplinks.js`: `(lat, lng) → [{ name, url, icon, darkB
 ## 8. Rate limiting
 
 In-process token bucket. No Redis. Limits applied per IP:
-- `POST /api/pins`: 5 per hour, 20 per day.
+- `POST /api/pins`: 3 per hour, 20 per day.
 - `GET /api/pins/:shortcode`: 300 per 15 min (lookups are cheap, don't over-constrain).
 - `POST /api/login`: 3 per hour per email fingerprint.
 - `PATCH`/`DELETE /api/pins/:shortcode`: 60 per hour **per owner handle** (not IP). These are authenticated, so the throttle is keyed on the session principal — caps a runaway/abusive session from pounding pin writes or probing ownership across shortcodes, without penalising unrelated owners behind a shared NAT egress.
