@@ -48,7 +48,7 @@ Explicit list of things v2 will **not** do. Each of these was in v1.
 - **No SaaS / paid services in the critical path.** Every runtime dependency (email send, email receive, DB, hosting, monitoring) must be OSS or self-hosted. Resend, Postmark, Umami, and similar are out.
 - **No shortcode re-use, ever.** Once a shortcode is retired (pin deleted or expired unconfirmed), it stays retired permanently. Prevents a freed code from pointing to a new, stranger's pin after someone still holds the old link.
 - **No Docker, no containerization.** Single Node process, systemd unit, nginx reverse proxy, Postfix for mail. All on bare metal / VPS.
-- **No CI/CD pipeline in v1.** Manual deploy to the VPS via `rsync` or `git pull`. Automate later only if it hurts.
+- **No CD pipeline.** Deploy is manual via `./ops/deploy.sh`. A GitHub Actions CI test gate runs on push/PR (`.github/workflows/ci.yml`); automate deploy later only if it hurts.
 - **No user accounts / passwords / OAuth.** Identity is a verified email via magic link. Nothing to store beyond a hash.
 - **No end-to-end encryption.** Server must be able to decrypt coords to serve public lookups. Threat model in §7.
 
