@@ -3,7 +3,19 @@
 All notable changes to addypin. Format loosely follows [Keep a
 Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
 
-## [Unreleased]
+## [2.0.24] — 2026-10-31
+
+### Security
+
+- **knowless `^1.3.4` → `^1.3.6`, which moves nodemailer 9.0.3 → 10.3.1** (PR #43).
+  - 1.3.5 clears eight nodemailer `<=10.0.9` advisories. knowless reports none
+    as reachable through its API; `npm audit --omit=dev` is now 0.
+  - 1.3.6 fixes handle seeding under `openRegistration: true`, which addypin
+    uses (`server/main.js`, `server/inbound-cli.js`). A sent-but-unredeemed
+    address no longer becomes an "existing" handle that skips the per-IP
+    new-handle cap; the row is now created at first redemption.
+  - nodemailer 10 is a major; its declared break is Node >=20, and addypin runs
+    on 22. No addypin code change. Suite 179/179.
 
 ### Documented
 

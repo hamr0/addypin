@@ -1,6 +1,6 @@
 {
   "name": "addypin",
-  "version": "2.0.23",
+  "version": "2.0.24",
   "private": true,
   "type": "module",
   "description": "Location sharing via short links. v2 rewrite.",
