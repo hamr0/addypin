@@ -51,7 +51,8 @@ translation layer across 12 map apps. That's the whole product.
 - No user-visible timestamps or view counts
 - No mobile app
 - No admin panel
-- No CI/CD pipeline (manual deploy — automate when it hurts)
+- No CD pipeline (CI runs tests on push/PR; deploy stays manual via
+  `ops/deploy.sh`)
 - No Docker, no Kubernetes, no Terraform
 - No E2E encryption (server must decrypt to serve lookups; see
   [`product/prd.md`](prd.md) §7)
