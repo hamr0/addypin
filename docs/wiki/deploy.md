@@ -2,7 +2,7 @@
 
 How to ship a change to production (the live VPS at `addypin.com`).
 
-There is no CI/CD pipeline. Deploys are manual on purpose — see
+CI is a GitHub Actions test gate on push/PR (`.github/workflows/ci.yml`); there is no CD. Deploys are manual on purpose — see
 `product/vision.md`. The single command path is `./ops/deploy.sh`,
 which enforces the pre-flight below and refuses to proceed if any
 gate fails. That's the whole point — the script is the runbook in

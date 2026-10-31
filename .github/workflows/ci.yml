@@ -1,0 +1,52 @@
+# Push / PR gate: npm ci -> npm test -> production boot smoke.
+# No typecheck/build steps: addypin has no tsc and no build (plain Node + plain HTML).
+# Tests are hermetic: no secrets, no network. Deploy is NOT here: it stays manual
+# via ./ops/deploy.sh (it reads SSH creds from a local `pass` store CI must never have).
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test   # node --test with --experimental-sqlite (in the script)
+      # Tests import modules but never run server/main.js, so a broken production
+      # config only fails at boot. Start it with throwaway keys and require GET / = 200.
+      # msmtp is absent on the runner; the mailer falls back to the console transport.
+      - name: Production boot smoke
+        run: |
+          set -u
+          PORT=3917
+          DATA_DIR="$(mktemp -d)"
+          export NODE_ENV=production DATA_DIR PORT
+          export ADDYPIN_DATA_KEY="$(openssl rand -hex 32)"
+          export KNOWLESS_SECRET="$(openssl rand -hex 32)"
+          node --experimental-sqlite server/main.js > "$DATA_DIR/server.log" 2>&1 &
+          SERVER_PID=$!
+          status=1
+          for _ in $(seq 1 20); do
+            code="$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:$PORT/" || true)"
+            if [ "$code" = "200" ]; then status=0; break; fi
+            kill -0 "$SERVER_PID" 2>/dev/null || break
+            sleep 0.5
+          done
+          kill "$SERVER_PID" 2>/dev/null || true
+          wait "$SERVER_PID" 2>/dev/null || true
+          if [ "$status" -ne 0 ]; then
+            # flightlog writes uncaught boot errors to errors.jsonl, not stderr
+            echo "GET / never returned 200; server log:"; cat "$DATA_DIR/server.log"
+            if [ -f "$DATA_DIR/errors.jsonl" ]; then echo "errors.jsonl:"; cat "$DATA_DIR/errors.jsonl"; fi
+          fi
+          exit "$status"

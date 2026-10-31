@@ -3,6 +3,15 @@
 All notable changes to addypin. Format loosely follows [Keep a
 Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
 
+## [Unreleased]
+
+### Added
+
+- **CI test gate** (`.github/workflows/ci.yml`): on every push and PR, `npm ci`
+  -> `npm test` -> a production boot smoke (starts `server/main.js` with
+  throwaway keys and requires `GET /` = 200). Deploy stays manual via
+  `./ops/deploy.sh`; there is no CD.
+
 ## [2.0.25] — 2026-10-31
 
 ### Fixed
