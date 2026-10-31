@@ -59,6 +59,11 @@ fs.mkdirSync(cfg.dataDir, { recursive: true });
 const db = createDb({ path: path.join(cfg.dataDir, 'addypin.db') });
 const crypto = createCrypto({ dataKey: cfg.dataKey });
 
+// Must equal knowless's maxNewHandlesPerIpPerHour: past that cap knowless
+// silently sends no mail, so addypin must 429 first rather than 201 a pin
+// whose owner never gets the confirmation.
+const NEW_PINS_PER_IP_PER_HOUR = 3;
+
 // knowless owns: magic-link mail, sessions, tokens, handle derivation.
 // Mounted on /login, /auth/callback, /logout. POST /api/login is a
 // thin JSON wrapper around auth.startLogin in http.js so addypin's
@@ -93,7 +98,9 @@ const auth = knowless({
     ...(process.env.NODE_ENV !== 'production' ? {
         maxLoginRequestsPerIpPerHour: 0,
         maxNewHandlesPerIpPerHour: 0,
-    } : {}),
+    } : {
+        maxNewHandlesPerIpPerHour: NEW_PINS_PER_IP_PER_HOUR,
+    }),
     // On magic-link replay or invalid token, knowless 302s to loginPath
     // (default /login). addypin doesn't mount /login (we wrap startLogin
     // in /api/login instead), so let replays fall to /manage — the page
@@ -104,7 +111,7 @@ const auth = knowless({
 
 // Per PRD §8.
 const limiters = {
-    create: createRateLimiter({ capacity: 5, refillPerSec: 5 / 3600 }),    // 5/hr per IP
+    create: createRateLimiter({ capacity: NEW_PINS_PER_IP_PER_HOUR, refillPerSec: NEW_PINS_PER_IP_PER_HOUR / 3600 }), // 3/hr per IP
     lookup: createRateLimiter({ capacity: 300, refillPerSec: 300 / 900 }), // 300/15min per IP
     login:  createRateLimiter({ capacity: 3, refillPerSec: 3 / 3600 }),    // 3/hr per email fp
     // Authenticated pin writes (PATCH/DELETE). Keyed by owner handle, not
