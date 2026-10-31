@@ -14,6 +14,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
@@ -23,7 +24,8 @@ jobs:
       - run: npm ci
       - run: npm test   # node --test with --experimental-sqlite (in the script)
       # Tests import modules but never run server/main.js, so a broken production
-      # config only fails at boot. Start it with throwaway keys and require GET / = 200.
+      # config only fails at boot. Start it with throwaway keys and require GET / = 200 plus
+      # the server's own bind line (a squatter on the port must not pass).
       # msmtp is absent on the runner; the mailer falls back to the console transport.
       - name: Production boot smoke
         run: |
@@ -38,7 +40,7 @@ jobs:
           status=1
           for _ in $(seq 1 20); do
             code="$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:$PORT/" || true)"
-            if [ "$code" = "200" ]; then status=0; break; fi
+            if [ "$code" = "200" ] && grep -qF "addypin listening on 127.0.0.1:$PORT" "$DATA_DIR/server.log"; then status=0; break; fi
             kill -0 "$SERVER_PID" 2>/dev/null || break
             sleep 0.5
           done
