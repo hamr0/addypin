@@ -82,9 +82,10 @@ stale link from silently redirecting to a stranger's pin.
 
 ### Manual deploy
 
-`ssh root@vps 'cd /opt/addypin && sudo -u addypin git pull &&
-systemctl restart addypin'`. No CI/CD pipeline. Automate only if
-it hurts; so far it hasn't.
+`./ops/deploy.sh` runs pre-flight (on main, clean, synced, tests
+green), pulls and restarts on the VPS, then smoke-tests. CI runs
+tests on push/PR, but there is no CD. Automate further only if it
+hurts; so far it hasn't.
 
 ### Plain-text emails forever
 

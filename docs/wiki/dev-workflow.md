@@ -54,7 +54,7 @@ See [`deploy.md`](deploy.md) for the full runbook. TL;DR:
 The script enforces pre-flight (on `main`, clean tree, in sync with
 origin, tests green) and refuses to deploy if any gate fails. VPS
 pulls from `github.com/hamr0/addypin` via a read-only SSH deploy
-key. No CI/CD — manual on purpose.
+key. A CI test gate runs on push/PR (`.github/workflows/ci.yml`); no CD — deploy is manual on purpose.
 
 **If the deploy fails:** check `journalctl -u addypin -n 50` on
 the VPS. Migration issues follow the `applyMigrations` pattern in

@@ -119,7 +119,7 @@ so older log entries that reference "the snapshot" still parse.
 | Wildcard TLS cert | Umami analytics |
 | DKIM signing | Resend (paid, SaaS) |
 | msmtp (added) | PostgreSQL |
-| systemd | GitHub Actions CI/CD pipeline (manual deploy for v2) |
+| systemd | GitHub Actions CD (deploy stays manual; a CI test gate runs on push/PR) |
 
 ## To verify before cutover
 

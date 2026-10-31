@@ -3,6 +3,26 @@
 All notable changes to addypin. Format loosely follows [Keep a
 Changelog](https://keepachangelog.com/). Dates are `YYYY-MM-DD`.
 
+## [2.1.0] — 2026-10-31
+
+### Added
+
+- **CI test gate** (`.github/workflows/ci.yml`): on every push and PR, `npm ci`
+  -> `npm test` -> a production boot smoke. The smoke starts `server/main.js`
+  with throwaway keys and requires both `GET /` = 200 and the server's own
+  `addypin listening on 127.0.0.1:$PORT` line, so another listener squatting
+  on the port cannot pass it. On failure it prints `server.log` and flightlog's
+  `errors.jsonl`. Job timeout is 15 minutes. Deploy stays manual via
+  `./ops/deploy.sh`; there is no CD.
+
+### Documented
+
+- CLAUDE.md, `docs/wiki/deploy.md`, `docs/product/system-state.md`,
+  `docs/product/vision.md`, `docs/product/assumptions.md`,
+  `docs/product/prd.md` and `docs/wiki/dev-workflow.md` now describe the CI
+  test gate and the absence of CD (deploy via `ops/deploy.sh`) instead of
+  "no CI/CD".
+
 ## [2.0.25] — 2026-10-31
 
 ### Fixed
